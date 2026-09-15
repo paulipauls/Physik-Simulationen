@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Energieerhaltung – Simulation</title>
+<style>
+:root{
+  --papier:#e9edf1;
+  --flaeche:#ffffff;
+  --raster:#ccd6de;
+  --linie:#9fadb8;
+  --tinte:#17242e;
+  --tinte-leise:#5d6f7c;
+  --epot:#2c5d8f;
+  --ekin:#c0561d;
+  --waerme:#8a7320;
+  --gesamt:#3f5561;
+  --radius:3px;
+}
+
+*{box-sizing:border-box}
+
+html{ -webkit-text-size-adjust:100%; }
+
+body{
+  margin:0;
+  background:var(--papier);
+  color:var(--tinte);
+  font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  font-feature-settings:"tnum" 1,"lnum" 1;
+}
+
+.blatt{
+  max-width:1180px;
+  margin:0 auto;
+  padding:24px 20px 56px;
+}
+
+/* ---------- Kopf ---------- */
+header{
+  border-bottom:1px solid var(--linie);
+  padding-bottom:14px;
+  margin-bottom:20px;
+}
+h1{
+  font-size:1.55rem;
+  font-weight:600;
+  letter-spacing:-0.015em;
+  margin:0 0 4px;
+}
+header p{
+  margin:0;
+  color:var(--tinte-leise);
+  max-width:62ch;
+}
+
+/* ---------- Szenarien ---------- */
+.szenarien{
+  display:flex;
+  gap:0;
+  margin:0 0 16px;
+  border:1px solid var(--linie);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--flaeche);
+  width:fit-content;
+  max-width:100%;
+  flex-wrap:wrap;
+}
+.szenarien button{
+  font:inherit;
+  border:0;
+  border-right:1px solid var(--linie);
+  background:transparent;
+  color:var(--tinte-leise);
+  padding:8px 18px;
+  cursor:pointer;
+}
+.szenarien button:last-child{border-right:0}
+.szenarien button[aria-pressed="true"]{
+  background:var(--tinte);
+  color:#fff;
+}
+.szenarien button:focus-visible{outline:2px solid var(--ekin);outline-offset:-2px}
+
+/* ---------- Hauptraster ---------- */
+.raster{
+  display:grid;
+  grid-template-columns:minmax(0,1.7fr) minmax(250px,1fr);
+  gap:16px;
+  align-items:start;
+}
+@media (max-width:880px){
+  .raster{grid-template-columns:1fr}
+}
+
+.tafel{
+  background:var(--flaeche);
+  border:1px solid var(--linie);
+  border-radius:var(--radius);
+}
+
+.buehne{position:relative;padding:0;overflow:hidden}
+#szene{display:block;width:100%;height:440px;touch-action:none}
+#szene.ziehbar{cursor:grab}
+#szene.zieht{cursor:grabbing}
+#hinweis{
+  margin:-6px 0 14px;
+  font-size:0.87rem;
+  color:var(--tinte-leise);
+  max-width:64ch;
+}
+#hinweis[hidden]{display:none}
+@media (max-width:880px){ #szene{height:340px} }
+
+/* ---------- Ablesetafel ---------- */
+.ablesen{padding:14px 16px 16px}
+.ablesen h2{
+  font-size:0.95rem;
+  font-weight:600;
+  margin:0 0 12px;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--raster);
+}
+
+.balken{display:grid;gap:9px;margin-bottom:16px}
+.balken .zeile{display:grid;grid-template-columns:78px 1fr 84px;gap:8px;align-items:center}
+.balken .name{font-size:0.83rem;color:var(--tinte-leise)}
+.balken .schiene{
+  height:15px;
+  background:var(--papier);
+  border:1px solid var(--raster);
+  border-radius:2px;
+  overflow:hidden;
+  display:flex;
+}
+.balken .fuellung{height:100%;width:0;transition:none}
+.balken .wert{
+  text-align:right;
+  font-size:0.83rem;
+  font-variant-numeric:tabular-nums;
+}
+.f-epot{background:var(--epot)}
+.f-ekin{background:var(--ekin)}
+.f-waerme{background:var(--waerme)}
+.zeile.summe .name{color:var(--tinte);font-weight:600}
+.zeile.summe .schiene{border-color:var(--linie)}
+
+.messwerte{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:2px 12px;
+  border-top:1px solid var(--raster);
+  padding-top:12px;
+}
+.messwerte div{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:0.85rem;
+  padding:2px 0;
+}
+.messwerte span:first-child{color:var(--tinte-leise)}
+.messwerte span:last-child{font-variant-numeric:tabular-nums}
+
+#verlauf{display:block;width:100%;height:120px;margin-top:14px;border-top:1px solid var(--raster);padding-top:10px}
+
+/* ---------- Bedienfeld ---------- */
+.pult{
+  margin-top:16px;
+  padding:16px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:14px 26px;
+}
+.regler label{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:8px;
+  font-size:0.85rem;
+  color:var(--tinte-leise);
+  margin-bottom:3px;
+}
+.regler label b{
+  color:var(--tinte);
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.regler input[type=range]{width:100%;accent-color:var(--epot);margin:0}
+.regler[hidden]{display:none}
+
+select{
+  font:inherit;
+  width:100%;
+  padding:5px 6px;
+  border:1px solid var(--linie);
+  border-radius:2px;
+  background:var(--flaeche);
+  color:var(--tinte);
+}
+
+.schalter{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-top:16px;
+}
+.schalter button{
+  font:inherit;
+  padding:8px 20px;
+  border:1px solid var(--linie);
+  border-radius:2px;
+  background:var(--flaeche);
+  color:var(--tinte);
+  cursor:pointer;
+}
+.schalter button.haupt{
+  background:var(--tinte);
+  border-color:var(--tinte);
+  color:#fff;
+  min-width:110px;
+}
+.schalter button:focus-visible{outline:2px solid var(--ekin);outline-offset:2px}
+.haken{display:flex;gap:6px;align-items:center;font-size:0.85rem;color:var(--tinte-leise)}
+.haken input{accent-color:var(--epot)}
+
+footer{
+  margin-top:26px;
+  padding-top:12px;
+  border-top:1px solid var(--linie);
+  color:var(--tinte-leise);
+  font-size:0.85rem;
+  max-width:70ch;
+}
+footer code{background:var(--flaeche);padding:1px 5px;border:1px solid var(--raster);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="blatt">
+
+<header>
+  <h1>Energieerhaltung</h1>
+  <p>Lageenergie und Bewegungsenergie wandeln sich ineinander um. Ihre Summe – zusammen mit der durch Reibung entstandenen Wärme – bleibt konstant.</p>
+</header>
+
+<div class="szenarien" role="group" aria-label="Szenario wählen">
+  <button data-szenario="fall" aria-pressed="true">Freier Fall</button>
+  <button data-szenario="pendel" aria-pressed="false">Fadenpendel</button>
+  <button data-szenario="bahn" aria-pressed="false">Skaterbahn</button>
+  <button data-szenario="ski" aria-pressed="false">Skipiste</button>
+</div>
+
+<p id="hinweis" hidden>Ziehe die Punkte auf der Piste, um das Gelände zu verändern. Der Startpunkt links legt die Anfangshöhe fest.</p>
+
+<div class="raster">
+
+  <div class="tafel buehne">
+    <canvas id="szene"></canvas>
+  </div>
+
+  <div class="tafel ablesen">
+    <h2>Energien</h2>
+
+    <div class="balken">
+      <div class="zeile">
+        <span class="name">Lage E<sub>pot</sub></span>
+        <span class="schiene"><i class="fuellung f-epot" id="b-epot"></i></span>
+        <span class="wert" id="w-epot">0 J</span>
+      </div>
+      <div class="zeile">
+        <span class="name">Bewegung E<sub>kin</sub></span>
+        <span class="schiene"><i class="fuellung f-ekin" id="b-ekin"></i></span>
+        <span class="wert" id="w-ekin">0 J</span>
+      </div>
+      <div class="zeile" id="zeile-waerme">
+        <span class="name">Wärme Q</span>
+        <span class="schiene"><i class="fuellung f-waerme" id="b-waerme"></i></span>
+        <span class="wert" id="w-waerme">0 J</span>
+      </div>
+      <div class="zeile summe">
+        <span class="name">Summe</span>
+        <span class="schiene">
+          <i class="fuellung f-epot" id="s-epot"></i>
+          <i class="fuellung f-ekin" id="s-ekin"></i>
+          <i class="fuellung f-waerme" id="s-waerme"></i>
+        </span>
+        <span class="wert" id="w-summe">0 J</span>
+      </div>
+    </div>
+
+    <div class="messwerte">
+      <div><span>Zeit</span><span id="w-t">0,00 s</span></div>
+      <div><span>Höhe</span><span id="w-h">0,00 m</span></div>
+      <div><span>Tempo</span><span id="w-v">0,00 m/s</span></div>
+      <div><span>Masse</span><span id="w-m">1,0 kg</span></div>
+    </div>
+
+    <canvas id="verlauf"></canvas>
+  </div>
+</div>
+
+<div class="tafel pult">
+  <div class="regler" id="r-masse">
+    <label for="i-masse">Masse m <b><span id="a-masse">1,0</span> kg</b></label>
+    <input type="range" id="i-masse" min="0.1" max="10" step="0.1" value="1">
+  </div>
+
+  <div class="regler" id="r-hoehe">
+    <label for="i-hoehe">Starthöhe h₀ <b><span id="a-hoehe">5,0</span> m</b></label>
+    <input type="range" id="i-hoehe" min="0.5" max="20" step="0.1" value="5">
+  </div>
+
+  <div class="regler" id="r-laenge" hidden>
+    <label for="i-laenge">Fadenlänge L <b><span id="a-laenge">2,0</span> m</b></label>
+    <input type="range" id="i-laenge" min="0.3" max="6" step="0.1" value="2">
+  </div>
+
+  <div class="regler" id="r-winkel" hidden>
+    <label for="i-winkel">Startwinkel φ₀ <b><span id="a-winkel">60</span>°</b></label>
+    <input type="range" id="i-winkel" min="5" max="89" step="1" value="60">
+  </div>
+
+  <div class="regler">
+    <label for="i-ort">Ortsfaktor g <b><span id="a-ort">9,81</span> N/kg</b></label>
+    <select id="i-ort">
+      <option value="9.81" selected>Erde – 9,81</option>
+      <option value="1.62">Mond – 1,62</option>
+      <option value="3.71">Mars – 3,71</option>
+      <option value="24.79">Jupiter – 24,79</option>
+    </select>
+  </div>
+
+  <div class="regler">
+    <label for="i-reibung">Reibung <b><span id="a-reibung">0</span> %</b></label>
+    <input type="range" id="i-reibung" min="0" max="100" step="1" value="0">
+  </div>
+
+  <div class="regler" id="r-stoss">
+    <label for="i-stoss">Elastizität beim Aufprall <b><span id="a-stoss">100</span> %</b></label>
+    <input type="range" id="i-stoss" min="0" max="100" step="1" value="100">
+  </div>
+
+  <div class="regler">
+    <label for="i-tempo">Zeitlupe <b><span id="a-tempo">1</span>×</b></label>
+    <select id="i-tempo">
+      <option value="1" selected>Echtzeit – 1×</option>
+      <option value="0.5">halb so schnell</option>
+      <option value="0.25">viertel Tempo</option>
+      <option value="0.1">zehntel Tempo</option>
+    </select>
+  </div>
+</div>
+
+<div class="schalter">
+  <button class="haupt" id="i-start">Start</button>
+  <button id="i-zurueck">Zurücksetzen</button>
+  <button id="i-pisteneu" hidden>Piste zurücksetzen</button>
+  <label class="haken"><input type="checkbox" id="i-spur" checked> Spur zeigen</label>
+  <label class="haken"><input type="checkbox" id="i-pfeile" checked> Geschwindigkeitspfeil</label>
+  <label class="haken"><input type="checkbox" id="i-gitter" checked> Metergitter</label>
+</div>
+
+<footer>
+  Nullniveau der Lageenergie ist jeweils der tiefste Punkt der Bahn. Bei der Skipiste begrenzen die beiden Ränder das Gelände; trifft der Fahrer dort auf, kehrt er ohne Energieverlust um. Alle Parameter stehen im Skript im Block <code>KONFIG</code> – dort lassen sich Wertebereiche, Farben, die Form der Skaterbahn und das Startgelände der Piste ändern.
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ================================================================
+   KONFIG – hier anpassen
+   ================================================================ */
+const KONFIG = {
+  bahnKruemmung: 0.2,      // Skaterbahn y = a·x²  (großes a = enge Bahn)
+  reibungMax:    1.2,      // Dämpfung bei Reglerstellung 100 % (1/s)
+  ruheSchwelle:  0.25,     // ab dieser Geschwindigkeit (m/s) bleibt der Ball liegen
+  zeitschritt:   0.0004,   // Länge eines Rechenschritts (s)
+  spurLaenge:    260,      // gespeicherte Spurpunkte
+  verlaufFenster:12,       // Breite des Energie-Zeit-Diagramms (s)
+
+  // Startgelände der Skipiste: [x in m, Höhe in m], links beginnend
+  skiPiste: [[0,20],[8,4],[16,13],[26,2],[36,10],[46,3],[56,22]],
+  skiMaxHoehe: 24,         // obere Grenze beim Ziehen (m)
+  skiMinAbstand: 3,        // kleinster waagerechter Abstand zweier Punkte (m)
+
+  farbe: {
+    epot:  "#2c5d8f",
+    ekin:  "#c0561d",
+    waerme:"#8a7320",
+    tinte: "#17242e",
+    leise: "#5d6f7c",
+    raster:"#ccd6de",
+    linie: "#9fadb8"
+  }
+};
+
+/* ================================================================
+   Kurzhelfer
+   ================================================================ */
+const $ = (id) => document.getElementById(id);
+const zahl = (x, n = 2) => x.toLocaleString("de-DE", {minimumFractionDigits:n, maximumFractionDigits:n});
+
+function energieText(e){
+  if (e >= 10000) return zahl(e/1000, 1) + " kJ";
+  if (e >= 100)   return zahl(e, 0) + " J";
+  return zahl(e, 1) + " J";
+}
+
+/* ================================================================
+   Zustand
+   ================================================================ */
+const P = {                 // einstellbare Parameter
+  szenario:"fall", m:1, h0:5, L:2, phi0:60*Math.PI/180,
+  g:9.81, reibung:0, stoss:1, tempo:1,
+  spur:true, pfeile:true, gitter:true
+};
+
+const S = {                 // Simulationszustand
+  laeuft:false, t:0,
+  y:0, v:0,                 // Freier Fall
+  th:0, om:0,               // Pendel
+  x:0, vx:0,                // Bahn
+  E0:0, Q:0,
+  spur:[], verlauf:[]
+};
+
+/* ================================================================
+   Szenarien – jedes liefert Start, Rechenschritt und Messwerte
+   ================================================================ */
+/* ================================================================
+   Skipiste – Gelände aus verschiebbaren Stützpunkten
+   Zwischen den Punkten wird monoton-kubisch interpoliert
+   (Hermite mit Fritsch-Carlson-Begrenzung). Dadurch entstehen
+   keine Buckel, die niemand hingezogen hat.
+   ================================================================ */
+const PISTE = {
+  punkte:[], stg:[],
+
+  laden(){
+    this.punkte = KONFIG.skiPiste.map(p => ({x:p[0], y:p[1]}));
+    this.neu();
+  },
+
+  neu(){
+    const p = this.punkte, n = p.length, m = new Array(n), d = [];
+    for (let i = 0; i < n-1; i++) d.push((p[i+1].y - p[i].y)/(p[i+1].x - p[i].x));
+    m[0] = d[0];
+    m[n-1] = d[n-2];
+    for (let i = 1; i < n-1; i++) m[i] = (d[i-1]*d[i] <= 0) ? 0 : (d[i-1] + d[i])/2;
+    for (let i = 0; i < n-1; i++){
+      if (d[i] === 0){ m[i] = 0; m[i+1] = 0; continue; }
+      const a = m[i]/d[i], b = m[i+1]/d[i], s = a*a + b*b;
+      if (s > 9){ const t = 3/Math.sqrt(s); m[i] = t*a*d[i]; m[i+1] = t*b*d[i]; }
+    }
+    this.stg = m;
+  },
+
+  links(){  return this.punkte[0].x; },
+  rechts(){ return this.punkte[this.punkte.length-1].x; },
+  gipfel(){ return Math.max(...this.punkte.map(q => q.y)); },
+
+  // Höhe, Steigung y' und Krümmung y'' an der Stelle x
+  werte(x){
+    const p = this.punkte, m = this.stg;
+    let i = 0;
+    while (i < p.length-2 && x > p[i+1].x) i++;
+    const h = p[i+1].x - p[i].x;
+    const t = Math.max(0, Math.min(1, (x - p[i].x)/h));
+    const dy = p[i].y - p[i+1].y;
+    const t2 = t*t, t3 = t2*t;
+    return {
+      y:  (2*t3 - 3*t2 + 1)*p[i].y + (t3 - 2*t2 + t)*h*m[i]
+        + (-2*t3 + 3*t2)*p[i+1].y + (t3 - t2)*h*m[i+1],
+      s1: (6*t2 - 6*t)*dy/h + (3*t2 - 4*t + 1)*m[i] + (3*t2 - 2*t)*m[i+1],
+      s2: ((12*t - 6)*dy/h + (6*t - 4)*m[i] + (6*t - 2)*m[i+1])/h
+    };
+  }
+};
+PISTE.laden();
+
+const SZENE = {
+
+  /* ---- Freier Fall mit Aufprall ---- */
+  fall:{
+    reset(){ S.y = P.h0; S.v = 0; },
+    schritt(dt){
+      const c = daempfung();
+      const v0 = S.v;
+      S.v += (-P.g - c*S.v)*dt;
+      S.y += S.v*dt;
+      if (c > 0) S.Q += P.m*c*((v0 + S.v)/2)**2*dt;
+
+      if (S.y <= 0){                                   // Aufprall
+        S.y = 0;
+        S.Q += 0.5*P.m*S.v*S.v*(1 - P.stoss*P.stoss);  // Stoßverlust
+        S.v = -S.v*P.stoss;
+        if (Math.abs(S.v) < KONFIG.ruheSchwelle){ S.v = 0; S.Q = S.E0; }
+      }
+    },
+    hoehe(){ return S.y; },
+    tempo(){ return Math.abs(S.v); },
+    tempoSetzen(v){ S.v = (S.v < 0 ? -v : v); },
+    umkehrpunkt(E){ S.y = Math.max(0, E/(P.m*P.g)); S.v = 0; }
+  },
+
+  /* ---- Fadenpendel ---- */
+  pendel:{
+    reset(){ S.th = P.phi0; S.om = 0; },
+    schritt(dt){
+      const c = daempfung();
+      const om0 = S.om;
+      S.om += (-(P.g/P.L)*Math.sin(S.th) - c*S.om)*dt;
+      S.th += S.om*dt;
+      if (c > 0){ const vm = P.L*(om0 + S.om)/2; S.Q += P.m*c*vm*vm*dt; }
+    },
+    hoehe(){ return P.L*(1 - Math.cos(S.th)); },
+    tempo(){ return Math.abs(P.L*S.om); },
+    tempoSetzen(v){ const w = v/P.L; S.om = (S.om < 0 ? -w : w); },
+    umkehrpunkt(E){
+      const h = Math.min(2*P.L, Math.max(0, E/(P.m*P.g)));
+      const w = Math.acos(Math.max(-1, Math.min(1, 1 - h/P.L)));
+      S.th = (S.th < 0 ? -w : w);
+      S.om = 0;
+    }
+  },
+
+  /* ---- Kugel auf parabelförmiger Bahn ---- */
+  bahn:{
+    reset(){
+      S.x = -Math.sqrt(P.h0 / KONFIG.bahnKruemmung);
+      S.vx = 0;
+    },
+    schritt(dt){
+      const a  = KONFIG.bahnKruemmung;
+      const c  = daempfung();
+      const s1 = 2*a*S.x;          // Steigung y'
+      const s2 = 2*a;              // Krümmung y''
+      const v0 = this.tempo();
+      S.vx += (-(s1*s2*S.vx*S.vx + P.g*s1)/(1 + s1*s1) - c*S.vx)*dt;
+      S.x  += S.vx*dt;
+      if (c > 0){ const vm = (v0 + this.tempo())/2; S.Q += P.m*c*vm*vm*dt; }
+    },
+    hoehe(){ return KONFIG.bahnKruemmung * S.x * S.x; },
+    tempo(){
+      const s1 = 2*KONFIG.bahnKruemmung*S.x;
+      return Math.abs(S.vx)*Math.hypot(1, s1);
+    },
+    tempoSetzen(v){
+      const s1 = 2*KONFIG.bahnKruemmung*S.x;
+      const w  = v/Math.hypot(1, s1);
+      S.vx = (S.vx < 0 ? -w : w);
+    },
+    umkehrpunkt(E){
+      const h = Math.max(0, E/(P.m*P.g));
+      S.x  = (S.x < 0 ? -1 : 1)*Math.sqrt(h/KONFIG.bahnKruemmung);
+      S.vx = 0;
+    }
+  },
+
+  /* ---- Skifahrer auf verstellbarer Piste ---- */
+  ski:{
+    reset(){ S.x = PISTE.links(); S.vx = 0; },
+    schritt(dt){
+      const c = daempfung();
+      const w = PISTE.werte(S.x);
+      const v0 = this.tempo();
+      S.vx += (-(w.s1*w.s2*S.vx*S.vx + P.g*w.s1)/(1 + w.s1*w.s1) - c*S.vx)*dt;
+      S.x  += S.vx*dt;
+      if (S.x < PISTE.links()){  S.x = PISTE.links();  S.vx =  Math.abs(S.vx); }
+      if (S.x > PISTE.rechts()){ S.x = PISTE.rechts(); S.vx = -Math.abs(S.vx); }
+      if (c > 0){ const vm = (v0 + this.tempo())/2; S.Q += P.m*c*vm*vm*dt; }
+    },
+    hoehe(){ return Math.max(0, PISTE.werte(S.x).y); },
+    tempo(){ return Math.abs(S.vx)*Math.hypot(1, PISTE.werte(S.x).s1); },
+    tempoSetzen(v){
+      const w = v/Math.hypot(1, PISTE.werte(S.x).s1);
+      S.vx = (S.vx < 0 ? -w : w);
+    },
+    // Die Piste lässt sich nicht nach x auflösen; der Umkehrpunkt wird
+    // deshalb entgegen der Fahrtrichtung gesucht und eingeschachtelt.
+    umkehrpunkt(E){
+      const hZiel = Math.max(0, E/(P.m*P.g));
+      const dir = (S.vx < 0 ? -1 : 1);
+      const xL = PISTE.links(), xR = PISTE.rechts();
+      let vorn = S.x, hinten = S.x, weite = 0.002;
+      for (let k = 0; k < 26 && PISTE.werte(hinten).y > hZiel; k++){
+        hinten = Math.max(xL, Math.min(xR, S.x - dir*weite));
+        weite *= 1.7;
+        if (hinten === xL || hinten === xR) break;
+      }
+      if (PISTE.werte(hinten).y <= hZiel){
+        for (let k = 0; k < 40; k++){
+          const mitte = (vorn + hinten)/2;
+          if (PISTE.werte(mitte).y > hZiel) vorn = mitte; else hinten = mitte;
+        }
+        S.x = hinten;
+      }
+      S.vx = 0;
+    }
+  }
+};
+
+function daempfung(){ return P.reibung * KONFIG.reibungMax; }
+function aktuell(){ return SZENE[P.szenario]; }
+
+/* ----------------------------------------------------------------
+   Energiekorrektur: hält E_pot + E_kin + Q exakt auf E₀.
+   Jedes numerische Verfahren driftet; nach jedem Rechenschritt wird
+   der Geschwindigkeitsbetrag deshalb auf den Wert gesetzt, den die
+   Energiebilanz vorschreibt. Die Bahnform bleibt unverändert.
+   ---------------------------------------------------------------- */
+function projizieren(){
+  const sz   = aktuell();
+  const ziel = Math.max(0, S.E0 - S.Q);      // verfügbare mechanische Energie
+  const Ek   = ziel - P.m*P.g*sz.hoehe();
+
+  if (Ek <= 0){ sz.umkehrpunkt(ziel); return; }
+
+  const vSoll = Math.sqrt(2*Ek/P.m);
+  // Die Korrektur darf die Bewegung nur nachjustieren, nicht antreiben.
+  // Bricht die integrierte Geschwindigkeit deutlich ein, ist der
+  // Umkehrpunkt erreicht - er wird dann exakt angesteuert.
+  if (sz.tempo() < 0.5*vSoll){ sz.umkehrpunkt(ziel); return; }
+
+  sz.tempoSetzen(vSoll);
+}
+
+/* ================================================================
+   Zurücksetzen
+   ================================================================ */
+function zuruecksetzen(){
+  S.laeuft = false;
+  S.t = 0;
+  S.Q = 0;
+  S.spur.length = 0;
+  S.verlauf.length = 0;
+  aktuell().reset();
+  S.E0 = P.m * P.g * aktuell().hoehe() + 0.5 * P.m * aktuell().tempo()**2;
+  if (S.E0 < 1e-9) S.E0 = 1e-9;
+  $("i-start").textContent = "Start";
+  zeichnen();
+  anzeigen();
+}
+
+/* ================================================================
+   Zeitschleife
+   ================================================================ */
+let letzteZeit = null;
+
+function schleife(jetzt){
+  requestAnimationFrame(schleife);
+  if (letzteZeit === null) letzteZeit = jetzt;
+  let dtEcht = (jetzt - letzteZeit)/1000;
+  letzteZeit = jetzt;
+  if (dtEcht > 0.05) dtEcht = 0.05;          // nach Tab-Wechsel nicht aufholen
+
+  if (S.laeuft){
+    const dtSim = dtEcht * P.tempo;
+    const n = Math.max(1, Math.min(4000, Math.round(dtSim/KONFIG.zeitschritt)));
+    const dt = dtSim/n;
+    for (let i = 0; i < n; i++){
+      aktuell().schritt(dt);
+      projizieren();
+    }
+    S.t += dtSim;
+
+    const sz = aktuell();
+    const Ep = P.m*P.g*sz.hoehe();
+    const Ek = 0.5*P.m*sz.tempo()**2;
+
+    S.verlauf.push({t:S.t, Ep, Ek, Q:S.Q});
+    while (S.verlauf.length && S.t - S.verlauf[0].t > KONFIG.verlaufFenster) S.verlauf.shift();
+
+    if (P.spur) merkeSpur();
+  }
+
+  zeichnen();
+  anzeigen();
+}
+
+/* ================================================================
+   Umrechnung Welt → Bildschirm
+   ================================================================ */
+let ansicht = {skala:1, x0:0, y0:0};
+
+function ansichtSetzen(b, h){
+  const randO = 26, randU = 34, randS = 20;
+  if (P.szenario === "fall"){
+    const welt = Math.max(2, P.h0*1.18 + 0.6);
+    ansicht.skala = (h - randO - randU)/welt;
+    ansicht.x0 = b*0.5;
+    ansicht.y0 = h - randU;
+  } else if (P.szenario === "pendel"){
+    const welt = P.L*1.35;
+    ansicht.skala = (h - randO - randU)/welt;
+    ansicht.x0 = b*0.5;
+    ansicht.y0 = h - randU;
+  } else if (P.szenario === "ski"){
+    const breite = PISTE.rechts() - PISTE.links();
+    const hoch   = Math.max(2, PISTE.gipfel()*1.12);
+    ansicht.skala = Math.min((b - 2*randS)/breite, (h - randO - randU)/hoch);
+    ansicht.x0 = (b - breite*ansicht.skala)/2 - PISTE.links()*ansicht.skala;
+    ansicht.y0 = h - randU;
+  } else {
+    const xMax = Math.sqrt(P.h0/KONFIG.bahnKruemmung)*1.15;
+    const sx = (b - 2*randS)/(2*xMax);
+    const sy = (h - randO - randU)/(P.h0*1.2);
+    ansicht.skala = Math.min(sx, sy);
+    ansicht.x0 = b*0.5;
+    ansicht.y0 = h - randU;
+  }
+}
+
+const PX = (xm) => ansicht.x0 + xm*ansicht.skala;
+const PY = (ym) => ansicht.y0 - ym*ansicht.skala;
+
+/* ================================================================
+   Zeichnen der Szene
+   ================================================================ */
+const leinwand = $("szene");
+const ctx = leinwand.getContext("2d");
+
+function leinwandGroesse(cv, c){
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  cv.width  = Math.round(r.width*dpr);
+  cv.height = Math.round(r.height*dpr);
+  c.setTransform(dpr,0,0,dpr,0,0);
+  return {b:r.width, h:r.height};
+}
+
+function merkeSpur(){
+  const p = ballPosition();
+  const letzt = S.spur[S.spur.length-1];
+  if (!letzt || Math.hypot(p.x-letzt.x, p.y-letzt.y) > 0.02){
+    S.spur.push(p);
+    if (S.spur.length > KONFIG.spurLaenge) S.spur.shift();
+  }
+}
+
+function ballPosition(){          // in Metern, Ursprung = tiefster Punkt, Mitte
+  if (P.szenario === "fall")   return {x:0, y:S.y};
+  if (P.szenario === "pendel") return {x:P.L*Math.sin(S.th), y:P.L*(1-Math.cos(S.th))};
+  if (P.szenario === "ski")    return {x:S.x, y:PISTE.werte(S.x).y};
+  return {x:S.x, y:KONFIG.bahnKruemmung*S.x*S.x};
+}
+
+function zeichnen(){
+  const {b,h} = leinwandGroesse(leinwand, ctx);
+  ansichtSetzen(b,h);
+  ctx.clearRect(0,0,b,h);
+
+  if (P.gitter) gitterZeichnen(b,h);
+  bahnZeichnen(b,h);
+  starthoeheZeichnen(b);
+  spurZeichnen();
+  if (P.szenario === "ski") griffeZeichnen();
+
+  const p = ballPosition();
+  const px = PX(p.x), py = PY(p.y);
+  const r = Math.max(7, Math.min(16, ansicht.skala*0.13));
+
+  if (P.pfeile) pfeilZeichnen(px, py, r);
+
+  if (P.szenario === "ski") skifahrerZeichnen(px, py);
+  else ballZeichnen(px, py, r);
+
+  hoehenlinieZeichnen(b, p.y, px, py);
+}
+
+function ballZeichnen(px, py, r){
+  ctx.beginPath();
+  ctx.arc(px, py, r, 0, Math.PI*2);
+  ctx.fillStyle = KONFIG.farbe.tinte;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(px - r*0.3, py - r*0.35, r*0.28, 0, Math.PI*2);
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.fill();
+}
+
+function skifahrerZeichnen(px, py){
+  const s1 = PISTE.werte(S.x).s1;
+  const blick = (S.vx < 0) ? -1 : 1;
+  const vMax = tempoMax();
+
+  // t = 0 bei Stillstand, t = 1 bei Höchsttempo. Steuert die Haltung:
+  // aufrecht am Umkehrpunkt, tiefe Hocke im schnellen Abschnitt.
+  const t = (vMax < 1e-6) ? 0 : Math.max(0, Math.min(1, aktuell().tempo()/vMax));
+  const z = (a, b) => a + (b - a)*t;
+
+  const hueX = z( 1,  -3), hueY = z( -9,  -7);   // Hüfte
+  const schX = z(-1,   5), schY = z(-19, -11);   // Schulter
+  const kopX = z(-1,  10), kopY = z(-23.5, -13.5);
+  const hanX = z( 6,  15), hanY = z(-15, -14);   // Hand
+  const stoX = z( 4, -10), stoY = z(  2, -18);   // Stockspitze
+
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(-Math.atan(s1));          // in den Hang legen
+  ctx.scale(blick, 1);                 // in Fahrtrichtung schauen
+  ctx.lineCap = "round";
+
+  if (t > 0.12){                       // Schneefahne, Länge wächst mit v
+    ctx.strokeStyle = "rgba(110,145,175,0.5)";
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 4; i++){
+      const a = -14 - i*5;
+      ctx.beginPath();
+      ctx.moveTo(a, -1 - i*1.6);
+      ctx.lineTo(a - 4 - 22*t, -3 - i*3.4);
+      ctx.stroke();
+    }
+  }
+
+  ctx.strokeStyle = KONFIG.farbe.tinte;
+  ctx.fillStyle   = KONFIG.farbe.tinte;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();                     // Ski
+  ctx.moveTo(-13, 0); ctx.lineTo(15, 0); ctx.lineTo(18, -3);
+  ctx.stroke();
+  ctx.beginPath();                     // Beine und Rumpf
+  ctx.moveTo(-1, 0); ctx.lineTo(hueX, hueY); ctx.lineTo(schX, schY);
+  ctx.stroke();
+  ctx.beginPath();                     // Arm
+  ctx.moveTo(schX, schY); ctx.lineTo(hanX, hanY);
+  ctx.stroke();
+  ctx.strokeStyle = KONFIG.farbe.ekin; // Stock
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(hanX, hanY); ctx.lineTo(stoX, stoY);
+  ctx.stroke();
+  ctx.beginPath();                     // Kopf
+  ctx.arc(kopX, kopY, 4.2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function griffeZeichnen(){
+  PISTE.punkte.forEach((q, i) => {
+    const x = PX(q.x), y = PY(q.y);
+    const aktiv = (i === ziehIndex);
+    ctx.beginPath();
+    ctx.arc(x, y, aktiv ? 9 : 7, 0, Math.PI*2);
+    ctx.fillStyle = aktiv ? KONFIG.farbe.ekin : "#ffffff";
+    ctx.fill();
+    ctx.strokeStyle = aktiv ? KONFIG.farbe.ekin : KONFIG.farbe.epot;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+}
+
+function starthoeheZeichnen(b){
+  let h0;
+  if (P.szenario === "pendel")   h0 = P.L*(1 - Math.cos(P.phi0));
+  else if (P.szenario === "ski") h0 = PISTE.punkte[0].y;
+  else                           h0 = P.h0;
+  const y  = PY(h0);
+  ctx.setLineDash([6,5]);
+  ctx.strokeStyle = "rgba(44,93,143,0.6)";
+  ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(b, y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = KONFIG.farbe.epot;
+  ctx.font = "12px system-ui, sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("h₀ = " + zahl(h0) + " m", b - 8, y - 6);
+  ctx.textAlign = "left";
+}
+
+function gitterZeichnen(b,h){
+  const schritt = ansicht.skala < 14 ? 5 : (ansicht.skala < 34 ? 2 : 1);
+  ctx.strokeStyle = KONFIG.farbe.raster;
+  ctx.lineWidth = 1;
+  ctx.fillStyle = KONFIG.farbe.leise;
+  ctx.font = "11px system-ui, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  for (let m = 0; PY(m) > -20; m += schritt){
+    const y = PY(m);
+    if (y > h) continue;
+    ctx.beginPath();
+    ctx.moveTo(0, y+0.5); ctx.lineTo(b, y+0.5); ctx.stroke();
+    if (m > 0) ctx.fillText(m + " m", 6, y - 8);
+  }
+}
+
+function bahnZeichnen(b,h){
+  ctx.strokeStyle = KONFIG.farbe.linie;
+  ctx.lineWidth = 2;
+
+  if (P.szenario === "fall"){
+    ctx.beginPath();
+    ctx.moveTo(0, PY(0)); ctx.lineTo(b, PY(0)); ctx.stroke();
+    schraffur(b, PY(0));
+  }
+  else if (P.szenario === "pendel"){
+    const auf = {x:PX(0), y:PY(P.L)};
+    ctx.beginPath();
+    ctx.moveTo(auf.x - 26, auf.y); ctx.lineTo(auf.x + 26, auf.y); ctx.stroke();
+    schraffur2(auf.x - 26, auf.x + 26, auf.y);
+    const p = ballPosition();
+    ctx.beginPath();
+    ctx.moveTo(auf.x, auf.y); ctx.lineTo(PX(p.x), PY(p.y));
+    ctx.lineWidth = 1.4; ctx.strokeStyle = KONFIG.farbe.tinte; ctx.stroke();
+    // Nullniveau
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle = KONFIG.farbe.linie; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, PY(0)); ctx.lineTo(b, PY(0)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  else if (P.szenario === "ski"){
+    const xL = PISTE.links(), xR = PISTE.rechts(), N = 320;
+    const punktAuf = (i) => {
+      const x = xL + (xR - xL)*i/N;
+      return [PX(x), PY(PISTE.werte(x).y)];
+    };
+    ctx.beginPath();
+    ctx.moveTo(...punktAuf(0));
+    for (let i = 1; i <= N; i++) ctx.lineTo(...punktAuf(i));
+    ctx.lineTo(PX(xR), PY(0));
+    ctx.lineTo(PX(xL), PY(0));
+    ctx.closePath();
+    ctx.fillStyle = "#dde6ed";                 // Schneedecke
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(...punktAuf(0));
+    for (let i = 1; i <= N; i++) ctx.lineTo(...punktAuf(i));
+    ctx.strokeStyle = KONFIG.farbe.linie;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Talsohle und seitliche Begrenzungen
+    ctx.beginPath();
+    ctx.moveTo(0, PY(0)); ctx.lineTo(b, PY(0)); ctx.stroke();
+    ctx.strokeStyle = KONFIG.farbe.raster;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(PX(xL), PY(0)); ctx.lineTo(PX(xL), PY(PISTE.werte(xL).y));
+    ctx.moveTo(PX(xR), PY(0)); ctx.lineTo(PX(xR), PY(PISTE.werte(xR).y));
+    ctx.stroke();
+  }
+  else {
+    const a = KONFIG.bahnKruemmung;
+    const xMax = Math.sqrt(P.h0/a)*1.15;
+    ctx.beginPath();
+    for (let i = 0; i <= 160; i++){
+      const x = -xMax + (2*xMax)*i/160;
+      const y = a*x*x;
+      i ? ctx.lineTo(PX(x), PY(y)) : ctx.moveTo(PX(x), PY(y));
+    }
+    ctx.stroke();
+  }
+}
+
+function schraffur(b, y){
+  ctx.strokeStyle = KONFIG.farbe.raster;
+  ctx.lineWidth = 1;
+  for (let x = -10; x < b + 12; x += 11){
+    ctx.beginPath(); ctx.moveTo(x, y+1); ctx.lineTo(x+9, y+11); ctx.stroke();
+  }
+}
+function schraffur2(x1, x2, y){
+  ctx.strokeStyle = KONFIG.farbe.raster;
+  ctx.lineWidth = 1;
+  for (let x = x1; x < x2; x += 8){
+    ctx.beginPath(); ctx.moveTo(x, y-1); ctx.lineTo(x+7, y-9); ctx.stroke();
+  }
+}
+
+function spurZeichnen(){
+  if (!P.spur || S.spur.length < 2) return;
+  ctx.strokeStyle = "rgba(44,93,143,0.32)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  S.spur.forEach((p,i) => i ? ctx.lineTo(PX(p.x), PY(p.y)) : ctx.moveTo(PX(p.x), PY(p.y)));
+  ctx.stroke();
+}
+
+// Höchsttempo des Szenarios: erreicht, wenn die gesamte Startenergie
+// kinetisch vorliegt. Dient als Bezugsgröße für Pfeil und Haltung.
+function tempoMax(){ return Math.sqrt(2*S.E0/P.m); }
+
+function pfeilZeichnen(px, py, r){
+  const sz = aktuell();
+  const v = sz.tempo();
+  const vMax = tempoMax();
+  if (v < 0.05 || vMax < 1e-6) return;
+
+  let dx = 0, dy = 0;
+  if (P.szenario === "fall"){ dy = -Math.sign(S.v); }
+  else if (P.szenario === "pendel"){
+    dx = Math.cos(S.th)*Math.sign(S.om);
+    dy = Math.sin(S.th)*Math.sign(S.om);
+  } else if (P.szenario === "ski"){
+    const s1 = PISTE.werte(S.x).s1;
+    const norm = Math.hypot(1, s1);
+    dx = Math.sign(S.vx)/norm;
+    dy = Math.sign(S.vx)*s1/norm;
+  } else {
+    const s1 = 2*KONFIG.bahnKruemmung*S.x;
+    const norm = Math.hypot(1, s1);
+    dx = Math.sign(S.vx)/norm;
+    dy = Math.sign(S.vx)*s1/norm;
+  }
+
+  // Die Länge ist proportional zu v: voller Ausschlag bei v_max,
+  // also dann, wenn die gesamte Energie kinetisch ist.
+  const laenge = 78*(v/vMax);
+  if (laenge < 5) return;
+  const x2 = px + dx*laenge, y2 = py - dy*laenge;
+  ctx.strokeStyle = KONFIG.farbe.ekin;
+  ctx.fillStyle   = KONFIG.farbe.ekin;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x2, y2); ctx.stroke();
+  const w = Math.atan2(y2-py, x2-px);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - 9*Math.cos(w-0.4), y2 - 9*Math.sin(w-0.4));
+  ctx.lineTo(x2 - 9*Math.cos(w+0.4), y2 - 9*Math.sin(w+0.4));
+  ctx.closePath(); ctx.fill();
+  ctx.fillText("v", x2 + 6*dx, y2 - 6*dy);
+}
+
+function hoehenlinieZeichnen(b, hm, px, py){
+  if (hm < 0.03) return;
+  ctx.setLineDash([3,4]);
+  ctx.strokeStyle = KONFIG.farbe.epot;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(px, py); ctx.lineTo(px, PY(0));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = KONFIG.farbe.epot;
+  ctx.font = "12px system-ui, sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("h = " + zahl(hm) + " m", px + 10, (py + PY(0))/2);
+}
+
+/* ================================================================
+   Anzeige rechts
+   ================================================================ */
+function anzeigen(){
+  const sz = aktuell();
+  const Ep = P.m*P.g*sz.hoehe();
+  const Ek = 0.5*P.m*sz.tempo()**2;
+  const Q  = S.Q;
+  const ges = S.E0;                        // feste Bezugsgröße: Startenergie
+
+  const pEp = Math.max(0, Math.min(100, 100*Ep/ges));
+  const pEk = Math.max(0, Math.min(100, 100*Ek/ges));
+  const pQ  = Math.max(0, 100 - pEp - pEk); // Rest, damit der Balken lückenlos schließt
+
+  $("b-epot").style.width   = pEp.toFixed(3) + "%";
+  $("b-ekin").style.width   = pEk.toFixed(3) + "%";
+  $("b-waerme").style.width = Math.min(100, 100*Q/ges).toFixed(3) + "%";
+  $("s-epot").style.width   = pEp.toFixed(3) + "%";
+  $("s-ekin").style.width   = pEk.toFixed(3) + "%";
+  $("s-waerme").style.width = pQ.toFixed(3) + "%";
+
+  $("w-epot").textContent   = energieText(Ep);
+  $("w-ekin").textContent   = energieText(Ek);
+  $("w-waerme").textContent = energieText(Q);
+  $("w-summe").textContent  = energieText(S.E0);
+
+  $("w-t").textContent = zahl(S.t) + " s";
+  $("w-h").textContent = zahl(sz.hoehe()) + " m";
+  $("w-v").textContent = zahl(sz.tempo()) + " m/s";
+  $("w-m").textContent = zahl(P.m,1) + " kg";
+
+  const reibungAktiv = P.reibung > 0 || (P.szenario === "fall" && P.stoss < 1);
+  $("zeile-waerme").style.display = reibungAktiv ? "" : "none";
+  $("s-waerme").style.display     = reibungAktiv ? "" : "none";
+
+  verlaufZeichnen();
+}
+
+/* ================================================================
+   Energie-Zeit-Diagramm
+   ================================================================ */
+const vLeinwand = $("verlauf");
+const vctx = vLeinwand.getContext("2d");
+
+function verlaufZeichnen(){
+  const {b,h} = leinwandGroesse(vLeinwand, vctx);
+  vctx.clearRect(0,0,b,h);
+
+  const padL = 4, padR = 4, padO = 12, padU = 14;
+  const innenB = b - padL - padR, innenH = h - padO - padU;
+
+  vctx.strokeStyle = KONFIG.farbe.raster;
+  vctx.lineWidth = 1;
+  vctx.beginPath();
+  vctx.moveTo(padL, h-padU+0.5); vctx.lineTo(b-padR, h-padU+0.5);
+  vctx.stroke();
+
+  vctx.fillStyle = KONFIG.farbe.leise;
+  vctx.font = "10px system-ui, sans-serif";
+  vctx.textAlign = "left";
+  vctx.fillText("Energie über der Zeit", padL, 8);
+
+  if (S.verlauf.length < 2) return;
+
+  const t1 = S.verlauf[S.verlauf.length-1].t;
+  const t0 = Math.max(0, t1 - KONFIG.verlaufFenster);
+  const spanne = Math.max(0.5, t1 - t0);
+  const X = (t) => padL + innenB*(t - t0)/spanne;
+  const Y = (e) => h - padU - innenH*Math.min(1, e/S.E0);
+
+  const kurve = (feld, farbe, dick) => {
+    vctx.strokeStyle = farbe;
+    vctx.lineWidth = dick;
+    vctx.beginPath();
+    S.verlauf.forEach((p,i) => i ? vctx.lineTo(X(p.t), Y(p[feld])) : vctx.moveTo(X(p.t), Y(p[feld])));
+    vctx.stroke();
+  };
+
+  kurve("Ep", KONFIG.farbe.epot, 1.6);
+  kurve("Ek", KONFIG.farbe.ekin, 1.6);
+
+  vctx.strokeStyle = KONFIG.farbe.leise;
+  vctx.setLineDash([3,3]);
+  vctx.lineWidth = 1.2;
+  vctx.beginPath();
+  vctx.moveTo(padL, Y(S.E0)); vctx.lineTo(b-padR, Y(S.E0));
+  vctx.stroke();
+  vctx.setLineDash([]);
+}
+
+/* ================================================================
+   Piste mit der Maus oder dem Finger verändern
+   ================================================================ */
+let ziehIndex = -1;
+
+function zeigerPosition(e){
+  const r = leinwand.getBoundingClientRect();
+  return {x:e.clientX - r.left, y:e.clientY - r.top};
+}
+
+function griffTreffen(z){
+  let treffer = -1, naechste = 20;
+  PISTE.punkte.forEach((q, i) => {
+    const d = Math.hypot(PX(q.x) - z.x, PY(q.y) - z.y);
+    if (d < naechste){ naechste = d; treffer = i; }
+  });
+  return treffer;
+}
+
+leinwand.addEventListener("pointerdown", e => {
+  if (P.szenario !== "ski") return;
+  const i = griffTreffen(zeigerPosition(e));
+  if (i < 0) return;
+  ziehIndex = i;
+  leinwand.setPointerCapture(e.pointerId);
+  leinwand.classList.add("zieht");
+  e.preventDefault();
+});
+
+leinwand.addEventListener("pointermove", e => {
+  if (P.szenario !== "ski") return;
+  const z = zeigerPosition(e);
+
+  if (ziehIndex < 0){
+    leinwand.classList.toggle("ziehbar", griffTreffen(z) >= 0);
+    return;
+  }
+
+  const q = PISTE.punkte[ziehIndex];
+  const letzt = PISTE.punkte.length - 1;
+  q.y = Math.max(0, Math.min(KONFIG.skiMaxHoehe, (ansicht.y0 - z.y)/ansicht.skala));
+
+  if (ziehIndex > 0 && ziehIndex < letzt){        // Randpunkte bleiben stehen
+    const links  = PISTE.punkte[ziehIndex-1].x + KONFIG.skiMinAbstand;
+    const rechts = PISTE.punkte[ziehIndex+1].x - KONFIG.skiMinAbstand;
+    q.x = Math.max(links, Math.min(rechts, (z.x - ansicht.x0)/ansicht.skala));
+  }
+
+  PISTE.neu();
+  zuruecksetzen();                                 // Fahrer wieder an den Start
+  e.preventDefault();
+});
+
+function ziehenBeenden(){
+  if (ziehIndex < 0) return;
+  ziehIndex = -1;
+  leinwand.classList.remove("zieht");
+  zeichnen();
+}
+leinwand.addEventListener("pointerup", ziehenBeenden);
+leinwand.addEventListener("pointercancel", ziehenBeenden);
+leinwand.addEventListener("pointerleave", () => leinwand.classList.remove("ziehbar"));
+
+$("i-pisteneu").addEventListener("click", () => { PISTE.laden(); zuruecksetzen(); });
+
+/* ================================================================
+   Bedienung
+   ================================================================ */
+function reglerSichtbarkeit(){
+  const ski = (P.szenario === "ski");
+  $("r-hoehe").hidden  = (P.szenario === "pendel" || ski);
+  $("r-laenge").hidden = (P.szenario !== "pendel");
+  $("r-winkel").hidden = (P.szenario !== "pendel");
+  $("r-stoss").hidden  = (P.szenario !== "fall");
+  $("i-pisteneu").hidden = !ski;
+  $("hinweis").hidden = !ski;
+  leinwand.classList.toggle("ziehbar", ski);
+}
+
+/* Der Massenregler deckt zwei sehr verschiedene Bereiche ab:
+   Versuchskörper im Kilogrammbereich und einen Menschen auf Ski. */
+const MASSEN = {
+  normal:{min:0.1, max:10,  step:0.1, wert:1},
+  ski:   {min:30,  max:140, step:1,   wert:70}
+};
+
+function masseBereich(){
+  const k = (P.szenario === "ski") ? MASSEN.ski : MASSEN.normal;
+  const el = $("i-masse");
+  el.min = k.min; el.max = k.max; el.step = k.step; el.value = k.wert;
+  P.m = k.wert;
+  $("a-masse").textContent = zahl(k.wert, 1);
+}
+
+$("i-masse").addEventListener("input", () => {
+  const k = (P.szenario === "ski") ? MASSEN.ski : MASSEN.normal;
+  k.wert = parseFloat($("i-masse").value);
+});
+
+document.querySelectorAll(".szenarien button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".szenarien button")
+      .forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+    P.szenario = btn.dataset.szenario;
+    reglerSichtbarkeit();
+    masseBereich();
+    zuruecksetzen();
+  });
+});
+
+function schieber(id, anzeige, ziel, faktor, stellen){
+  const el = $(id);
+  el.addEventListener("input", () => {
+    const w = parseFloat(el.value);
+    P[ziel] = w*faktor;
+    $(anzeige).textContent = zahl(w, stellen);
+    zuruecksetzen();
+  });
+}
+
+schieber("i-masse",  "a-masse",  "m",       1,        1);
+schieber("i-hoehe",  "a-hoehe",  "h0",      1,        1);
+schieber("i-laenge", "a-laenge", "L",       1,        1);
+schieber("i-winkel", "a-winkel", "phi0",    Math.PI/180, 0);
+schieber("i-reibung","a-reibung","reibung", 0.01,     0);
+schieber("i-stoss",  "a-stoss",  "stoss",   0.01,     0);
+
+$("i-ort").addEventListener("change", e => {
+  P.g = parseFloat(e.target.value);
+  $("a-ort").textContent = zahl(P.g);
+  zuruecksetzen();
+});
+
+$("i-tempo").addEventListener("change", e => {
+  P.tempo = parseFloat(e.target.value);
+  $("a-tempo").textContent = P.tempo === 1 ? "1" : zahl(P.tempo,2);
+});
+
+$("i-start").addEventListener("click", () => {
+  S.laeuft = !S.laeuft;
+  $("i-start").textContent = S.laeuft ? "Pause" : "Weiter";
+});
+$("i-zurueck").addEventListener("click", zuruecksetzen);
+
+$("i-spur").addEventListener("change",   e => { P.spur   = e.target.checked; S.spur.length = 0; });
+$("i-pfeile").addEventListener("change", e => { P.pfeile = e.target.checked; });
+$("i-gitter").addEventListener("change", e => { P.gitter = e.target.checked; });
+
+window.addEventListener("keydown", e => {
+  if (e.code === "Space" && e.target.tagName !== "INPUT" && e.target.tagName !== "SELECT"){
+    e.preventDefault();
+    $("i-start").click();
+  }
+});
+
+window.addEventListener("resize", zeichnen);
+
+reglerSichtbarkeit();
+zuruecksetzen();
+requestAnimationFrame(schleife);
+</script>
+</body>
+</html>
