@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Einzelspalt – Schritt für Schritt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --paper:#E9EEF1; --panel:#F7F9FA; --ink:#1B2B3A; --muted:#566775; --grid:#DCE4EA; --rule:#C3CFD7;
+  --ray:#C98A06; --g1:#12817F; --g2:#8250BD; --g3:#C06F0C; --g4:#BF355F;
+  --sum:#1B2B3A; --laser:#FF3344; --barrier:#2A3B4B; --accent:#1966A0; --accent-ink:#FFFFFF;
+  --screen:#0B0F14; --ok:#1E7A3C; --bad:#B3261E;
+  --serif:"Literata", Georgia, "Times New Roman", serif;
+  --sans:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1821; --panel:#15212C; --ink:#E3EBF0; --muted:#95A6B3; --grid:#1D2B38; --rule:#2B3C4A;
+    --ray:#F2C14E; --g1:#3CC6C2; --g2:#B58EEE; --g3:#F2A844; --g4:#F2729A;
+    --sum:#FFFFFF; --barrier:#8FA4B5; --accent:#6DB5EE; --accent-ink:#0F1821; --ok:#6FD08C; --bad:#FF8A80;
+  }
+}
+:root[data-theme="dark"]{
+  --ok:#6FD08C; --bad:#FF8A80;
+  --paper:#0F1821; --panel:#15212C; --ink:#E3EBF0; --muted:#95A6B3; --grid:#1D2B38; --rule:#2B3C4A;
+  --ray:#F2C14E; --g1:#3CC6C2; --g2:#B58EEE; --g3:#F2A844; --g4:#F2729A;
+  --sum:#FFFFFF; --barrier:#8FA4B5; --accent:#6DB5EE; --accent-ink:#0F1821;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*,*::before,*::after{box-sizing:inherit;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 20px 40px;}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;margin-bottom:14px;}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(1.6rem,3.2vw,2.3rem);line-height:1.1;margin:0;letter-spacing:-0.01em;}
+header p{margin:0;color:var(--muted);}
+
+/* Schrittleiste */
+.rail{list-style:none;margin:0 0 16px;padding:0;display:grid;grid-template-columns:repeat(9,1fr);gap:6px;}
+.rail button{
+  width:100%;text-align:left;font:inherit;color:var(--ink);background:transparent;cursor:pointer;
+  border:0;border-top:3px solid var(--rule);padding:8px 4px 4px;display:flex;gap:8px;align-items:baseline;
+}
+.rail .n{font-family:var(--serif);font-weight:700;font-size:1.15rem;color:var(--muted);}
+.rail .t{font-size:.92rem;line-height:1.25;}
+.rail button[aria-current="step"]{border-top-color:var(--accent);}
+.rail button[aria-current="step"] .n{color:var(--accent);}
+.rail button.done{border-top-color:color-mix(in srgb,var(--accent) 45%,var(--rule));}
+.rail button:hover .t{text-decoration:underline;text-underline-offset:3px;}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:16px;align-items:start;}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0;}
+@media (min-width:901px) and (min-height:960px){ .colL{position:sticky;top:8px;} }
+
+
+
+.side{display:flex;flex-direction:column;gap:16px;}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:6px;}
+.stage .box{padding:0;overflow:hidden;}
+#geo{display:block;width:100%;aspect-ratio:16/10;}
+.cap{font-size:.86rem;color:var(--muted);margin:6px 2px 0;}
+canvas{display:block;width:100%;}
+.panel{padding:12px 14px 14px;}
+.panel h3{font-family:var(--serif);font-weight:500;font-size:1.02rem;margin:0 0 6px;}
+#phasor{height:210px;}
+#waves{height:300px;}
+#graphc{height:250px;}
+.read{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem;margin:6px 0 0;}
+
+.text .box{padding:18px 20px 18px;}
+.text h2{font-family:var(--serif);font-weight:700;font-size:1.45rem;line-height:1.2;margin:0 0 10px;}
+.text p{margin:0 0 10px;max-width:62ch;}
+.formula{font-family:var(--serif);font-size:1.08rem;background:color-mix(in srgb,var(--accent) 9%,transparent);border-left:3px solid var(--accent);padding:8px 12px;margin:12px 0;border-radius:0 4px 4px 0;}
+.note{font-size:.9rem;color:var(--muted);}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center;}
+.btn{font:inherit;font-weight:700;border-radius:4px;padding:8px 14px;cursor:pointer;border:1.5px solid var(--accent);background:transparent;color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--accent-ink);}
+.btn:disabled{opacity:.35;cursor:default;}
+.btn.small{font-weight:400;padding:4px 10px;font-size:.9rem;}
+.btn.small[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);}
+.spacer{flex:1;}
+.ctrls{display:none;margin-top:6px;}
+.ctrls.on{display:block;}
+.ctrl{margin:10px 0;}
+.ctrl label{display:flex;justify-content:space-between;font-size:.95rem;}
+.ctrl output{font-variant-numeric:tabular-nums;font-weight:700;}
+input[type=range]{width:100%;accent-color:var(--accent);}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px;}
+.chips .pb.hi{outline:2px solid var(--accent);outline-offset:1px;}
+.chips span{font-size:.9rem;color:var(--muted);margin-right:4px;}
+#status{font-weight:700;}
+header .score{margin-left:auto;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;}
+.rail button.quizdone .t::after{content:" ✓";color:var(--accent);font-weight:700;}
+.tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--rule);margin:0 0 14px;flex-wrap:wrap;}
+.tabs button{font:inherit;font-size:.95rem;background:transparent;border:0;border-bottom:3px solid transparent;margin-bottom:-1.5px;padding:6px 10px;color:var(--muted);cursor:pointer;}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:700;}
+.tabs button:hover{color:var(--ink);}
+details{margin:6px 0;}
+details summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:.93rem;}
+details p{margin:6px 0 0;}
+.reveal{border:1.5px dashed var(--rule);border-radius:4px;padding:6px 10px;margin:12px 0;}
+.reveal[open]{border-style:solid;}
+.reveal .formula{margin:8px 0 2px;}
+.tasklist{margin:0;padding-left:1.3em;}
+.tasklist li{margin:0 0 16px;padding-left:4px;}
+.tasklist li::marker{font-family:var(--serif);font-weight:700;color:var(--accent);}
+.tasklist li>p{margin:0 0 6px;}
+textarea,.numrow input,select{font:inherit;color:var(--ink);background:var(--paper);border:1.5px solid var(--rule);border-radius:4px;}
+textarea{width:100%;padding:6px 8px;resize:vertical;font-size:.95rem;}
+.solu summary{color:var(--muted);}
+.chk{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0;}
+.qcard{border:1px solid var(--rule);border-radius:6px;padding:12px 12px 10px;margin:0 0 12px;background:var(--paper);}
+.qq{margin:0 0 8px!important;font-weight:700;display:flex;gap:8px;}
+.qn{flex:none;display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:.85rem;}
+.opts{display:flex;flex-direction:column;gap:6px;}
+.opt{font:inherit;text-align:left;background:var(--panel);color:var(--ink);border:1.5px solid var(--rule);border-radius:4px;padding:7px 10px;cursor:pointer;}
+.opt:hover{border-color:var(--accent);}
+.opt.right,select.right,.tfrow.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--panel));}
+.opt.wrong,select.wrong,.tfrow.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--panel));}
+.numrow{display:flex;gap:8px;align-items:center;}
+.numrow input{width:8em;padding:6px 8px;}
+.unit{font-family:var(--serif);}
+.gaptext{line-height:2.1;}
+.gaptext select{padding:3px 4px;margin:0 3px;}
+.tf{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.tfrow{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1.5px solid transparent;border-radius:4px;padding:4px 6px;font-size:.95rem;}
+.tfb{display:flex;gap:4px;flex:none;}
+.fb{margin-top:8px;font-size:.93rem;}
+.fb:empty{display:none;}
+.fb.ok{color:var(--ok);}
+.fb.bad{color:var(--bad);}
+.fb p{color:var(--ink);}
+#pairbox:empty{display:none;}
+
+@media (max-width:900px){
+  .grid{grid-template-columns:minmax(0,1fr);}
+  .col{display:contents;}
+  .stage{order:1;} .text{order:2;} .side{order:3;} .graph{order:4;}
+  .rail{grid-template-columns:repeat(9,minmax(0,1fr));}
+  .rail .t{display:none;}
+  .rail .n{font-size:1.25rem;}
+  #geo{aspect-ratio:4/3;}
+}
+@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto!important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Beugung am Einzelspalt</h1>
+    <p>Schritt für Schritt mit zwölf Huygens’schen Elementarwellen</p>
+    <span class="score" id="score"></span>
+  </header>
+
+  <ol class="rail" id="rail" aria-label="Schritte"></ol>
+
+  <div class="grid">
+   <div class="col colL">
+    <section class="stage">
+      <div class="box"><canvas id="geo" aria-label="Spalt mit Elementarwellen und Wellenstrahlen"></canvas></div>
+      <p class="cap">Gelb bzw. farbig: Wellenstrahlen der zwölf Elementarwellen unter dem Winkel α. Blaue Strecke: Gangunterschied Δs der Randstrahlen, Striche im Abstand λ/2.</p>
+    </section>
+
+
+    <section class="graph">
+      <div class="box panel">
+        <h3>Schirmbild und Intensität</h3>
+        <canvas id="graphc" aria-label="Intensitätsverteilung hinter dem Einzelspalt"></canvas>
+        <p class="read">Kurve: I(α) = I<sub>0</sub> · [sin(π·B·sin α/λ) / (π·B·sin α/λ)]². Gestrichelt: dieselbe Kurve 10-fach überhöht, damit die Nebenmaxima sichtbar werden. Punkt: Ergebnis der zwölf Elementarwellen.</p>
+      </div>
+    </section>
+   </div>
+   <div class="col colR">
+    <section class="text">
+      <div class="box">
+        <h2 id="stitle"></h2>
+        <div class="tabs" role="tablist" aria-label="Inhalt des Schritts">
+          <button role="tab" id="tabText" aria-controls="sbody">Erklärung</button>
+          <button role="tab" id="tabTasks" aria-controls="tbody">Aufträge</button>
+          <button role="tab" id="tabQuiz" aria-controls="qbody">Quiz</button>
+        </div>
+        <div id="sbody" role="tabpanel" aria-labelledby="tabText"></div>
+        <div id="tbody" role="tabpanel" aria-labelledby="tabTasks" hidden></div>
+        <div id="qbody" role="tabpanel" aria-labelledby="tabQuiz" hidden></div>
+        <div id="pairbox"></div>
+        <div class="ctrls" id="ctrls">
+          <div class="ctrl">
+            <label for="alpha">Winkel α <output id="alphaOut"></output></label>
+            <input type="range" id="alpha" min="0" max="80" step="0.1" value="0">
+          </div>
+          <div class="ctrl">
+            <label for="ratio">Spaltbreite B in Wellenlängen <output id="ratioOut"></output></label>
+            <input type="range" id="ratio" min="1.2" max="6" step="0.1" value="3">
+          </div>
+          <div class="chips" id="jumps"><span>Springe zu Δs =</span></div>
+          <div class="chips" id="groups"><span>Bündel teilen in</span></div>
+          <p class="read" id="status"></p>
+        </div>
+        <div class="nav">
+          <button class="btn" id="prev">Zurück</button>
+          <button class="btn primary" id="next">Weiter</button>
+          <span class="spacer"></span>
+          <button class="btn small" id="play" aria-pressed="true">Wellen anhalten</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="box panel">
+        <h3>Zeigerdiagramm</h3>
+        <canvas id="phasor" aria-label="Zeigerdiagramm der zwölf Elementarwellen"></canvas>
+        <p class="read" id="readA"></p>
+      </div>
+      <div class="box panel">
+        <h3>Überlagerung am Schirm</h3>
+        <canvas id="waves" aria-label="Überlagerung der Wellen"></canvas>
+      </div>
+    </aside>
+   </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+const N = 12;
+const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt = (v,d=2)=> v.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const GNAME = {2:'Hälfte',3:'Drittel',4:'Viertel'};
+
+const STEPS = [
+ { short:'Elementarwellen', title:'Huygens’sche Elementarwellen', ds:0, G:1, huy:true,
+   html:`<p>Eine ebene Lichtwelle, zum Beispiel Laserlicht, trifft von links auf einen Spalt der Breite B. Nach dem Huygens’schen Prinzip wird jeder Punkt im Spalt zum Ausgangspunkt einer neuen, kreisförmigen Elementarwelle.</p>
+   <p>Vereinfachend lassen wir nur zwölf Elementarwellen starten, gleichmäßig über den Spalt verteilt. Wie hell es auf dem weit entfernten Schirm in Richtung α ist, hängt davon ab, wie sich diese zwölf Wellen dort überlagern.</p>
+   <p class="note">In den nächsten Schritten betrachten wir jeweils nur die Wellenstrahlen, die den Spalt parallel unter demselben Winkel α verlassen.</p>` },
+ { short:'Hauptmaximum', title:'Hauptmaximum bei α = 0°', ds:0, G:1,
+   html:`<p>Alle zwölf Strahlen laufen geradeaus. Bis zum Schirm legen sie gleich lange Wege zurück, der Gangunterschied der Randstrahlen ist Δs = 0.</p>
+   <p>Die Wellen kommen im Gleichtakt an: Berg trifft auf Berg. Im Zeigerdiagramm zeigen alle zwölf Zeiger in dieselbe Richtung, die Summe ist so groß wie möglich.</p>
+   <div class="formula">α = 0°: Maximum 0. Ordnung (Hauptmaximum)</div>` },
+ { short:'Paare: 1. Min', title:'Welche Wellen haben λ/2 Gangunterschied?', ds:1, G:2, pair:true,
+   html:`<p>Das Bündel ist so gekippt, dass der Gangunterschied der Randstrahlen Δs = λ beträgt. Wir teilen es in zwei Hälften: Wellen 1 bis 6 und Wellen 7 bis 12.</p>
+   <p>Jede Welle der oberen Hälfte hat einen Partner, der genau sechs Plätze tiefer startet, also eine halbe Spaltbreite weiter unten. Deshalb ist ihr Gangunterschied genau die Hälfte von Δs: λ/2.</p>
+   <div class="formula">Paare: 1 & 7, 2 & 8, 3 & 9, 4 & 10, 5 & 11, 6 & 12 &nbsp;mit&nbsp; Δs/2 = λ/2</div>
+   <p class="note">Die blaue Strecke im Bild zeigt für das gewählte Paar den Gangunterschied. Im Zeigerdiagramm zeigen die beiden Zeiger genau entgegengesetzt.</p>` },
+ { short:'1. Minimum', title:'1. Minimum: Δs = λ', ds:1, G:2,
+   html:`<p>Wir kippen das Strahlenbündel, bis der untere Randstrahl genau eine Wellenlänge weiter läuft als der obere: Δs = λ.</p>
+   <p>Die Paare aus dem vorigen Schritt (1 & 7, 2 & 8 bis 6 & 12) haben jeweils den Gangunterschied λ/2: Berg trifft auf Tal, sie löschen sich paarweise aus. Die zwölf Zeiger schließen sich zu einem Kreis, die Summe ist null.</p>
+   <details class="reveal"><summary>Formel aufdecken (erst nach den Aufträgen)</summary><div class="formula">Δs = B · sin α = λ &nbsp;⇒&nbsp; sin α = λ / B</div></details>` },
+ { short:'Paare: 1. Max', title:'Welche Wellen haben λ/2 Gangunterschied?', ds:1.5, G:3, pair:true,
+   html:`<p>Jetzt ist Δs = 3/2 · λ. Wir teilen das Bündel in drei Drittel zu je vier Wellen: 1 bis 4, 5 bis 8 und 9 bis 12.</p>
+   <p>Eine Welle im ersten Drittel und die Welle vier Plätze tiefer im zweiten Drittel sind ein Drittel der Spaltbreite voneinander entfernt. Ihr Gangunterschied ist Δs/3 = λ/2.</p>
+   <div class="formula">Paare: 1 & 5, 2 & 6, 3 & 7, 4 & 8 &nbsp;mit&nbsp; Δs/3 = λ/2</div>
+   <p class="note">Die Wellen 9 bis 12 im dritten Drittel finden keinen Partner mehr, sie bleiben übrig.</p>` },
+ { short:'1. Maximum', title:'1. Maximum: Δs = 3/2 · λ', ds:1.5, G:3,
+   html:`<p>Jetzt beträgt der Gangunterschied der Randstrahlen anderthalb Wellenlängen. Wir teilen das Bündel in drei Drittel; jedes Drittel trägt λ/2 zum Gangunterschied bei.</p>
+   <p>Das erste und das zweite Drittel löschen sich paarweise aus (1 & 5 bis 4 & 8). Übrig bleibt das dritte Drittel, und auch dessen Wellen sind untereinander nicht im Gleichtakt. Deshalb ist das 1. Maximum viel schwächer als das Hauptmaximum.</p>
+   <details class="reveal"><summary>Formel aufdecken (erst nach den Aufträgen)</summary><div class="formula">B · sin α = 3/2 · λ &nbsp;⇒&nbsp; sin α = 3/2 · λ / B</div></details>
+   <p class="note">Genau gerechnet liegt das 1. Maximum etwas weiter innen, bei Δs ≈ 1,43 λ. Die Drittel-Überlegung macht die Lage nur plausibel.</p>` },
+ { short:'Paare: 2. Min', title:'Welche Wellen haben λ/2 Gangunterschied?', ds:2, G:4, pair:true,
+   html:`<p>Bei Δs = 2λ teilen wir das Bündel in vier Viertel zu je drei Wellen: 1 bis 3, 4 bis 6, 7 bis 9 und 10 bis 12.</p>
+   <p>Wellen, die drei Plätze auseinander liegen, sind ein Viertel der Spaltbreite voneinander entfernt. Ihr Gangunterschied ist Δs/4 = λ/2. So bildet Viertel 1 Paare mit Viertel 2 und Viertel 3 Paare mit Viertel 4.</p>
+   <div class="formula">Paare: 1 & 4, 2 & 5, 3 & 6, 7 & 10, 8 & 11, 9 & 12 &nbsp;mit&nbsp; Δs/4 = λ/2</div>
+   <p class="note">Jede der zwölf Wellen hat einen Partner, keine bleibt übrig.</p>` },
+ { short:'2. Minimum', title:'2. Minimum: Δs = 2λ', ds:2, G:4,
+   html:`<p>Bei zwei Wellenlängen Gangunterschied teilen wir das Bündel in vier Viertel, jedes mit λ/2.</p>
+   <p>Viertel 1 löscht sich mit Viertel 2 aus, Viertel 3 mit Viertel 4, jeweils über die Paare aus dem vorigen Schritt. Es bleibt nichts übrig, am Schirm ist es wieder dunkel. Die Zeiger laufen zweimal im Kreis herum.</p>
+   <details class="reveal"><summary>Formel aufdecken (erst nach den Aufträgen)</summary><div class="formula">B · sin α = 2λ &nbsp;⇒&nbsp; sin α = 2 · λ / B</div>
+   <p>Allgemein liegen die Minima bei</p><div class="formula">B · sin α = k · λ &nbsp;&nbsp;(k = 1, 2, 3, …)</div><p>und die Nebenmaxima näherungsweise bei</p><div class="formula">B · sin α ≈ (k + ½) · λ</div></details>` },
+ { short:'Ausprobieren', title:'Selbst ausprobieren', free:true,
+   html:`<p>Stelle den Winkel α und die Spaltbreite frei ein und beobachte Zeigerdiagramm, Überlagerung und Intensitätskurve.</p>
+   <p class="note">Tipp: Ein schmalerer Spalt (kleineres B/λ) schiebt die Minima nach außen, das Beugungsbild wird breiter.</p>` }
+];
+
+/* ---------- Aufträge und Quiz ---------- */
+const EXTRA = [
+ { // 1 Elementarwellen
+   tasks:[
+    {q:'Vergleiche die Wellenfronten links und rechts vom Spalt. Beschreibe, wie sich ihre Form hinter dem Spalt verändert.',
+     hint:'Achte darauf, ob die Wellenfronten gerade Linien oder Kreisbögen sind.',
+     sol:'Links laufen gerade (ebene) Wellenfronten auf den Spalt zu. Hinter dem Spalt breiten sich von jedem Punkt im Spalt kreisförmige Elementarwellen aus.'},
+    {q:'Begründe mit dem Huygens’schen Prinzip, warum hinter dem Spalt auch Licht in Bereiche gelangt, die geometrisch im Schatten der Blende liegen.',
+     sol:'Jede Elementarwelle breitet sich in alle Richtungen nach vorne aus, also auch schräg hinter die Blende. Das Licht wird am Spalt gebeugt.'},
+    {q:'Stelle eine Vermutung auf: Wovon könnte es abhängen, ob es auf dem Schirm in einer bestimmten Richtung α hell oder dunkel ist?',
+     sol:'Davon, wie sich die zwölf Elementarwellen dort überlagern: im Gleichtakt (hell) oder so, dass sie sich gegenseitig auslöschen (dunkel). Entscheidend sind die Gangunterschiede.'}
+   ],
+   quiz:{title:'Kurz geprüft', items:[
+    {type:'mc', q:'Was besagt das Huygens’sche Prinzip?',
+     opts:['Licht breitet sich immer geradlinig aus.','Jeder Punkt einer Wellenfront ist Ausgangspunkt einer neuen Elementarwelle.','Licht besteht aus einzelnen Teilchen.','Hinter einem Spalt entsteht nur ein heller Streifen.'],
+     correct:1, why:'Die neue Wellenfront ergibt sich als Einhüllende (Überlagerung) aller Elementarwellen.'},
+    {type:'tf', q:'Richtig oder falsch?', rows:[
+      ['Die Elementarwellen haben dieselbe Wellenlänge wie das einfallende Licht.',true],
+      ['Hinter dem Spalt breitet sich das Licht nur geradeaus aus.',false],
+      ['Für die Helligkeit am Schirm kommt es auf die Überlagerung der Elementarwellen an.',true]],
+     why:'Die Elementarwellen entstehen aus derselben Welle, also mit gleicher Wellenlänge und Frequenz. Sie breiten sich auch schräg aus, und ihre Überlagerung bestimmt die Helligkeit.'}
+   ]}
+ },
+ { // 2 Hauptmaximum
+   tasks:[
+    {q:'Vergleiche die Wege der zwölf Strahlen bis zum weit entfernten Schirm. Wie groß ist der Gangunterschied zwischen zwei beliebigen Strahlen?',
+     sol:'Alle Strahlen laufen parallel geradeaus und legen gleich lange Wege zurück. Der Gangunterschied ist null.'},
+    {q:'Beschreibe das Zeigerdiagramm. Wie lang ist der Summenzeiger im Vergleich zu einem einzelnen Zeiger?',
+     hint:'Die zwölf kleinen Pfeile werden hintereinander gehängt.',
+     sol:'Alle Zeiger zeigen in dieselbe Richtung und liegen auf einer Geraden. Der Summenzeiger ist zwölfmal so lang wie ein Einzelzeiger, also maximal.'},
+    {q:'Betrachte die Überlagerung am Schirm. Beschreibe, wie die Einzelwellen und die Summenwelle zueinander liegen.',
+     sol:'Alle Einzelwellen haben ihre Berge an derselben Stelle. Die Summenwelle hat die größtmögliche Amplitude.'}
+   ],
+   quiz:{title:'Kurz geprüft', items:[
+    {type:'mc', q:'Warum ist es bei α = 0° am hellsten?',
+     opts:['Weil dort der Spalt am breitesten ist.','Weil alle Elementarwellen ohne Gangunterschied, also im Gleichtakt, ankommen.','Weil dort nur eine Elementarwelle ankommt.','Weil sich dort je zwei Wellen auslöschen.'],
+     correct:1, why:'Ohne Gangunterschied verstärken sich alle Wellen: konstruktive Interferenz.'},
+    {type:'num', q:'Jeder Einzelzeiger hat die Länge 1. Wie lang ist der Summenzeiger bei α = 0°?', answer:12, tol:0.01, unit:'',
+     why:'Zwölf gleich gerichtete Zeiger der Länge 1 ergeben einen Summenzeiger der Länge 12.'}
+   ]}
+ },
+ { // 3 Paare 1. Min
+   tasks:[
+    {q:'Klicke dich durch die Paare „1 & 7“, „2 & 8“ usw. Welcher Zusammenhang besteht zwischen den Nummern der Partner? Wie weit liegen die Partner im Spalt auseinander?',
+     sol:'Die Nummern unterscheiden sich immer um 6. Die Partner liegen also genau eine halbe Spaltbreite B/2 auseinander.'},
+    {q:'Betrachte das Dreieck am Spalt: Spaltbreite B, das gestrichelte Lot und die blaue Strecke Δs. Stelle einen Zusammenhang zwischen Δs, B und dem Winkel α auf.',
+     hint:'Das Dreieck ist rechtwinklig. Der Winkel α taucht am oberen Spaltrand wieder auf. Welche Seite liegt α gegenüber, welche ist die Hypotenuse?',
+     sol:'Im rechtwinkligen Dreieck ist B die Hypotenuse und Δs die Gegenkathete zu α. Also gilt sin α = Δs / B bzw. Δs = B · sin α.'},
+    {q:'Der Gangunterschied zweier Strahlen ist proportional zu ihrem Abstand im Spalt. Begründe damit, dass jedes Paar den Gangunterschied λ/2 hat.',
+     sol:'Die Partner liegen B/2 auseinander, also halb so weit wie die Randstrahlen. Ihr Gangunterschied ist deshalb Δs/2 = λ/2.'},
+    {q:'Beobachte das Zeigerdiagramm und die Überlagerung für ein Paar. Was passiert, wenn zwei Wellen mit Gangunterschied λ/2 zusammentreffen?',
+     sol:'Die Zeiger zeigen genau entgegengesetzt. In der Überlagerung trifft Berg auf Tal, die Summe ist null: Die beiden Wellen löschen sich aus.'}
+   ],
+   quiz:{title:'Kurz geprüft', items:[
+    {type:'gap', q:'Ergänze die Herleitung:', parts:['Im rechtwinkligen Dreieck am Spalt ist Δs die ',' zum Winkel α und B die ','. Also gilt sin α = ','.'],
+     gaps:[{opts:['Ankathete','Gegenkathete','Hypotenuse'],correct:1},{opts:['Ankathete','Gegenkathete','Hypotenuse'],correct:2},{opts:['B / Δs','Δs / B','Δs · B'],correct:1}],
+     why:'sin α = Gegenkathete / Hypotenuse = Δs / B. Daraus folgt Δs = B · sin α.'},
+    {type:'mc', q:'Die Randstrahlen haben den Gangunterschied Δs = λ. Welche beiden Wellen haben den Gangunterschied λ/2?',
+     opts:['Welle 1 und Welle 2','Welle 1 und Welle 7','Welle 1 und Welle 12','Welle 6 und Welle 7'],
+     correct:1, why:'Welle 1 und Welle 7 liegen eine halbe Spaltbreite auseinander, ihr Gangunterschied ist Δs/2 = λ/2.'},
+    {type:'num', q:'Wieder ist Δs = λ. Welchen Gangunterschied haben Welle 1 und Welle 4? Gib ihn in Vielfachen von λ an.', answer:0.25, tol:0.01, unit:'λ',
+     why:'Welle 1 und 4 liegen 3 von 12 Plätzen auseinander, also ein Viertel der Spaltbreite. Gangunterschied: λ/4 = 0,25 λ.'}
+   ]}
+ },
+ { // 4 1. Minimum
+   tasks:[
+    {q:'Lies im Bild den Winkel α und die Spaltbreite B (in Wellenlängen) ab. Berechne B · sin α und vergleiche mit λ.',
+     sol:'α ≈ 19,5° und B = 3 λ. B · sin α = 3 λ · sin 19,5° ≈ 3 λ · 0,334 ≈ 1,0 λ.'},
+    {q:'Leite eine Formel für den Winkel α des 1. Minimums her. Nutze Δs = B · sin α aus Schritt 3 und die Bedingung, die du im Bild abliest. Decke erst danach die Formel unten im Reiter „Erklärung“ auf.',
+     hint:'Welcher Gangunterschied der Randstrahlen führt dazu, dass sich alle Wellen paarweise auslöschen?',
+     sol:'Beim 1. Minimum gilt Δs = λ. Mit Δs = B · sin α folgt B · sin α = λ, also sin α = λ / B.'},
+    {q:'Das Zeigerdiagramm ist ein geschlossener Kreis. Erkläre, was das für die resultierende Amplitude und die Helligkeit bedeutet.',
+     sol:'Der letzte Zeiger endet genau am Anfang des ersten. Der Summenzeiger hat die Länge null, es kommt kein Licht an: Minimum.'},
+    {q:'Häufiger Denkfehler: „Beim 1. Minimum haben die Randstrahlen den Gangunterschied λ/2.“ Nimm Stellung.',
+     sol:'Falsch. Bei Δs = λ/2 würden sich nur die beiden Randstrahlen auslöschen. Alle anderen Paare hätten kleinere Gangunterschiede und würden sich teilweise verstärken. Erst bei Δs = λ findet jede Welle einen Partner mit genau λ/2.'}
+   ],
+   quiz:{title:'Zwischenfazit 1', items:[
+    {type:'mc', q:'Das 1. Minimum entsteht, weil …',
+     opts:['… die beiden Randstrahlen den Gangunterschied λ/2 haben.','… sich die Wellen paarweise auslöschen, wobei die Partner eine halbe Spaltbreite auseinander liegen.','… unter diesem Winkel kein Licht durch den Spalt kommt.','… alle Wellen gegenphasig zur ersten Welle schwingen.'],
+     correct:1, why:'Bei Δs = λ bildet jede Welle der oberen Hälfte mit ihrem Partner in der unteren Hälfte ein Paar mit λ/2 Gangunterschied.'},
+    {type:'num', q:'Ein Spalt ist B = 3 λ breit. Berechne sin α für das 1. Minimum.', answer:1/3, tol:0.01, unit:'',
+     why:'sin α = λ / B = λ / (3 λ) = 1/3 ≈ 0,33. Das entspricht α ≈ 19,5°.'},
+    {type:'num', q:'Ein Spalt ist B = 4 λ breit. Unter welchem Winkel α liegt das 1. Minimum? (in Grad, auf eine Nachkommastelle)', answer:14.48, tol:0.3, unit:'°',
+     why:'sin α = 1/4 = 0,25, also α = arcsin 0,25 ≈ 14,5°.'}
+   ]}
+ },
+ { // 5 Paare 1. Max
+   tasks:[
+    {q:'Klicke dich durch die Paare. Wie viele Plätze liegen die Partner jetzt auseinander? Begründe mit dem Gangunterschied Δs = 3/2 · λ.',
+     sol:'Die Partner liegen 4 Plätze, also ein Drittel der Spaltbreite, auseinander. Ihr Gangunterschied ist Δs/3 = (3/2 λ)/3 = λ/2.'},
+    {q:'Zähle die Wellen ohne Partner. Welcher Anteil des Spalts bleibt übrig?',
+     sol:'Die Wellen 9 bis 12, also 4 von 12 Wellen bzw. ein Drittel des Spalts.'},
+    {q:'Stelle eine Vermutung auf: Wird es unter diesem Winkel hell oder dunkel? Und wie hell im Vergleich zum Hauptmaximum?',
+     sol:'Hell, weil ein Drittel übrig bleibt. Aber deutlich dunkler als das Hauptmaximum, weil höchstens ein Drittel der Wellen beiträgt.'}
+   ],
+   quiz:{title:'Kurz geprüft', items:[
+    {type:'num', q:'Wie viele der zwölf Wellen bleiben bei Δs = 3/2 · λ ohne Partner?', answer:4, tol:0.01, unit:'',
+     why:'Die Drittel 1 und 2 löschen sich paarweise aus. Das dritte Drittel mit den Wellen 9 bis 12 bleibt übrig.'},
+    {type:'mc', q:'Warum teilen wir das Bündel bei Δs = 3/2 · λ in drei Teile?',
+     opts:['Weil drei Teile am einfachsten zu zeichnen sind.','Weil dann jedes Teilbündel genau λ/2 zum Gangunterschied beiträgt.','Weil 12 durch 3 teilbar ist.','Weil das 1. Maximum immer drei Streifen hat.'],
+     correct:1, why:'3/2 λ geteilt durch 3 ergibt λ/2. Nur dann haben Wellen aus benachbarten Teilbündeln genau λ/2 Gangunterschied.'}
+   ]}
+ },
+ { // 6 1. Maximum
+   tasks:[
+    {q:'Schätze: Wären die vier übrigen Wellen genau im Gleichtakt, welchen Bruchteil der Amplitude des Hauptmaximums hätte die Summe? Welchen Bruchteil der Intensität (I ~ A²)?',
+     sol:'Amplitude 4/12 = 1/3, Intensität (1/3)² = 1/9 ≈ 11 %.'},
+    {q:'Lies im Zeigerdiagramm bzw. unter dem Diagramm den tatsächlichen Wert I/I₀ ab. Erkläre, warum er kleiner ist als deine Schätzung.',
+     hint:'Betrachte die Zeiger des dritten Drittels. Zeigen sie in dieselbe Richtung?',
+     sol:'I/I₀ ≈ 0,047, also knapp 5 %. Auch die Wellen des dritten Drittels haben untereinander Gangunterschiede bis λ/2. Ihre Zeiger bilden einen Halbkreis, der Summenzeiger ist nur die Sehne.'},
+    {q:'Stelle analog zum 1. Minimum eine Formel für die Lage des 1. Nebenmaximums auf. Vergleiche danach mit der Formel im Reiter „Erklärung“.',
+     sol:'Δs = 3/2 · λ, also B · sin α ≈ 3/2 · λ.'}
+   ],
+   quiz:{title:'Zwischenfazit 2', items:[
+    {type:'mc', q:'Das 1. Nebenmaximum ist viel schwächer als das Hauptmaximum, weil …',
+     opts:['… der Spalt dort schmaler ist.','… nur ein Drittel der Wellen übrig bleibt und auch diese nicht im Gleichtakt sind.','… sich alle Wellen auslöschen.','… das Licht dort eine andere Wellenlänge hat.'],
+     correct:1, why:'Zwei Drittel löschen sich aus. Das übrige Drittel verstärkt sich nur teilweise, daher ergeben sich knapp 5 % von I₀.'},
+    {type:'num', q:'Wie viel Prozent der Intensität des Hauptmaximums erreicht das 1. Nebenmaximum ungefähr?', answer:4.7, tol:0.8, unit:'%',
+     why:'Die Simulation zeigt I/I₀ ≈ 0,047, also etwa 4,7 %.'},
+    {type:'tf', q:'Richtig oder falsch?', rows:[
+      ['Beim 1. Nebenmaximum ist Δs = 3/2 · λ.',true],
+      ['Nebenmaxima liegen genau in der Mitte zwischen zwei Minima, das folgt exakt aus der Drittel-Überlegung.',false],
+      ['Zwischen Hauptmaximum und 1. Nebenmaximum liegt das 1. Minimum.',true]],
+     why:'Die Drittel-Überlegung ist nur eine Näherung. Genau gerechnet liegt das 1. Nebenmaximum bei Δs ≈ 1,43 λ.'}
+   ]}
+ },
+ { // 7 Paare 2. Min
+   tasks:[
+    {q:'Wie viele Plätze liegen die Partner jetzt auseinander? Bleibt eine Welle ohne Partner?',
+     sol:'Drei Plätze, also ein Viertel der Spaltbreite. Jede Welle hat einen Partner.'},
+    {q:'Vergleiche die drei Paar-Schritte in einer Tabelle: Δs der Randstrahlen, Anzahl der Teilbündel, Abstand der Partner, übrig bleibende Wellen. Welche Regel erkennst du?',
+     sol:'Δs = λ: 2 Teile, 6 Plätze, 0 übrig. Δs = 3/2 λ: 3 Teile, 4 Plätze, 4 übrig. Δs = 2λ: 4 Teile, 3 Plätze, 0 übrig. Regel: Anzahl der Teile = Δs / (λ/2). Ist sie gerade, bleibt nichts übrig (dunkel), ist sie ungerade, bleibt ein Teil übrig (hell).'}
+   ],
+   quiz:{title:'Kurz geprüft', items:[
+    {type:'num', q:'Stell dir Δs = 3 λ vor. In wie viele Teilbündel teilst du, damit jedes Teilbündel λ/2 beiträgt?', answer:6, tol:0.01, unit:'',
+     why:'3 λ : (λ/2) = 6 Teilbündel.'},
+    {type:'num', q:'Bei Δs = 3 λ und 12 Wellen: Wie viele Plätze liegen die Partner auseinander?', answer:2, tol:0.01, unit:'',
+     why:'12 Wellen auf 6 Teile ergibt 2 Wellen je Teil. Die Partner liegen 2 Plätze auseinander.'},
+    {type:'mc', q:'Ist es bei Δs = 3 λ hell oder dunkel?',
+     opts:['Hell, weil ein Teilbündel übrig bleibt.','Dunkel, weil sich alle sechs Teilbündel paarweise auslöschen.','Hell, weil 3 eine ungerade Zahl ist.','Man kann es nicht sagen.'],
+     correct:1, why:'Sechs Teile ist eine gerade Anzahl: 1 mit 2, 3 mit 4, 5 mit 6. Es entsteht das 3. Minimum.'}
+   ]}
+ },
+ { // 8 2. Minimum
+   tasks:[
+    {q:'Lies α ab und prüfe die Bedingung B · sin α = 2 λ für B = 3 λ nach.',
+     sol:'α ≈ 41,8°, sin 41,8° ≈ 0,667. B · sin α = 3 λ · 0,667 ≈ 2,0 λ.'},
+    {q:'Verallgemeinere: Stelle eine Bedingung für das k-te Minimum auf und begründe sie mit der Anzahl der Teilbündel.',
+     hint:'Bei Δs = k · λ teilst du in 2k Teilbündel.',
+     sol:'Bei Δs = k · λ gibt es 2k Teilbündel, also eine gerade Anzahl. Sie löschen sich paarweise aus. Bedingung: B · sin α = k · λ mit k = 1, 2, 3, …'},
+    {q:'Stelle ebenso eine Näherungsformel für die Nebenmaxima auf. Decke danach die Formeln im Reiter „Erklärung“ auf und vergleiche.',
+     sol:'Bei ungerader Anzahl 2k + 1 bleibt ein Teilbündel übrig: B · sin α ≈ (k + ½) · λ.'}
+   ],
+   quiz:{title:'Zwischenfazit 3', items:[
+    {type:'gap', q:'Ergänze die allgemeinen Bedingungen (k = 1, 2, 3, …):', parts:['Minima: B · sin α = ','. Nebenmaxima näherungsweise: B · sin α = ','.'],
+     gaps:[{opts:['k · λ','(k + ½) · λ','k · λ/2'],correct:0},{opts:['k · λ','(k + ½) · λ','2k · λ'],correct:1}],
+     why:'Gerade Anzahl von Teilbündeln (Δs = kλ) → dunkel. Ungerade Anzahl (Δs = (k + ½)λ) → hell.'},
+    {type:'num', q:'B = 3 λ. Berechne den Winkel α des 2. Minimums (in Grad).', answer:41.81, tol:0.4, unit:'°',
+     why:'sin α = 2 λ / (3 λ) = 0,667, α = arcsin 0,667 ≈ 41,8°.'},
+    {type:'num', q:'Ein Spalt ist B = 2,5 λ breit. Wie viele Minima gibt es auf jeder Seite des Hauptmaximums?', answer:2, tol:0.01, unit:'',
+     why:'sin α = k · λ / B = k / 2,5 muss kleiner als 1 sein. Das geht für k = 1 und k = 2, also zwei Minima je Seite.'}
+   ]}
+ },
+ { // 9 Ausprobieren
+   tasks:[
+    {q:'Stelle B = 2 λ ein. Sage zuerst voraus, unter welchem Winkel das 1. Minimum liegt. Überprüfe dann mit dem Regler für α.',
+     sol:'sin α = λ / (2 λ) = 0,5, also α = 30°.',
+     check:{label:'Einstellung prüfen', test:()=> Math.abs(S.freeR-2)<0.051 && Math.abs(S.freeR*Math.sin(S.freeDeg*Math.PI/180)-1)<0.03,
+            ok:'Richtig eingestellt: B = 2 λ und α ≈ 30°, die Intensität ist null.', bad:'Noch nicht: Stelle B = 2,0 λ ein und suche mit α die Stelle, an der der Punkt in der Intensitätskurve auf null fällt.'}},
+    {q:'Verändere B zwischen 1,5 λ und 6 λ und beobachte die Breite des Hauptmaximums im Schirmbild. Formuliere eine Je-desto-Aussage und begründe sie mit sin α = λ / B.',
+     sol:'Je schmaler der Spalt, desto breiter das Hauptmaximum. Wird B kleiner, wird λ / B größer, also liegt das 1. Minimum bei größerem Winkel.'},
+    {q:'Stelle B = 1,5 λ ein. Wie viele Minima gibt es auf jeder Seite? Begründe mit der Bedingung sin α ≤ 1.',
+     sol:'sin α = k / 1,5 ≤ 1 gilt nur für k = 1. Es gibt nur ein Minimum je Seite (bei α ≈ 41,8°).'},
+    {q:'Transferaufgabe: Rotes Laserlicht (λ = 633 nm) fällt auf einen Spalt mit B = 0,10 mm. Der Schirm steht e = 2,0 m entfernt. Berechne den Abstand x des 1. Minimums von der Mitte und die Breite des Hauptmaximums.',
+     hint:'Erst sin α = λ / B, dann x = e · tan α. Bei kleinen Winkeln ist tan α ≈ sin α.',
+     sol:'sin α = 633 · 10⁻⁹ m / 1,0 · 10⁻⁴ m = 6,33 · 10⁻³. x ≈ 2,0 m · 6,33 · 10⁻³ ≈ 12,7 mm. Das Hauptmaximum ist etwa 2x ≈ 25 mm breit.'}
+   ],
+   quiz:{title:'Abschlussquiz', items:[
+    {type:'mc', q:'Der Spalt wird schmaler gemacht, die Wellenlänge bleibt gleich. Was passiert mit dem Beugungsbild?',
+     opts:['Es wird schmaler, die Minima rücken zur Mitte.','Es wird breiter, die Minima rücken nach außen.','Es ändert sich nicht.','Das Hauptmaximum verschwindet.'],
+     correct:1, why:'sin α = λ / B wird größer, wenn B kleiner wird.'},
+    {type:'mc', q:'Statt grünem wird rotes Licht (größere Wellenlänge) verwendet, der Spalt bleibt gleich. Was gilt?',
+     opts:['Die Minima rücken nach außen.','Die Minima rücken zur Mitte.','Die Minima bleiben an derselben Stelle.','Es entstehen keine Minima mehr.'],
+     correct:0, why:'sin α = λ / B wird mit größerem λ größer.'},
+    {type:'num', q:'λ = 633 nm, B = 0,10 mm, Schirmabstand 2,0 m. Wie weit ist das 1. Minimum von der Mitte entfernt? (in mm)', answer:12.66, tol:0.3, unit:'mm',
+     why:'sin α = 6,33 · 10⁻³, x = 2,0 m · tan α ≈ 12,7 mm.'},
+    {type:'tf', q:'Richtig oder falsch?', rows:[
+      ['Beim Einzelspalt ist es dunkel, wenn B · sin α ein ganzzahliges Vielfaches von λ ist.',true],
+      ['Beim Einzelspalt ist es dunkel, wenn der Gangunterschied der Randstrahlen λ/2 beträgt.',false],
+      ['Ist der Spalt schmaler als eine Wellenlänge, gibt es kein Minimum.',true]],
+     why:'Minima: B · sin α = k · λ. Für B < λ wäre sin α > 1, das ist nicht möglich.'}
+   ]}
+ }
+];
+
+const QST = {};  // Zustand der Quizfragen je Schritt
+const NOTES = {};
+let TAB = 'text';
+const esc = t=> String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const numParse = v=> parseFloat(String(v).trim().replace(/\s/g,'').replace(',','.'));
+
+function totals(){
+  let n=0, ok=0;
+  EXTRA.forEach((e,s)=> e.quiz.items.forEach((_,i)=>{ n++; if (QST[s+'-'+i]&&QST[s+'-'+i].ok) ok++; }));
+  return {n,ok};
+}
+function stepScore(s){
+  const it=EXTRA[s].quiz.items; let ok=0;
+  it.forEach((_,i)=>{ if (QST[s+'-'+i]&&QST[s+'-'+i].ok) ok++; });
+  return {ok,n:it.length};
+}
+function updateScore(){
+  const t=totals();
+  $('score').textContent='Quiz: '+t.ok+' von '+t.n+' richtig';
+  const sc=stepScore(S.step);
+  $('tabQuiz').textContent=EXTRA[S.step].quiz.title+' ('+sc.ok+'/'+sc.n+')';
+  rail.querySelectorAll('button').forEach((b,i)=>{ const q=stepScore(i); b.classList.toggle('quizdone', q.ok===q.n); });
+}
+
+function setTab(t){
+  TAB=t;
+  [['text','sbody','tabText'],['tasks','tbody','tabTasks'],['quiz','qbody','tabQuiz']].forEach(([k,p,b])=>{
+    $(p).hidden = k!==t; $(b).setAttribute('aria-selected',String(k===t)); $(b).tabIndex = k===t?0:-1;
+  });
+}
+
+function renderTasks(){
+  const s=S.step, box=$('tbody'); box.innerHTML='';
+  const intro=document.createElement('p'); intro.className='note';
+  intro.textContent='Bearbeite die Aufträge mit Hilfe der Simulation. Notiere deine Antwort, bevor du den Lösungsvorschlag öffnest.';
+  box.appendChild(intro);
+  const ol=document.createElement('ol'); ol.className='tasklist';
+  EXTRA[s].tasks.forEach((t,i)=>{
+    const li=document.createElement('li');
+    let h=`<p>${esc(t.q)}</p>`;
+    h+=`<textarea rows="2" aria-label="Deine Antwort zu Auftrag ${i+1}" placeholder="Deine Antwort …"></textarea>`;
+    if (t.check) h+=`<div class="chk"><button class="btn small">${esc(t.check.label)}</button><span class="fb" role="status"></span></div>`;
+    if (t.hint) h+=`<details><summary>Tipp</summary><p>${esc(t.hint)}</p></details>`;
+    h+=`<details class="solu"><summary>Lösungsvorschlag</summary><p>${esc(t.sol)}</p></details>`;
+    li.innerHTML=h;
+    const ta=li.querySelector('textarea'); ta.value=NOTES[s+'-'+i]||'';
+    ta.addEventListener('input',()=>{ NOTES[s+'-'+i]=ta.value; });
+    if (t.check){
+      const b=li.querySelector('.chk button'), fb=li.querySelector('.chk .fb');
+      b.addEventListener('click',()=>{ const ok=t.check.test(); fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?t.check.ok:t.check.bad; });
+    }
+    ol.appendChild(li);
+  });
+  box.appendChild(ol);
+}
+
+function feedback(el,ok,why){
+  el.className='fb '+(ok?'ok':'bad');
+  el.innerHTML=(ok?'<strong>Richtig.</strong> ':'<strong>Noch nicht.</strong> ')+esc(ok?why:'Schau dir die Simulation noch einmal an und versuche es erneut.');
+  if (!ok){ const d=document.createElement('details'); d.innerHTML='<summary>Erklärung anzeigen</summary><p>'+esc(why)+'</p>'; el.appendChild(d); }
+}
+
+function renderQuiz(){
+  const s=S.step, box=$('qbody'); box.innerHTML='';
+  EXTRA[s].quiz.items.forEach((it,i)=>{
+    const key=s+'-'+i, st=QST[key]||(QST[key]={});
+    const card=document.createElement('div'); card.className='qcard';
+    const head=document.createElement('p'); head.className='qq'; head.innerHTML='<span class="qn">'+(i+1)+'</span>'+esc(it.q); card.appendChild(head);
+    const fb=document.createElement('div'); fb.setAttribute('role','status');
+    const done=(ok)=>{ st.ok=ok; st.tried=true; feedback(fb,ok,it.why); updateScore(); };
+
+    if (it.type==='mc'){
+      const list=document.createElement('div'); list.className='opts';
+      it.opts.forEach((o,k)=>{
+        const b=document.createElement('button'); b.className='opt'; b.textContent=o;
+        if (st.pick===k) b.classList.add(k===it.correct?'right':'wrong');
+        b.addEventListener('click',()=>{
+          st.pick=k; list.querySelectorAll('.opt').forEach(x=>x.classList.remove('right','wrong'));
+          b.classList.add(k===it.correct?'right':'wrong'); done(k===it.correct);
+        });
+        list.appendChild(b);
+      });
+      card.appendChild(list);
+    }
+    if (it.type==='num'){
+      const row=document.createElement('div'); row.className='numrow';
+      row.innerHTML=`<input type="text" inputmode="decimal" aria-label="Antwort" placeholder="Zahl"><span class="unit">${esc(it.unit)}</span><button class="btn small">Prüfen</button>`;
+      const inp=row.querySelector('input'); inp.value=st.val||'';
+      const go=()=>{ st.val=inp.value; const v=numParse(inp.value); if (isNaN(v)){ fb.className='fb bad'; fb.textContent='Bitte eine Zahl eingeben, z. B. 0,33.'; return; }
+        done(Math.abs(v-it.answer)<=it.tol+1e-9); };
+      row.querySelector('button').addEventListener('click',go);
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
+      card.appendChild(row);
+    }
+    if (it.type==='gap'){
+      const p=document.createElement('p'); p.className='gaptext';
+      const sels=[];
+      it.parts.forEach((txt,k)=>{
+        p.appendChild(document.createTextNode(txt));
+        if (k<it.gaps.length){
+          const sel=document.createElement('select'); sel.setAttribute('aria-label','Lücke '+(k+1));
+          sel.innerHTML='<option value="">…</option>'+it.gaps[k].opts.map((o,j)=>`<option value="${j}">${esc(o)}</option>`).join('');
+          if (st.vals) sel.value=st.vals[k]; sels.push(sel); p.appendChild(sel);
+        }
+      });
+      card.appendChild(p);
+      const b=document.createElement('button'); b.className='btn small'; b.textContent='Prüfen';
+      b.addEventListener('click',()=>{
+        st.vals=sels.map(x=>x.value);
+        let ok=true; sels.forEach((x,k)=>{ const r=+x.value===it.gaps[k].correct && x.value!==''; x.classList.toggle('right',r); x.classList.toggle('wrong',!r); if(!r) ok=false; });
+        done(ok);
+      });
+      card.appendChild(b);
+    }
+    if (it.type==='tf'){
+      const tb=document.createElement('div'); tb.className='tf';
+      st.tf=st.tf||[];
+      it.rows.forEach((r,k)=>{
+        const row=document.createElement('div'); row.className='tfrow';
+        row.innerHTML=`<span>${esc(r[0])}</span><span class="tfb"><button class="btn small" data-v="1">richtig</button><button class="btn small" data-v="0">falsch</button></span>`;
+        row.querySelectorAll('button').forEach(b=>{
+          b.setAttribute('aria-pressed',String(st.tf[k]===(b.dataset.v==='1')));
+          b.addEventListener('click',()=>{ st.tf[k]=b.dataset.v==='1'; row.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); row.classList.remove('right','wrong'); });
+        });
+        tb.appendChild(row);
+      });
+      card.appendChild(tb);
+      const b=document.createElement('button'); b.className='btn small'; b.textContent='Prüfen';
+      b.addEventListener('click',()=>{
+        let ok=true;
+        tb.querySelectorAll('.tfrow').forEach((row,k)=>{ const r=st.tf[k]===it.rows[k][1]; row.classList.toggle('right',r); row.classList.toggle('wrong',!r); if(!r) ok=false; });
+        done(ok);
+      });
+      card.appendChild(b);
+    }
+    card.appendChild(fb);
+    if (st.tried) feedback(fb,!!st.ok,it.why);
+    box.appendChild(card);
+  });
+}
+
+const S = { step:0, R:3, Rt:3, a:0, at:0, huy:1, huyT:1, G:1, t:0, playing:!reduce,
+            freeDeg:0, freeR:3, freeG:1, pairMode:false, hi:0, auto:!reduce, pairClock:0 };
+
+/* ---------- Farben ---------- */
+let C = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ['paper','panel','ink','muted','grid','rule','ray','g1','g2','g3','g4','sum','laser','barrier','accent','screen']
+    .forEach(k=> C[k] = cs.getPropertyValue('--'+k).trim());
+}
+readColors();
+if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+const groupOf = (i,G)=> Math.floor(i*G/N);
+const gColor = (g,G)=> G===1 ? C.ray : [C.g1,C.g2,C.g3,C.g4][g%4];
+function pairsFor(G){
+  const pairs=[], rest=[];
+  if (G<2) return {pairs,rest};
+  for (let g=0; g+1<G; g+=2) pairs.push([g,g+1]);
+  if (G%2) rest.push(G-1);
+  return {pairs,rest};
+}
+
+function pairList(G){
+  const m=N/G, list=[];
+  for (let g=0; g+1<G; g+=2) for (let j=0;j<m;j++) list.push([g*m+j,(g+1)*m+j]);
+  return list;
+}
+function unpaired(G){ const used=new Set(pairList(G).flat()); return [...Array(N).keys()].filter(i=>!used.has(i)); }
+function rayVis(i){
+  if (!S.pairMode) return 1;
+  const pr=pairList(S.G)[S.hi]; return (pr && pr.includes(i)) ? 1 : 0.16;
+}
+/* ---------- Physik ---------- */
+const D = ()=> S.R*Math.sin(S.a);                 // Δs/λ
+const phases = ()=> { const d=D(); const p=[]; for(let i=0;i<N;i++) p.push(2*Math.PI*(i+0.5)/N*d); return p; };
+function discreteAmp(){ let x=0,y=0; for (const f of phases()){ x+=Math.cos(f); y+=Math.sin(f);} return Math.hypot(x,y)/N; }
+const sinc2 = x=> { if (Math.abs(x)<1e-9) return 1; const u=Math.PI*x; const s=Math.sin(u)/u; return s*s; };
+
+/* ---------- Canvas-Helfer ---------- */
+function fit(cv){
+  const r = cv.getBoundingClientRect(); const dpr = window.devicePixelRatio||1;
+  const w = Math.max(1,Math.round(r.width*dpr)), h = Math.max(1,Math.round(r.height*dpr));
+  if (cv.width!==w || cv.height!==h){ cv.width=w; cv.height=h; }
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, W:r.width, H:r.height};
+}
+function arrow(ctx,x1,y1,x2,y2,col,w,head){
+  const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy); if (L<0.5) return;
+  const ux=dx/L, uy=dy/L, h=Math.min(head, L*0.45);
+  ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2-ux*h*0.7,y2-uy*h*0.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-ux*h-uy*h*0.45, y2-uy*h+ux*h*0.45);
+  ctx.lineTo(x2-ux*h+uy*h*0.45, y2-uy*h-ux*h*0.45);
+  ctx.closePath(); ctx.fill();
+}
+const font = (px,w=400)=> `${w} ${px}px "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif`;
+const sfont = (px)=> `italic 500 ${px}px Literata, Georgia, serif`;
+
+/* ---------- Geometrie-Ansicht ---------- */
+const geo = document.getElementById('geo');
+function drawGeo(){
+  const {ctx,W,H} = fit(geo);
+  ctx.fillStyle=C.panel; ctx.fillRect(0,0,W,H);
+  // Millimeterpapier
+  ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.beginPath();
+  for (let x=0.5; x<W; x+=20){ ctx.moveTo(x,0); ctx.lineTo(x,H); }
+  for (let y=0.5; y<H; y+=20){ ctx.moveTo(0,y); ctx.lineTo(W,y); }
+  ctx.stroke();
+
+  const small = W<520;
+  const x0 = Math.max(small?46:70, W*0.2);
+  const yc = H*0.56;
+  const B = Math.min(H*0.5, W*0.4);
+  const lam = B/S.R;
+  const yT = yc-B/2, yB = yc+B/2;
+  const a = S.a, d=[Math.cos(a),-Math.sin(a)], p=[Math.sin(a),Math.cos(a)];
+  const sOff = ((S.t/1.6)%1)*lam;
+  const G = S.G;
+
+  // einfallende ebene Welle
+  ctx.save(); ctx.beginPath(); ctx.rect(0,0,x0-5,H); ctx.clip();
+  ctx.strokeStyle=C.ray; ctx.lineWidth=2; ctx.globalAlpha=0.6;
+  for (let x=x0-lam+sOff; x>-2; x-=lam){ ctx.beginPath(); ctx.moveTo(x,34); ctx.lineTo(x,H-14); ctx.stroke(); }
+  ctx.restore();
+
+  // Elementarwellen (Schritt 1)
+  if (S.huy>0.01){
+    ctx.save(); ctx.beginPath(); ctx.rect(x0+4,0,W,H); ctx.clip();
+    const maxR = Math.hypot(W-x0,H);
+    for (let i=0;i<N;i++){
+      const ys = yT+(i+0.5)*B/N;
+      for (let r=sOff; r<maxR; r+=lam){
+        if (r<2) continue;
+        ctx.globalAlpha = S.huy*0.42*Math.max(0,1-r/(maxR*0.8));
+        ctx.strokeStyle=C.ray; ctx.lineWidth=1.3;
+        ctx.beginPath(); ctx.arc(x0,ys,r,-Math.PI/2,Math.PI/2); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // optische Achse
+  ctx.save(); ctx.setLineDash([3,5]); ctx.strokeStyle=C.muted; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x0,yc); ctx.lineTo(W-8,yc); ctx.stroke(); ctx.restore();
+
+  // Strahlen
+  const rayA = 1-0.85*S.huy;
+  const L = Math.hypot(W,H)*1.2;
+  ctx.save(); ctx.beginPath(); ctx.rect(x0,0,W,H); ctx.clip();
+  for (let i=0;i<N;i++){
+    const ys = yT+(i+0.5)*B/N; const col = gColor(groupOf(i,G),G);
+    ctx.globalAlpha = rayA*rayVis(i); ctx.strokeStyle=col; ctx.lineWidth=rayVis(i)===1&&S.pairMode?2.6:1.7;
+    ctx.beginPath(); ctx.moveTo(x0,ys); ctx.lineTo(x0+d[0]*L, ys+d[1]*L); ctx.stroke();
+    // Wellenberge als kleine Querstriche
+    ctx.lineWidth=2;
+    for (let s=sOff; s<L; s+=lam){
+      if (s<4) continue;
+      const cx=x0+d[0]*s, cy=ys+d[1]*s; if (cx>W+5||cy<-5) break;
+      ctx.beginPath(); ctx.moveTo(cx-p[0]*4,cy-p[1]*4); ctx.lineTo(cx+p[0]*4,cy+p[1]*4); ctx.stroke();
+    }
+  }
+  ctx.restore(); ctx.globalAlpha=1;
+
+  // Winkel α an der Achse
+  if (a>0.004 && rayA>0.3){
+    const rr = Math.min(96, (W-x0)*0.35);
+    ctx.strokeStyle=C.ink; ctx.lineWidth=1.3; ctx.globalAlpha=rayA;
+    ctx.beginPath(); ctx.arc(x0,yc,rr,-a,0); ctx.stroke();
+    ctx.fillStyle=C.ink; ctx.font=sfont(16); ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText('α', x0+(rr+8)*Math.cos(-a/2), yc+(rr+8)*Math.sin(-a/2));
+    ctx.globalAlpha=1;
+  }
+
+  // Blende
+  ctx.fillStyle=C.barrier;
+  ctx.fillRect(x0-5,0,10,yT-1); ctx.fillRect(x0-5,yB+1,10,H-yB);
+
+  // Quellpunkte
+  for (let i=0;i<N;i++){
+    const ys = yT+(i+0.5)*B/N;
+    ctx.globalAlpha = Math.max(0.35,rayVis(i));
+    ctx.fillStyle = gColor(groupOf(i,G),G);
+    const hiR = S.pairMode && rayVis(i)===1;
+    ctx.beginPath(); ctx.arc(x0,ys,hiR?5:3.6,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=C.panel; ctx.lineWidth=1; ctx.stroke();
+    if (S.huy<0.5){
+      ctx.fillStyle = hiR ? C.ink : C.muted;
+      ctx.font=font(Math.max(9,Math.min(12,B/N-3)), hiR?700:400); ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillText(String(i+1), x0-9, ys);
+    }
+    ctx.globalAlpha=1;
+  }
+  // Gangunterschied des gewählten Paares – mit Hinweispfeil und Lupe
+  if (S.pairMode && a>0.006){
+    const pr=pairList(G)[S.hi];
+    if (pr){
+      const [i,j]=pr, yi=yT+(i+0.5)*B/N, yj=yT+(j+0.5)*B/N;
+      const dd=(yj-yi)*Math.sin(a);                 // = λ/2
+      const fx=x0+d[0]*dd, fy=yj+d[1]*dd;           // Lotfußpunkt auf Strahl j
+      const pulse = reduce ? 0.5 : 0.5+0.5*Math.sin(performance.now()/260);
+      const drawPairGeom = (lw)=>{
+        ctx.save(); ctx.setLineDash([5*lw,4*lw]); ctx.strokeStyle=C.ink; ctx.lineWidth=1.2*lw;
+        ctx.beginPath(); ctx.moveTo(x0,yi); ctx.lineTo(fx+p[0]*6*lw,fy+p[1]*6*lw); ctx.stroke(); ctx.restore();
+        const q=5*lw; ctx.strokeStyle=C.ink; ctx.lineWidth=1*lw;
+        ctx.beginPath(); ctx.moveTo(fx+d[0]*q,fy+d[1]*q); ctx.lineTo(fx+d[0]*q-p[0]*q,fy+d[1]*q-p[1]*q); ctx.lineTo(fx-p[0]*q,fy-p[1]*q); ctx.stroke();
+        ctx.strokeStyle=C.accent; ctx.lineWidth=4.5*lw; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(x0,yj); ctx.lineTo(fx,fy); ctx.stroke(); ctx.lineCap='butt';
+      };
+      // Leuchtender Rahmen um die Strecke
+      const mx=(x0+fx)/2, my=(yj+fy)/2;
+      ctx.save(); ctx.strokeStyle=C.accent; ctx.globalAlpha=0.25+0.45*pulse; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(mx,my,dd/2+10+3*pulse,11+3*pulse,-a,0,Math.PI*2); ctx.stroke(); ctx.restore();
+      drawPairGeom(1);
+
+      // Lupe
+      const inW=Math.min(270,W*0.4), inH=Math.round(inW*0.62), m=3;
+      const ix=W-inW-12, iy=H-inH-12;
+      const zw=inW/m, zh=inH/m, zx=mx-zw/2, zy=my-zh/2;
+      ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle=C.accent; ctx.lineWidth=1.2;
+      ctx.strokeRect(zx,zy,zw,zh);
+      ctx.beginPath(); ctx.moveTo(zx+zw,zy); ctx.lineTo(ix,iy); ctx.moveTo(zx+zw,zy+zh); ctx.lineTo(ix,iy+inH); ctx.stroke(); ctx.restore();
+      ctx.fillStyle=C.panel; ctx.fillRect(ix,iy,inW,inH);
+      ctx.save(); ctx.beginPath(); ctx.rect(ix,iy,inW,inH); ctx.clip();
+      ctx.translate(ix,iy); ctx.scale(m,m); ctx.translate(-zx,-zy);
+      ctx.strokeStyle=C.grid; ctx.lineWidth=1/m; ctx.beginPath();
+      for (let gx=Math.floor(zx/20)*20+0.5; gx<zx+zw; gx+=20){ ctx.moveTo(gx,zy); ctx.lineTo(gx,zy+zh); }
+      for (let gy=Math.floor(zy/20)*20+0.5; gy<zy+zh; gy+=20){ ctx.moveTo(zx,gy); ctx.lineTo(zx+zw,gy); }
+      ctx.stroke();
+      for (const [k,yy] of [[i,yi],[j,yj]]){
+        ctx.strokeStyle=gColor(groupOf(k,G),G); ctx.lineWidth=2.4/m;
+        ctx.beginPath(); ctx.moveTo(x0,yy); ctx.lineTo(x0+d[0]*300,yy+d[1]*300); ctx.stroke();
+      }
+            drawPairGeom(1/m*1.6);
+      for (const [k,yy] of [[i,yi],[j,yj]]){
+        ctx.fillStyle=gColor(groupOf(k,G),G); ctx.beginPath(); ctx.arc(x0,yy,4.5/m,0,Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+      const Z=(X,Y)=>[ix+(X-zx)*m, iy+(Y-zy)*m];
+      // Beschriftungen in der Lupe
+      ctx.font=font(13,700); ctx.textBaseline='middle'; ctx.textAlign='right';
+      for (const [k,yy] of [[i,yi],[j,yj]]){ const [lx,ly]=Z(x0,yy); if (lx-6>ix+30 && ly>iy+8 && ly<iy+inH-8){ ctx.fillStyle=C.ink; ctx.fillText(String(k+1),lx-7,ly);} }
+      const [cx,cy]=Z(mx,my);
+      ctx.textAlign='left'; ctx.font=font(15,700);
+      const lab='Δs = λ/2', lw2=ctx.measureText(lab).width;
+      let lx=cx+p[0]*18-lw2/2, ly=cy+p[1]*22;
+      lx=Math.max(ix+4,Math.min(ix+inW-lw2-6,lx)); ly=Math.max(iy+12,Math.min(iy+inH-12,ly));
+      ctx.fillStyle=C.panel; ctx.fillRect(lx-3,ly-10,lw2+6,20);
+      ctx.fillStyle=C.accent; ctx.fillText(lab,lx,ly);
+      ctx.strokeStyle=C.accent; ctx.lineWidth=1.5; ctx.strokeRect(ix+0.5,iy+0.5,inW-1,inH-1);
+      ctx.fillStyle=C.muted; ctx.font=font(11); ctx.textAlign='left'; ctx.textBaseline='top';
+      ctx.fillText('Lupe (3-fach)', ix+6, iy+5);
+
+      // Hinweis mit Pfeil auf die Strecke
+      ctx.font=font(small?12:14,700); ctx.textBaseline='middle'; ctx.textAlign='left';
+      const t1='Gangunterschied', t2='Welle '+(j+1)+' läuft λ/2 weiter als Welle '+(i+1);
+      const bw=Math.max(ctx.measureText(t1).width, (ctx.font=font(small?11:13), ctx.measureText(t2).width))+16, bh=44;
+      const bx0=Math.min(x0+40, W-bw-8), by0=Math.min(H-bh-12, yB+24);
+      const boxY = by0+bh>iy && bx0+bw>ix ? Math.max(yB+8, iy-bh-10) : by0;
+      ctx.fillStyle=C.panel; ctx.fillRect(bx0,boxY,bw,bh);
+      ctx.strokeStyle=C.accent; ctx.lineWidth=1.5; ctx.strokeRect(bx0+0.5,boxY+0.5,bw-1,bh-1);
+      ctx.fillStyle=C.accent; ctx.font=font(small?12:14,700); ctx.fillText(t1,bx0+8,boxY+14);
+      ctx.fillStyle=C.ink; ctx.font=font(small?11:13); ctx.fillText(t2,bx0+8,boxY+31);
+      // Pfeil vom Kasten zur Strecke (leicht gebogen)
+      const sx=bx0+24, sy=boxY, tx=mx+p[0]*8, ty=my+p[1]*8;
+      const c1x=sx, c1y=(sy+ty)/2;
+      ctx.strokeStyle=C.accent; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.quadraticCurveTo(c1x,c1y,tx,ty); ctx.stroke();
+      const ang=Math.atan2(ty-c1y,tx-c1x), h=9;
+      ctx.fillStyle=C.accent; ctx.beginPath(); ctx.moveTo(tx,ty);
+      ctx.lineTo(tx-h*Math.cos(ang-0.4),ty-h*Math.sin(ang-0.4)); ctx.lineTo(tx-h*Math.cos(ang+0.4),ty-h*Math.sin(ang+0.4)); ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // Gangunterschied-Dreieck
+  const ds = B*Math.sin(a);
+  if (a>0.006 && rayA>0.3){
+    const Tx=x0, Ty=yT, Ux=x0, Uy=yB;
+    const Fx=Ux+d[0]*ds, Fy=Uy+d[1]*ds;
+    ctx.globalAlpha=rayA;
+    // Lot (Wellenfront durch oberen Rand)
+    ctx.save(); ctx.setLineDash([6,4]); ctx.strokeStyle=C.ink; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(Tx-p[0]*14,Ty-p[1]*14); ctx.lineTo(Fx+p[0]*14,Fy+p[1]*14); ctx.stroke(); ctx.restore();
+    // rechter Winkel bei F
+    const q=7; ctx.strokeStyle=C.ink; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(Fx-d[0]*q,Fy-d[1]*q); ctx.lineTo(Fx-d[0]*q-p[0]*q,Fy-d[1]*q-p[1]*q); ctx.lineTo(Fx-p[0]*q,Fy-p[1]*q); ctx.stroke();
+    // Δs
+    ctx.strokeStyle=C.accent; ctx.lineWidth=4.5; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(Ux,Uy); ctx.lineTo(Fx,Fy); ctx.stroke(); ctx.lineCap='butt';
+    ctx.lineWidth=2;
+    for (let k=1; k*lam/2<=ds+0.5; k++){
+      const cx=Ux+d[0]*k*lam/2, cy=Uy+d[1]*k*lam/2;
+      ctx.beginPath(); ctx.moveTo(cx-p[0]*8,cy-p[1]*8); ctx.lineTo(cx+p[0]*8,cy+p[1]*8); ctx.stroke();
+    }
+    ctx.fillStyle=C.accent; ctx.font=font(small?13:15,700); ctx.textAlign='left'; ctx.textBaseline='top';
+    const mx=(Ux+Fx)/2+p[0]*14, my=(Uy+Fy)/2+p[1]*14;
+    ctx.fillText('Δs = '+fmt(D())+' λ', mx, my);
+    // Winkel α am oberen Rand
+    ctx.strokeStyle=C.ink; ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.arc(Tx,Ty,26,Math.PI/2-a,Math.PI/2); ctx.stroke();
+    ctx.fillStyle=C.ink; ctx.font=sfont(14); ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('α', Tx+38*Math.cos(Math.PI/2-a/2), Ty+38*Math.sin(Math.PI/2-a/2));
+    ctx.globalAlpha=1;
+  }
+
+  // Spaltbreite B
+  const bx = x0-(S.huy<0.5?34:18);
+  ctx.strokeStyle=C.ink; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(bx,yT); ctx.lineTo(bx,yB);
+  ctx.moveTo(bx-5,yT); ctx.lineTo(bx+5,yT); ctx.moveTo(bx-5,yB); ctx.lineTo(bx+5,yB); ctx.stroke();
+  ctx.fillStyle=C.panel; ctx.fillRect(bx-10,yc-11,20,22);
+  ctx.fillStyle=C.ink; ctx.font=sfont(17); ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('B', bx, yc);
+
+  // Maßstab λ
+  ctx.strokeStyle=C.ink; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(12,16); ctx.lineTo(12+lam,16);
+  ctx.moveTo(12,11); ctx.lineTo(12,21); ctx.moveTo(12+lam,11); ctx.lineTo(12+lam,21); ctx.stroke();
+  ctx.fillStyle=C.ink; ctx.font=sfont(14); ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText('λ', 18+lam, 16);
+
+  // Anzeige
+  ctx.textAlign='right'; ctx.textBaseline='top'; ctx.fillStyle=C.ink; ctx.font=font(small?13:15,700);
+  ctx.fillText('α = '+fmt(a*180/Math.PI,1)+'°', W-12, 10);
+  ctx.font=font(small?12:14); ctx.fillStyle=C.muted;
+  ctx.fillText('B = '+fmt(S.R,1)+' λ', W-12, small?28:30);
+  ctx.textBaseline='bottom';
+  if (!S.pairMode) ctx.fillText('zum weit entfernten Schirm', W-12, H-10);
+}
+
+/* ---------- Zeigerdiagramm ---------- */
+const phc = document.getElementById('phasor');
+function drawPhasor(){
+  const {ctx,W,H} = fit(phc);
+  ctx.clearRect(0,0,W,H);
+  const ph = phases();
+  const pts=[[0,0]];
+  for (let i=0;i<N;i++){ const [x,y]=pts[i]; pts.push([x+Math.cos(ph[i]), y-Math.sin(ph[i])]); }
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  for (const [x,y] of pts){ minX=Math.min(minX,x); maxX=Math.max(maxX,x); minY=Math.min(minY,y); maxY=Math.max(maxY,y); }
+  const pad=18, bw=Math.max(maxX-minX,1e-6), bh=Math.max(maxY-minY,1e-6);
+  const cap=(W-2*pad)/N;
+  const sc=Math.min((W-2*pad)/bw,(H-2*pad)/bh,cap*3.4);
+  const ox=W/2-(minX+maxX)/2*sc, oy=H/2-(minY+maxY)/2*sc;
+  const P=([x,y])=>[ox+x*sc, oy+y*sc];
+  for (let i=0;i<N;i++){
+    const [x1,y1]=P(pts[i]), [x2,y2]=P(pts[i+1]);
+    ctx.globalAlpha=rayVis(i);
+    arrow(ctx,x1,y1,x2,y2,gColor(groupOf(i,S.G),S.G),rayVis(i)===1&&S.pairMode?3:2,Math.min(8,sc*0.35));
+    ctx.globalAlpha=1;
+  }
+  const [sx,sy]=P(pts[0]), [ex,ey]=P(pts[N]);
+  const res = Math.hypot(pts[N][0],pts[N][1]);
+  ctx.fillStyle=C.sum;
+  ctx.beginPath(); ctx.arc(sx,sy,3,0,Math.PI*2); ctx.fill();
+  if (S.pairMode){ /* im Paar-Schritt nur die Paare betonen */ }
+  else if (res>0.25){
+    ctx.save(); ctx.globalAlpha=0.9; arrow(ctx,sx,sy,ex,ey,C.sum,3.2,11); ctx.restore();
+  } else {
+    ctx.font=font(13,700); ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText('Summe ≈ 0', sx, sy+8);
+  }
+  if (S.pairMode){ const pr=pairList(S.G)[S.hi]; if(pr){ ctx.fillStyle=C.ink; ctx.font=font(13,700); ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText('Zeiger '+(pr[0]+1)+' und '+(pr[1]+1)+': entgegengesetzt', 0, 0);} }
+}
+
+/* ---------- Wellenüberlagerung ---------- */
+const wc = document.getElementById('waves');
+function waveLayout(){
+  const {pairs,rest}=pairsFor(S.G);
+  const rows = S.G>1 ? pairs.length+rest.length : 0;
+  return {pairs,rest,rows};
+}
+function sizeWaves(){
+  if (S.pairMode){ const n=pairList(S.G).length + (unpaired(S.G).length?1:0); wc.style.height=(10+n*34+24)+'px'; return; }
+  const {rows}=waveLayout();
+  wc.style.height = (8 + N*11 + 12 + rows*38 + 52) + 'px';
+}
+function drawWaves(){
+  const {ctx,W,H} = fit(wc);
+  ctx.clearRect(0,0,W,H);
+  const ph = phases();
+  const lab = 104, x1=lab, x2=W-4, Lw=86;
+  const wt = 2*Math.PI*S.t/1.6;
+  const {pairs,rest} = waveLayout();
+  const plot = (yc,amp,fn,col,w)=>{
+    ctx.strokeStyle=col; ctx.lineWidth=w; ctx.beginPath();
+    for (let x=x1; x<=x2; x+=2){
+      const y = yc - amp*fn(2*Math.PI*(x-x1)/Lw - wt);
+      if (x===x1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  };
+  const sumOf = idx=> (u=> { let s=0; for (const i of idx) s+=Math.sin(u-ph[i]); return s/N; });
+  const axis = (yc)=>{ ctx.strokeStyle=C.rule; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x1,yc); ctx.lineTo(x2,yc); ctx.stroke(); };
+  const label = (txt,yc,col,bold)=>{ ctx.fillStyle=col; ctx.font=font(13,bold?700:400); ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(txt,0,yc); };
+
+  if (S.pairMode){
+    const pl=pairList(S.G); let y=6;
+    pl.forEach((pr,k)=>{
+      const hi=k===S.hi, yc=y+(hi?40:16);
+      ctx.globalAlpha = hi?1:0.35;
+      axis(yc);
+      plot(yc,11,u=>Math.sin(u-ph[pr[0]]),gColor(groupOf(pr[0],S.G),S.G),hi?2:1.4);
+      plot(yc,11,u=>Math.sin(u-ph[pr[1]]),gColor(groupOf(pr[1],S.G),S.G),hi?2:1.4);
+      plot(yc,11,u=>Math.sin(u-ph[pr[0]])+Math.sin(u-ph[pr[1]]),C.sum,hi?3:2);
+      label('Welle '+(pr[0]+1)+' + '+(pr[1]+1), yc, hi?C.ink:C.muted, hi);
+      ctx.globalAlpha=1;
+      if (hi){
+        const xa = x1 + Lw*((((Math.PI/2+ph[pr[0]]+wt)/(2*Math.PI))%1+1)%1), xb = xa+Lw/2;
+        const ya=yc-11, yb=yc-26;
+        ctx.save(); ctx.setLineDash([2,3]); ctx.lineWidth=1.2;
+        ctx.strokeStyle=gColor(groupOf(pr[0],S.G),S.G); ctx.beginPath(); ctx.moveTo(xa,ya); ctx.lineTo(xa,yb-4); ctx.stroke();
+        ctx.strokeStyle=gColor(groupOf(pr[1],S.G),S.G); ctx.beginPath(); ctx.moveTo(xb,yc+11); ctx.lineTo(xb,yb-4); ctx.stroke();
+        ctx.restore();
+        arrow(ctx,(xa+xb)/2,yb,xb,yb,C.accent,1.8,7); arrow(ctx,(xa+xb)/2,yb,xa,yb,C.accent,1.8,7);
+        ctx.font=font(12,700); ctx.fillStyle=C.accent; ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText('λ/2 versetzt: Berg trifft Tal', xb+6, yb);
+      }
+      y += hi?58:34;
+    });
+    const up=unpaired(S.G);
+    if (up.length){ label('Wellen '+(up[0]+1)+' bis '+(up[up.length-1]+1)+': ohne Partner', y+14, C.muted, false); }
+    return;
+  }
+  let y = 8;
+  for (let i=0;i<N;i++){
+    const yc=y+5.5;
+    plot(yc,4.2,u=>Math.sin(u-ph[i]),gColor(groupOf(i,S.G),S.G),1.3);
+    y+=11;
+  }
+  label('Welle 1 bis 12', 8+N*11/2, C.muted, false);
+  y+=12;
+
+  const G=S.G, gname=GNAME[G]||'Gruppe';
+  const idxOfGroups = gs=>{ const r=[]; for (let i=0;i<N;i++) if (gs.includes(groupOf(i,G))) r.push(i); return r; };
+  if (G>1){
+    for (const pr of pairs){
+      const yc=y+19; axis(yc);
+      plot(yc,15,sumOf(idxOfGroups(pr)),C.muted,2);
+      ctx.save();
+      label(gname+' '+(pr[0]+1)+' + '+(pr[1]+1), yc, C.ink, false);
+      ctx.restore();
+      y+=38;
+    }
+    for (const g of rest){
+      const yc=y+19; axis(yc);
+      plot(yc,15,sumOf(idxOfGroups([g])),gColor(g,G),2.4);
+      label(gname+' '+(g+1), yc, gColor(g,G), true);
+      y+=38;
+    }
+  }
+  const yc=y+26; axis(yc);
+  const all=[...Array(N).keys()];
+  plot(yc,22,sumOf(all),C.sum,2.8);
+  label('Summe', yc, C.sum, true);
+}
+
+/* ---------- Intensitätsgraph ---------- */
+const gc = document.getElementById('graphc');
+function drawGraph(){
+  const {ctx,W,H}=fit(gc);
+  ctx.clearRect(0,0,W,H);
+  const ml=34, mr=10, stripT=4, stripH=26, mt=stripT+stripH+22, mb=34;
+  const xmax=4.25;
+  const X=v=> ml+(v+xmax)/(2*xmax)*(W-ml-mr);
+  const Y=v=> mt+(1-v/1.08)*(H-mt-mb);
+  const R=S.R;
+
+  // Schirmbild
+  ctx.fillStyle=C.screen; ctx.fillRect(ml,stripT,W-ml-mr,stripH);
+  for (let px=ml; px<W-mr; px++){
+    const v=(px-ml)/(W-ml-mr)*2*xmax-xmax;
+    if (Math.abs(v)>=R) continue;
+    const I=sinc2(v);
+    ctx.globalAlpha=Math.min(1,Math.pow(I,0.45));
+    ctx.fillStyle=C.laser; ctx.fillRect(px,stripT,1.2,stripH);
+  }
+  ctx.globalAlpha=1;
+  ctx.fillStyle=C.muted; ctx.font=font(12); ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('Schirm', ml, stripT+stripH+3);
+
+  // unerreichbarer Bereich
+  if (R<xmax){
+    ctx.fillStyle=C.grid;
+    ctx.fillRect(ml,mt,X(-R)-ml,H-mt-mb); ctx.fillRect(X(R),mt,W-mr-X(R),H-mt-mb);
+    if (X(xmax)-X(R)>70){
+      ctx.fillStyle=C.muted; ctx.font=font(11); ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText('sin α > 1', (X(R)+W-mr)/2, mt+4);
+    }
+  }
+  // Achsen
+  ctx.strokeStyle=C.rule; ctx.lineWidth=1; ctx.beginPath();
+  ctx.moveTo(ml,Y(0)); ctx.lineTo(W-mr,Y(0)); ctx.moveTo(X(0),mt); ctx.lineTo(X(0),Y(0)); ctx.stroke();
+  ctx.fillStyle=C.muted; ctx.font=font(12); ctx.textAlign='center'; ctx.textBaseline='top';
+  for (let k=-4;k<=4;k++){
+    ctx.beginPath(); ctx.moveTo(X(k),Y(0)); ctx.lineTo(X(k),Y(0)+4); ctx.stroke();
+    ctx.fillText(k===0?'0':(k<0?'−':'')+(Math.abs(k)===1?'':Math.abs(k))+'λ', X(k), Y(0)+6);
+  }
+  ctx.textAlign='right'; ctx.fillText('Δs = B · sin α', W-mr, Y(0)+20);
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  ctx.fillText('I₀', ml-6, Y(1));
+  ctx.beginPath(); ctx.moveTo(ml-3,Y(1)); ctx.lineTo(ml,Y(1)); ctx.stroke();
+
+  const curve=(f,col,w,dash)=>{
+    ctx.save(); ctx.beginPath(); ctx.rect(ml,mt-2,W-ml-mr,H-mt-mb+2); ctx.clip();
+    ctx.setLineDash(dash||[]); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.beginPath();
+    let first=true;
+    for (let px=ml; px<=W-mr; px+=1){
+      const v=(px-ml)/(W-ml-mr)*2*xmax-xmax;
+      const y=Y(Math.min(1.12,f(v)));
+      if (first){ctx.moveTo(px,y); first=false;} else ctx.lineTo(px,y);
+    }
+    ctx.stroke(); ctx.restore();
+  };
+  curve(v=>10*sinc2(v), C.muted, 1.2, [4,4]);
+  curve(sinc2, C.ink, 2.2);
+
+  // aktueller Punkt
+  const xc=D(), Ic=Math.pow(discreteAmp(),2);
+  if (Math.abs(xc)<=xmax){
+    ctx.strokeStyle=C.accent; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(X(xc),mt); ctx.lineTo(X(xc),Y(0)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=C.accent; ctx.beginPath(); ctx.arc(X(xc),Y(Ic),5.5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=C.panel; ctx.lineWidth=2; ctx.stroke();
+    // Markierung auf dem Schirm
+    ctx.strokeStyle=C.accent; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(X(xc),stripT+stripH+1); ctx.lineTo(X(xc),stripT+stripH+8); ctx.stroke();
+  }
+}
+
+/* ---------- Oberfläche ---------- */
+const rail = document.getElementById('rail');
+STEPS.forEach((st,i)=>{
+  const li=document.createElement('li'); const b=document.createElement('button');
+  b.innerHTML=`<span class="n">${i+1}</span><span class="t">${st.short}</span>`;
+  b.setAttribute('aria-label',`Schritt ${i+1}: ${st.short}`);
+  b.addEventListener('click',()=>setStep(i));
+  li.appendChild(b); rail.appendChild(li);
+});
+const $ = id=>document.getElementById(id);
+const alphaIn=$('alpha'), ratioIn=$('ratio');
+const JUMPS=[1,1.5,2,2.5,3];
+JUMPS.forEach(v=>{
+  const b=document.createElement('button'); b.className='btn small'; b.textContent=fmt(v,v%1?1:0)+' λ';
+  b.dataset.v=v;
+  b.addEventListener('click',()=>{ if (v<=S.freeR){ S.freeDeg=Math.asin(v/S.freeR)*180/Math.PI; syncFree(); }});
+  $('jumps').appendChild(b);
+});
+[1,2,3,4].forEach(g=>{
+  const b=document.createElement('button'); b.className='btn small'; b.textContent=g===1?'nicht teilen':g+' Teile';
+  b.dataset.g=g;
+  b.addEventListener('click',()=>{ S.freeG=g; syncFree(); });
+  $('groups').appendChild(b);
+});
+
+function syncFree(){
+  alphaIn.value=S.freeDeg; ratioIn.value=S.freeR;
+  $('alphaOut').textContent=fmt(+S.freeDeg,1)+'°';
+  $('ratioOut').textContent=fmt(+S.freeR,1)+' λ';
+  S.at=S.freeDeg*Math.PI/180; S.Rt=S.freeR; S.G=S.freeG;
+  $('jumps').querySelectorAll('button').forEach(b=> b.disabled = (+b.dataset.v > S.freeR+1e-9));
+  $('groups').querySelectorAll('button').forEach(b=> b.setAttribute('aria-pressed', String(+b.dataset.g===S.freeG)));
+  sizeWaves();
+}
+alphaIn.addEventListener('input',()=>{ S.freeDeg=+alphaIn.value; syncFree(); });
+ratioIn.addEventListener('input',()=>{ S.freeR=+ratioIn.value; syncFree(); });
+
+function syncPairs(){
+  const box=document.getElementById('pairchips'); if(!box) return;
+  box.querySelectorAll('.pb').forEach((b,k)=>{ b.classList.toggle('hi',k===S.hi); b.setAttribute('aria-pressed',String(k===S.hi)); });
+  const ab=document.getElementById('autob'); ab.textContent=S.auto?'Automatik aus':'Alle nacheinander zeigen'; ab.setAttribute('aria-pressed',String(S.auto));
+}
+['Text','Tasks','Quiz'].forEach((k,i,arr)=>{
+  const b=$('tab'+k);
+  b.addEventListener('click',()=>setTab(['text','tasks','quiz'][i]));
+  b.addEventListener('keydown',e=>{
+    if (e.key!=='ArrowRight' && e.key!=='ArrowLeft') return;
+    e.preventDefault(); e.stopPropagation();
+    const j=(i+(e.key==='ArrowRight'?1:arr.length-1))%arr.length;
+    setTab(['text','tasks','quiz'][j]); $('tab'+arr[j]).focus();
+  });
+});
+function setStep(n){
+  n=Math.max(0,Math.min(STEPS.length-1,n));
+  S.step=n; const st=STEPS[n];
+  $('stitle').textContent=st.title;
+  $('sbody').innerHTML=st.html;
+  $('pairbox').innerHTML='';
+  renderTasks(); renderQuiz(); setTab('text'); updateScore();
+  $('ctrls').classList.toggle('on',!!st.free);
+  S.pairMode=!!st.pair; S.hi=0; S.pairClock=0; S.auto=!reduce;
+  if (st.pair){
+    const box=document.createElement('div'); box.className='chips'; box.id='pairchips';
+    box.innerHTML='<span>Paar ansehen:</span>';
+    pairList(st.G).forEach((pr,k)=>{
+      const b=document.createElement('button'); b.className='btn small pb'; b.textContent=(pr[0]+1)+' & '+(pr[1]+1);
+      b.addEventListener('click',()=>{ S.hi=k; S.auto=false; syncPairs(); });
+      box.appendChild(b);
+    });
+    const ab=document.createElement('button'); ab.className='btn small'; ab.id='autob';
+    ab.addEventListener('click',()=>{ S.auto=!S.auto; S.pairClock=0; syncPairs(); });
+    box.appendChild(ab);
+    $('pairbox').appendChild(box);
+    syncPairs();
+  }
+  if (st.free){
+    S.freeDeg=Math.round(S.a*1800/Math.PI)/10; S.freeR=Math.round(S.R*10)/10; S.freeG=1; S.huyT=0;
+    syncFree();
+  } else {
+    S.Rt=3; S.at=Math.asin(st.ds/3); S.G=st.G; S.huyT=st.huy?1:0;
+    sizeWaves();
+  }
+  rail.querySelectorAll('button').forEach((b,i)=>{
+    if (i===n) b.setAttribute('aria-current','step'); else b.removeAttribute('aria-current');
+    b.classList.toggle('done', i<n);
+  });
+  $('prev').disabled = n===0;
+  $('next').disabled = n===STEPS.length-1;
+}
+$('prev').addEventListener('click',()=>setStep(S.step-1));
+$('next').addEventListener('click',()=>setStep(S.step+1));
+const playBtn=$('play');
+function syncPlay(){ playBtn.textContent=S.playing?'Wellen anhalten':'Wellen laufen lassen'; playBtn.setAttribute('aria-pressed',String(S.playing)); }
+playBtn.addEventListener('click',()=>{ S.playing=!S.playing; syncPlay(); });
+syncPlay();
+document.addEventListener('keydown',e=>{
+  if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if (e.target && e.target.getAttribute && e.target.getAttribute('role')==='tab') return;
+  if (e.key==='ArrowRight') setStep(S.step+1);
+  if (e.key==='ArrowLeft') setStep(S.step-1);
+});
+
+function statusText(){
+  const d=D(), k=Math.round(d), h=Math.round(d-0.5)+0.5;
+  if (d<0.03) return 'Hauptmaximum (0. Ordnung)';
+  if (Math.abs(d-k)<0.03) return k+'. Minimum: B · sin α = '+k+' λ';
+  if (Math.abs(d-h)<0.05 && h>1) return 'ungefähr '+(h-0.5)+'. Maximum: B · sin α ≈ '+fmt(h,1)+' λ';
+  return 'Δs = '+fmt(d)+' λ';
+}
+
+let lastRead='';
+function readouts(){
+  const A=discreteAmp();
+  const txt='Δs = '+fmt(D())+' λ   ·   Summe A/A₀ = '+fmt(A)+'   ·   I/I₀ = '+fmt(A*A,3);
+  if (txt!==lastRead){ $('readA').textContent='Δs = '+fmt(D())+' λ, Summe A/A₀ = '+fmt(A)+', I/I₀ = '+fmt(A*A,3); lastRead=txt; }
+  if (STEPS[S.step].free) $('status').textContent=statusText();
+}
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if (S.playing) S.t+=dt;
+  if (S.pairMode && S.auto){ S.pairClock+=dt; if (S.pairClock>2.4){ S.pairClock=0; S.hi=(S.hi+1)%pairList(S.G).length; syncPairs(); } }
+  const k=1-Math.exp(-dt*5);
+  S.a+=(S.at-S.a)*k; S.R+=(S.Rt-S.R)*k; S.huy+=(S.huyT-S.huy)*k;
+  drawGeo(); drawPhasor(); drawWaves(); drawGraph(); readouts();
+  requestAnimationFrame(frame);
+}
+setStep(0);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
