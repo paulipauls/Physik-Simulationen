@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elektromagnetischer Schwingkreis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   FARBEN & TYPOGRAFIE  –  hier zentral anpassen
+   Farbcodierung durchgehend:  U / E-Feld = bernstein,  I / B-Feld = petrol
+   ===================================================================== */
+:root{
+  --papier:#e9edf1;
+  --karte:#ffffff;
+  --linie:#ccd4dd;
+  --tinte:#141e27;
+  --tinte-leise:#5d6c7a;
+  --schirm:#0e1820;
+  --raster:#1d2f3b;
+  --spannung:#e08a24;   /* U_C, elektrisches Feld  */
+  --strom:#1697b0;      /* I,  magnetisches Feld   */
+  --verlust:#8a97a3;    /* in Wärme umgesetzt      */
+  --fokus:#3b6ef0;
+  --radius:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--papier);
+  color:var(--tinte);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.45;
+  padding:20px 16px 48px;
+}
+.blatt{max-width:1140px;margin:0 auto}
+
+/* ---------- Kopf ---------- */
+header{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;
+  border-bottom:2px solid var(--tinte);padding-bottom:10px;margin-bottom:18px;
+}
+h1{
+  font-family:"Space Grotesk","IBM Plex Sans",sans-serif;
+  font-weight:700;font-size:clamp(21px,3.4vw,30px);letter-spacing:-.02em;margin:0;
+}
+header .dgl{
+  font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--tinte-leise);
+  white-space:nowrap;
+}
+/* Kopfzeile der Schaltungs-Karte: Überschrift links, Bedienknöpfe rechts */
+.kartenkopf{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.kartenkopf h2{margin:0}
+.steuerung{display:flex;gap:8px}
+.steuerung button{padding:6px 14px;font-size:13.5px}
+.steuerung button#btnStartOben{min-width:86px}
+
+/* ---------- Raster ---------- */
+.raster{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}
+@media (max-width:900px){.raster{grid-template-columns:1fr}}
+
+.karte{
+  background:var(--karte);border:1px solid var(--linie);border-radius:var(--radius);
+  padding:14px 16px 16px;
+}
+.karte h2{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--tinte-leise);
+  margin:0 0 10px;
+}
+
+/* ---------- Schaltbild ---------- */
+#schaltbild{width:100%;aspect-ratio:26/15;display:block}
+
+/* ---------- Oszilloskop ---------- */
+.schirm{background:var(--schirm);border-radius:4px;padding:6px}
+#scope{width:100%;height:300px;display:block}
+@media (max-width:600px){#scope{height:230px}}
+.legende{display:flex;gap:18px;flex-wrap:wrap;margin-top:9px;font-size:12.5px;color:var(--tinte-leise)}
+.legende span{display:flex;align-items:center;gap:6px}
+.swatch{width:16px;height:3px;border-radius:2px;display:inline-block}
+
+/* ---------- Messwerte ---------- */
+.messwerte{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:1px;background:var(--linie);
+  border:1px solid var(--linie);border-radius:var(--radius);overflow:hidden;margin-top:16px}
+.mw{background:var(--karte);padding:8px 10px}
+.mw dt{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinte-leise);margin:0}
+.mw dd{margin:2px 0 0;font-family:"IBM Plex Mono",monospace;font-size:17px;font-weight:500;font-variant-numeric:tabular-nums}
+.mw.u dd{color:var(--spannung)} .mw.i dd{color:var(--strom)}
+
+/* ---------- Energiebalken ---------- */
+.energie{margin-top:16px}
+.balken{display:flex;height:22px;border-radius:3px;overflow:hidden;background:#dfe4ea;border:1px solid var(--linie)}
+.balken div{height:100%;transition:none}
+.b-el{background:var(--spannung)} .b-mag{background:var(--strom)} .b-verlust{background:var(--verlust)}
+.energie .legende{margin-top:7px}
+.dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+/* ---------- Bedienfeld ---------- */
+.regler{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px 22px}
+.regler label{display:block;font-size:13px;margin-bottom:3px;display:flex;justify-content:space-between;gap:10px}
+.regler label b{font-family:"IBM Plex Mono",monospace;font-weight:500;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--tinte);margin:0}
+input[type=range]:disabled{opacity:.35}
+.schalter{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--linie)}
+.schalter label{display:flex;align-items:center;gap:7px;font-size:13.5px;cursor:pointer}
+button{
+  font-family:inherit;font-size:14px;font-weight:500;
+  background:var(--tinte);color:#fff;border:1px solid var(--tinte);
+  border-radius:4px;padding:8px 16px;cursor:pointer;
+}
+button.sekundaer{background:transparent;color:var(--tinte)}
+button:hover{opacity:.85}
+:focus-visible{outline:2px solid var(--fokus);outline-offset:2px}
+.hinweis{font-size:12.5px;color:var(--tinte-leise);margin:12px 0 0}
+.fall{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--tinte-leise)}
+</style>
+</head>
+<body>
+<div class="blatt">
+
+<header>
+  <h1>Elektromagnetischer Schwingkreis</h1>
+  <span class="dgl">L·İ + R·I + Q/C = 0</span>
+</header>
+
+<div class="raster">
+
+  <!-- ============ links: Schaltbild + Energie ============ -->
+  <section class="karte">
+    <div class="kartenkopf">
+      <h2>Schaltung</h2>
+      <div class="steuerung">
+        <button id="btnStartOben">Pause</button>
+        <button id="btnResetOben" class="sekundaer">Neu laden</button>
+      </div>
+    </div>
+    <canvas id="schaltbild"></canvas>
+
+    <dl class="messwerte">
+      <div class="mw u"><dt>Spannung U<sub>C</sub></dt><dd id="mwU">0,00 V</dd></div>
+      <div class="mw i"><dt>Stromstärke I</dt><dd id="mwI">0,0 mA</dd></div>
+      <div class="mw"><dt>Zeit t</dt><dd id="mwT">0,00 ms</dd></div>
+    </dl>
+
+    <div class="energie">
+      <div class="balken">
+        <div class="b-el" id="bEl" style="width:100%"></div>
+        <div class="b-mag" id="bMag" style="width:0%"></div>
+        <div class="b-verlust" id="bVerlust" style="width:0%"></div>
+      </div>
+      <div class="legende">
+        <span><i class="dot b-el" style="background:var(--spannung)"></i> E<sub>el</sub> <b id="eEl">0 µJ</b></span>
+        <span><i class="dot" style="background:var(--strom)"></i> E<sub>mag</sub> <b id="eMag">0 µJ</b></span>
+        <span><i class="dot" style="background:var(--verlust)"></i> Wärme <b id="eVerlust">0 µJ</b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ rechts: Oszilloskop ============ -->
+  <section class="karte">
+    <h2>Zeitverlauf</h2>
+    <div class="schirm"><canvas id="scope"></canvas></div>
+    <div class="legende">
+      <span><i class="swatch" style="background:var(--spannung)"></i> Kondensatorspannung U<sub>C</sub></span>
+      <span><i class="swatch" style="background:var(--strom)"></i> Stromstärke I</span>
+      <span id="huelleLegende" hidden><i class="swatch" style="background:var(--spannung);opacity:.45"></i> Einhüllende e<sup>−Rt/2L</sup></span>
+    </div>
+  </section>
+</div>
+
+<!-- ============ Bedienfeld ============ -->
+<section class="karte" style="margin-top:16px">
+  <h2>Bauteile und Anzeige</h2>
+
+  <div class="regler">
+    <div>
+      <label for="rL">Induktivität L <b><span id="vL">10,0</span> mH</b></label>
+      <input type="range" id="rL" min="1" max="100" step="0.5" value="10">
+    </div>
+    <div>
+      <label for="rC">Kapazität C <b><span id="vC">10,0</span> µF</b></label>
+      <input type="range" id="rC" min="1" max="100" step="0.5" value="10">
+    </div>
+    <div>
+      <label for="rR">Ohmscher Widerstand R <b><span id="vR">0,0</span> Ω</b></label>
+      <input type="range" id="rR" min="0" max="80" step="0.5" value="0" disabled>
+    </div>
+    <div>
+      <label for="rU">Ladespannung U<sub>0</sub> <b><span id="vU">5,0</span> V</b></label>
+      <input type="range" id="rU" min="1" max="12" step="0.5" value="5">
+    </div>
+    <div>
+      <label for="rZ">Zeitlupe <b>1 : <span id="vZ">500</span></b></label>
+      <input type="range" id="rZ" min="1" max="5" step="0.01" value="2.7" list="zeitlupenMarken">
+      <datalist id="zeitlupenMarken">
+        <option value="1" label="1:10"></option>
+        <option value="2"></option>
+        <option value="3"></option>
+        <option value="4"></option>
+        <option value="5" label="1:100000"></option>
+      </datalist>
+    </div>
+  </div>
+
+  <div class="schalter">
+    <button id="btnStart">Pause</button>
+    <button id="btnReset" class="sekundaer">Neu laden</button>
+    <label><input type="checkbox" id="cbIdeal" checked> ideale Spule (R = 0)</label>
+    <label><input type="checkbox" id="cbFelder" checked> Felder anzeigen</label>
+    <span class="fall" id="fall"></span>
+  </div>
+
+  <p class="hinweis">
+    Eigenfrequenz <span style="font-family:'IBM Plex Mono',monospace">f<sub>0</sub> = <span id="vF">–</span></span>,
+    Periodendauer <span style="font-family:'IBM Plex Mono',monospace">T = <span id="vT">–</span></span>.
+    Beim Ändern eines Bauteils wird der Kondensator neu geladen. Leertaste startet und pausiert.
+  </p>
+</section>
+
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   1) PARAMETER  –  Startwerte und Grenzen (SI-Einheiten)
+   ===================================================================== */
+const P = {
+  L : 10e-3,   // Induktivität in H
+  C : 10e-6,   // Kapazität in F
+  R : 0,       // Widerstand in Ω
+  U0: 5,       // Ladespannung in V
+  zeitlupe: 500 // 1 s Realzeit = 1/500 s Simulationszeit
+};
+
+/* Womit werden Feldlinien, Ladungen und Säulen skaliert?
+   "energie"     – Energieanteil der beiden Felder; beide ergänzen sich
+                   immer zu 100 % (Standard).
+   "feldstaerke" – proportional zu U bzw. I; physikalisch die Feldstärke,
+                   die Anzeigen summieren sich dann aber nicht zu 100 %.  */
+const ANZEIGE_MODUS = "energie";
+
+const S = { q:0, i:0, t:0, laeuft:true, verlust:0 };  // Zustand
+let proben = [];        // Messpunkte für das Oszilloskop: {t,u,i}
+let letzteProbe = 0;
+let dashPhase = 0;      // Phase der Strom-Animation
+
+/* abgeleitete Größen */
+const T0    = () => 2*Math.PI*Math.sqrt(P.L*P.C);          // ungedämpfte Periodendauer
+const Imax  = () => P.U0*Math.sqrt(P.C/P.L);               // Stromamplitude (R = 0)
+const E0    = () => 0.5*P.C*P.U0*P.U0;                     // Anfangsenergie
+const Rkrit = () => 2*Math.sqrt(P.L/P.C);                  // aperiodischer Grenzfall
+const fenster = () => 6*T0();                              // dargestellter Zeitbereich
+
+/* =====================================================================
+   2) PHYSIK  –  Runge-Kutta 4. Ordnung für  q' = i ,  i' = (−q/C − R·i)/L
+   ===================================================================== */
+/* Vorzeichenkonvention: I ist der Entladestrom, also I = −dQ/dt.
+   Damit gilt Q' = −I und L·I' = Q/C − R·I; bei geladenem Kondensator
+   (Q > 0, I = 0) läuft I zuerst ins positive Maximum.               */
+function abl(q,i){ return [ -i, (q/P.C - P.R*i)/P.L ]; }
+
+function schritt(h){
+  const q=S.q, i=S.i;
+  const k1=abl(q,i);
+  const k2=abl(q+h/2*k1[0], i+h/2*k1[1]);
+  const k3=abl(q+h/2*k2[0], i+h/2*k2[1]);
+  const k4=abl(q+h*k3[0],   i+h*k3[1]);
+  const qn = q + h/6*(k1[0]+2*k2[0]+2*k3[0]+k4[0]);
+  const iN = i + h/6*(k1[1]+2*k2[1]+2*k3[1]+k4[1]);
+  S.verlust += P.R * ((i+iN)/2)**2 * h;   // in Wärme umgesetzte Energie
+  S.q = qn; S.i = iN; S.t += h;
+}
+
+function neuLaden(){
+  S.q = P.C*P.U0;  S.i = 0;  S.t = 0;  S.verlust = 0;
+  proben = [{t:0,u:P.U0,i:0}];  letzteProbe = 0;  dashPhase = 0;
+}
+
+/* =====================================================================
+   3) ZEICHNEN  –  Schaltbild
+   ===================================================================== */
+const cvS = document.getElementById("schaltbild");
+const cxS = cvS.getContext("2d");
+const BW = 520, BH = 300;          // internes Zeichenkoordinatensystem
+
+/* Geometrie des Stromkreises */
+const G = { xl:140, xr:370, yo:60, yu:240, ym:150,
+            pOben:141, pUnten:159, pL:102, pR:178,   // Kondensatorplatten
+            spO:105, spU:195,                        // Spule
+            wL:231, wR:279 };                        // Widerstand
+
+/* Feldstärke-Anzeigen in der Mitte des Stromkreises */
+const M = { yTop:100, hoehe:84, breite:18, xE:205, xB:275 };
+
+function fitCanvas(cv){
+  const dpr = window.devicePixelRatio||1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
+    cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+  }
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {w,h,ctx};
+}
+
+function drahtPfad(){
+  const p = new Path2D();
+  p.moveTo(G.xl,G.pOben); p.lineTo(G.xl,G.yo); p.lineTo(G.xr,G.yo); p.lineTo(G.xr,G.spO);
+  const n=4, r=(G.spU-G.spO)/(2*n);
+  for(let k=0;k<n;k++) p.arc(G.xr, G.spO+r+2*r*k, r, -Math.PI/2, Math.PI/2, false);
+  p.lineTo(G.xr,G.yu); p.lineTo(G.wR,G.yu);
+  p.moveTo(G.wL,G.yu); p.lineTo(G.xl,G.yu); p.lineTo(G.xl,G.pUnten);
+  return p;
+}
+const PFAD = drahtPfad();
+
+function pfeil(ctx,x,y,dir,farbe,alpha){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=farbe;
+  ctx.beginPath(); ctx.moveTo(x+dir*8,y); ctx.lineTo(x-dir*4,y-5.5); ctx.lineTo(x-dir*4,y+5.5);
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+const klemm = x => Math.max(0, Math.min(1, x));
+
+/* Säulenanzeige für die Feldstärke inklusive Hinweis auf Auf- oder Abbau.
+   trend: +1 = Feld wächst, −1 = Feld fällt, 0 = Umkehrpunkt            */
+function feldAnzeige(ctx, cx, anteil, farbe, titel, trend, cLeise){
+  const x = cx-M.breite/2, y = M.yTop, h = M.hoehe, b = M.breite;
+
+  ctx.save();
+  ctx.fillStyle="#eef1f4"; ctx.strokeStyle="#ccd4dd"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(x,y,b,h); ctx.fill(); ctx.stroke();
+
+  const fh = anteil*h;
+  ctx.fillStyle=farbe;
+  ctx.fillRect(x+1, y+h-fh, b-2, fh);
+
+  /* Teilstriche bei 25 %, 50 %, 75 % */
+  ctx.strokeStyle="#ffffff"; ctx.globalAlpha=.65; ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let k=1;k<4;k++){ const yy=y+h*k/4; ctx.moveTo(x+1,yy); ctx.lineTo(x+b-1,yy); }
+  ctx.stroke(); ctx.globalAlpha=1;
+  ctx.strokeStyle="#ccd4dd"; ctx.beginPath(); ctx.rect(x,y,b,h); ctx.stroke();
+
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.fillStyle=cLeise; ctx.font='500 11px "IBM Plex Mono",monospace';
+  ctx.fillText(titel, cx, y+h+8);
+
+  if(trend!==0){
+    const wort = trend>0 ? "Aufbau" : "Abbau";
+    ctx.font='500 11px "IBM Plex Sans",sans-serif';
+    ctx.fillStyle=farbe;
+    const br = ctx.measureText(wort).width;
+    ctx.fillText(wort, cx+5, y+h+22);
+    const yy = y+h+27;                         // Dreieck links vom Wort
+    ctx.beginPath();
+    if(trend>0){ ctx.moveTo(cx-br/2-4, yy-4); ctx.lineTo(cx-br/2-9, yy+3); ctx.lineTo(cx-br/2+1, yy+3); }
+    else       { ctx.moveTo(cx-br/2-4, yy+3); ctx.lineTo(cx-br/2-9, yy-4); ctx.lineTo(cx-br/2+1, yy-4); }
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function zeichneSchaltbild(u,i,zeigeFelder){
+  const {w,h,ctx} = fitCanvas(cvS);
+  ctx.clearRect(0,0,w,h);
+  const s = Math.min(w/BW, h/BH);
+  ctx.save();
+  ctx.translate((w-BW*s)/2,(h-BH*s)/2); ctx.scale(s,s);
+
+  /* Anteile der beiden Felder.
+     Im Modus "energie" werden die Energieanteile W_el/(W_el+W_mag) bzw.
+     W_mag/(W_el+W_mag) dargestellt. Beide ergänzen sich zu jedem Zeitpunkt
+     exakt zu 100 %: Wo das eine Feld abgebaut wird, ist das andere im
+     gleichen Maß aufgebaut. Im Modus "feldstaerke" gilt dagegen die
+     Proportionalität E ~ U und B ~ I; dann summieren sich die Anzeigen
+     nicht zu 100 %, weil W ~ U² bzw. W ~ I² ist.                        */
+  const wEl = 0.5*P.C*u*u, wMag = 0.5*P.L*i*i, wSum = wEl+wMag;
+  const nUamp = klemm(Math.abs(u)/P.U0);                    // |E| ~ |U|
+  const nIamp = klemm(Math.abs(i)/Math.max(Imax(),1e-12));  // |B| ~ |I|
+  let nU, nI;
+  if(ANZEIGE_MODUS==="energie" && wSum>0){ nU = wEl/wSum; nI = wMag/wSum; }
+  else                                   { nU = nUamp;    nI = nIamp;    }
+  const css = getComputedStyle(document.documentElement);
+  const cSpan = css.getPropertyValue("--spannung").trim();
+  const cStrom= css.getPropertyValue("--strom").trim();
+  const cTinte= css.getPropertyValue("--tinte").trim();
+  const cLeise= css.getPropertyValue("--tinte-leise").trim();
+
+  /* Wächst oder fällt der Anteil des elektrischen Feldes gerade?
+     Mit W_el' = −U·I und W_mag' = U·I − R·I² ist das Vorzeichen der
+     Ableitung von W_el/(W_el+W_mag) durch den Ausdruck unten gegeben.
+     Der magnetische Anteil verhält sich exakt gegenläufig.              */
+  const wachsE = -u*i*wSum + P.R*i*i*wEl;
+  const bezug  = Math.max(1e-30, E0()*P.U0*Math.max(Imax(),1e-12));
+  const trendE = Math.abs(wachsE)/bezug < 0.02 ? 0 : Math.sign(wachsE);
+  const trendB = -trendE;
+
+  /* --- Magnetfeld: Ringe erscheinen von innen nach außen --- */
+  if(zeigeFelder){
+    ctx.save(); ctx.strokeStyle=cStrom;
+    for(let k=1;k<=4;k++){
+      const a = klemm(nI*4-(k-1));
+      if(a<=0.01) continue;
+      ctx.globalAlpha = a*0.8;
+      ctx.lineWidth = 2.2-0.3*k;
+      ctx.beginPath(); ctx.ellipse(G.xr,G.ym, 14+9*k, 34+8*k, 0,0,2*Math.PI); ctx.stroke();
+    }
+    /* Feldrichtung auf der Spulenachse */
+    if(nI>0.04){
+      const vz = i>0 ? -1 : 1;
+      ctx.globalAlpha = 0.35+0.65*nI; ctx.strokeStyle=cStrom; ctx.fillStyle=cStrom; ctx.lineWidth=2.4;
+      ctx.beginPath(); ctx.moveTo(G.xr, G.ym-vz*24); ctx.lineTo(G.xr, G.ym+vz*16); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(G.xr, G.ym+vz*25); ctx.lineTo(G.xr-5, G.ym+vz*15); ctx.lineTo(G.xr+5, G.ym+vz*15);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* --- elektrisches Feld: Linien füllen den Plattenraum von innen nach außen --- */
+  if(zeigeFelder && nU>0.01){
+    ctx.save(); ctx.strokeStyle=cSpan; ctx.fillStyle=cSpan; ctx.lineWidth=1.7;
+    const richtung = u>=0 ? 1 : -1;
+    const reihe = [3,2,4,1,5,0,6];                  // Reihenfolge des Erscheinens
+    reihe.forEach((idx,r)=>{
+      const a = klemm(nU*7-r);
+      if(a<=0.01) return;
+      ctx.globalAlpha = a;
+      const x = G.pL+11 + idx*9;
+      ctx.beginPath(); ctx.moveTo(x,G.pOben+1); ctx.lineTo(x,G.pUnten-1); ctx.stroke();
+      const ys = richtung>0 ? G.pUnten-1 : G.pOben+1;
+      ctx.beginPath(); ctx.moveTo(x,ys); ctx.lineTo(x-2.8,ys-richtung*5); ctx.lineTo(x+2.8,ys-richtung*5);
+      ctx.closePath(); ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  /* --- Leitungen --- */
+  ctx.strokeStyle=cTinte; ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.lineJoin="round";
+  ctx.setLineDash([]); ctx.stroke(PFAD);
+
+  /* --- Stromfluss als wandernde Striche --- */
+  if(nIamp>0.015){
+    ctx.save();
+    ctx.strokeStyle=cStrom; ctx.lineWidth=2.6; ctx.globalAlpha=0.25+0.75*nIamp;
+    ctx.setLineDash([7,11]); ctx.lineDashOffset = -dashPhase;
+    ctx.stroke(PFAD); ctx.restore();
+    const dir = i>0 ? 1 : -1;                       // I > 0: entlädt die obere Platte
+    pfeil(ctx, 255, G.yo, dir,  cStrom, 0.3+0.7*nIamp);
+    pfeil(ctx, 180, G.yu, -dir, cStrom, 0.3+0.7*nIamp);
+  }
+
+  /* --- Kondensatorplatten --- */
+  ctx.strokeStyle=cTinte; ctx.lineWidth=3.4; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(G.pL,G.pOben); ctx.lineTo(G.pR,G.pOben);
+                   ctx.moveTo(G.pL,G.pUnten); ctx.lineTo(G.pR,G.pUnten); ctx.stroke();
+
+  /* --- Ladungen: Anzahl der Zeichen wächst mit der Spannung --- */
+  if(nU>0.01){
+    ctx.save(); ctx.fillStyle=cSpan;
+    ctx.font='600 15px "IBM Plex Mono",monospace'; ctx.textAlign="center"; ctx.textBaseline="middle";
+    const oben = u>=0 ? "+" : "–", unten = u>=0 ? "–" : "+";
+    [2,1,3,0,4].forEach((idx,r)=>{
+      const a = klemm(nU*5-r);
+      if(a<=0.01) return;
+      ctx.globalAlpha = a;
+      const x=G.pL+10+idx*14;
+      ctx.fillText(oben, x, G.pOben-9);
+      ctx.fillText(unten,x, G.pUnten+9);
+    });
+    ctx.restore();
+  }
+
+  /* --- Widerstand --- */
+  ctx.setLineDash([]);
+  if(P.R>0){
+    ctx.fillStyle="#fff"; ctx.strokeStyle=cTinte; ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.rect(G.wL,G.yu-9,G.wR-G.wL,18); ctx.fill(); ctx.stroke();
+  }else{
+    ctx.strokeStyle=cTinte; ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.moveTo(G.wL,G.yu); ctx.lineTo(G.wR,G.yu); ctx.stroke();
+  }
+
+  /* --- Feldstärke-Anzeigen --- */
+  if(zeigeFelder){
+    ctx.save();
+    ctx.fillStyle=cLeise; ctx.font='500 10.5px "IBM Plex Mono",monospace';
+    ctx.textAlign="center"; ctx.textBaseline="bottom";
+    ctx.fillText(ANZEIGE_MODUS==="energie" ? "ENERGIEANTEIL" : "FELDSTÄRKE",
+                 (M.xE+M.xB)/2, M.yTop-8);
+    ctx.restore();
+    feldAnzeige(ctx, M.xE, nU, cSpan,  "E-Feld", trendE, cLeise);
+    feldAnzeige(ctx, M.xB, nI, cStrom, "B-Feld", trendB, cLeise);
+  }
+
+  /* --- Beschriftung --- */
+  ctx.fillStyle=cTinte; ctx.font='500 12.5px "IBM Plex Mono",monospace';
+  ctx.textAlign="right"; ctx.textBaseline="middle";
+  ctx.fillText("C = "+f(P.C*1e6,1)+" µF", G.pL-12, G.ym);
+  ctx.textAlign="left";
+  ctx.fillText("L = "+f(P.L*1e3,1)+" mH", G.xr+58, G.ym);
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.fillText(P.R>0 ? "R = "+f(P.R,1)+" Ω" : "R = 0", (G.wL+G.wR)/2, G.yu+14);
+  ctx.restore();
+}
+
+/* =====================================================================
+   4) ZEICHNEN  –  Oszilloskop
+   ===================================================================== */
+const cvO = document.getElementById("scope");
+
+function zeichneScope(){
+  const {w,h,ctx} = fitCanvas(cvO);
+  ctx.clearRect(0,0,w,h);
+  const l=44, r=w-46, o=14, un=h-24;          // Zeichenfläche
+  if(r<=l||un<=o) return;
+
+  const win = fenster();
+  const t1 = Math.max(win, S.t);              // rechter Rand
+  const t0 = t1-win;
+  const uMax = P.U0*1.08, iMax = Math.max(Imax(),1e-9)*1.08;
+  const X = t => l + (t-t0)/win*(r-l);
+  const YU = u => o + (1-(u+uMax)/(2*uMax))*(un-o);
+  const YI = i => o + (1-(i+iMax)/(2*iMax))*(un-o);
+
+  /* Raster */
+  ctx.strokeStyle="#1d2f3b"; ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let k=0;k<=8;k++){ const x=l+(r-l)*k/8; ctx.moveTo(x,o); ctx.lineTo(x,un); }
+  for(let k=0;k<=8;k++){ const y=o+(un-o)*k/8; ctx.moveTo(l,y); ctx.lineTo(r,y); }
+  ctx.stroke();
+  ctx.strokeStyle="#3b5566"; ctx.beginPath(); ctx.moveTo(l,YU(0)); ctx.lineTo(r,YU(0)); ctx.stroke();
+
+  /* Achsenbeschriftung */
+  ctx.font='11px "IBM Plex Mono",monospace'; ctx.textBaseline="middle";
+  ctx.fillStyle="#e08a24"; ctx.textAlign="right";
+  ctx.fillText(f(P.U0,1)+" V", l-6, o+6);  ctx.fillText("−"+f(P.U0,1), l-6, un-6);
+  ctx.fillStyle="#1697b0"; ctx.textAlign="left";
+  ctx.fillText(f(Imax()*1e3,0)+" mA", r+6, o+6); ctx.fillText("−"+f(Imax()*1e3,0), r+6, un-6);
+  ctx.fillStyle="#6d8494"; ctx.textAlign="center"; ctx.textBaseline="top";
+  for(let k=0;k<=4;k++){
+    const t=t0+win*k/4;
+    ctx.fillText(f(t*1e3,1)+" ms", l+(r-l)*k/4, un+6);
+  }
+
+  /* Einhüllende bei gedämpfter Schwingung */
+  if(P.R>0 && P.R<Rkrit()){
+    ctx.save(); ctx.strokeStyle="#e08a24"; ctx.globalAlpha=.4; ctx.setLineDash([4,4]); ctx.lineWidth=1.2;
+    for(const vz of [1,-1]){
+      ctx.beginPath();
+      for(let px=l;px<=r;px+=3){
+        const t=t0+(px-l)/(r-l)*win; if(t<0) continue;
+        const y=YU(vz*P.U0*Math.exp(-P.R*t/(2*P.L)));
+        px===l?ctx.moveTo(px,y):ctx.lineTo(px,y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* Kurven */
+  ctx.lineWidth=2; ctx.lineJoin="round";
+  const kurve=(farbe,fy,feld)=>{
+    ctx.strokeStyle=farbe; ctx.beginPath(); let start=true;
+    for(const p of proben){
+      if(p.t<t0-1e-9) continue;
+      const x=X(p.t), y=fy(p[feld]);
+      start?(ctx.moveTo(x,y),start=false):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  };
+  kurve("#1697b0", YI, "i");
+  kurve("#e08a24", YU, "u");
+}
+
+/* =====================================================================
+   5) OBERFLÄCHE
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const f = (x,n=2) => x.toLocaleString("de-DE",{minimumFractionDigits:n,maximumFractionDigits:n});
+
+/* Der Regler läuft logarithmisch von 10^1 bis 10^5; eingestellt werden nur
+   glatte Stufen 1 · 1,5 · 2 · 3 · 5 · 7 · 10 je Zehnerpotenz. */
+function glatterFaktor(exp){
+  const e = Math.floor(exp);
+  const m = Math.pow(10, exp-e);
+  const stufen = [1,1.5,2,3,5,7,10];
+  const nah = stufen.reduce((a,b)=> Math.abs(b-m)<Math.abs(a-m) ? b : a);
+  return Math.round(nah*Math.pow(10,e));
+}
+
+function energieText(J){
+  if(J>=1e-3) return f(J*1e3,2)+" mJ";
+  if(J>=1e-6) return f(J*1e6,1)+" µJ";
+  return f(J*1e9,0)+" nJ";
+}
+
+function aktualisiereAnzeige(){
+  const u = S.q/P.C;
+  $("mwU").textContent = f(u,2)+" V";
+  $("mwI").textContent = f(S.i*1e3,1)+" mA";
+  $("mwT").textContent = f(S.t*1e3,2)+" ms";
+
+  const eEl = S.q*S.q/(2*P.C), eMag = 0.5*P.L*S.i*S.i, ges = E0();
+  $("bEl").style.width      = (100*eEl/ges)+"%";
+  $("bMag").style.width     = (100*eMag/ges)+"%";
+  $("bVerlust").style.width = (100*Math.max(0,ges-eEl-eMag)/ges)+"%";
+  $("eEl").textContent      = energieText(eEl);
+  $("eMag").textContent     = energieText(eMag);
+  $("eVerlust").textContent = energieText(Math.max(0,ges-eEl-eMag));
+}
+
+function aktualisiereKennwerte(){
+  const T=T0();
+  $("vF").textContent = f(1/T,1)+" Hz";
+  $("vT").textContent = f(T*1e3,2)+" ms";
+  const rk=Rkrit();
+  let text;
+  if(P.R===0)            text = "R = 0 · ungedämpfte Schwingung";
+  else if(P.R<rk-1e-9){
+    const fd = Math.sqrt(1/(P.L*P.C)-P.R*P.R/(4*P.L*P.L))/(2*Math.PI);
+    text = "Schwingfall · f = "+f(fd,1)+" Hz (R_krit = "+f(rk,1)+" Ω)";
+  }
+  else if(Math.abs(P.R-rk)<0.26) text = "aperiodischer Grenzfall (R ≈ "+f(rk,1)+" Ω)";
+  else                           text = "Kriechfall · R > R_krit = "+f(rk,1)+" Ω";
+  $("fall").textContent = text;
+  $("huelleLegende").hidden = !(P.R>0 && P.R<rk);
+}
+
+function leseRegler(){
+  P.L  = parseFloat($("rL").value)*1e-3;
+  P.C  = parseFloat($("rC").value)*1e-6;
+  P.U0 = parseFloat($("rU").value);
+  P.R  = $("cbIdeal").checked ? 0 : parseFloat($("rR").value);
+  P.zeitlupe = glatterFaktor(parseFloat($("rZ").value));   // 1:10 … 1:100000
+  $("vL").textContent = f(P.L*1e3,1);
+  $("vC").textContent = f(P.C*1e6,1);
+  $("vR").textContent = f(parseFloat($("rR").value),1);
+  $("vU").textContent = f(P.U0,1);
+  $("vZ").textContent = P.zeitlupe.toLocaleString("de-DE");
+  $("rR").disabled = $("cbIdeal").checked;
+  aktualisiereKennwerte();
+}
+
+["rL","rC","rR","rU"].forEach(id=>
+  $(id).addEventListener("input",()=>{ leseRegler(); neuLaden(); aktualisiereAnzeige(); }));
+$("rZ").addEventListener("input", leseRegler);
+$("cbIdeal").addEventListener("change",()=>{ leseRegler(); neuLaden(); aktualisiereAnzeige(); });
+
+/* Pause/Weiter gibt es oben und im Bedienfeld – beide zeigen denselben Zustand */
+const startKnoepfe = [$("btnStartOben"), $("btnStart")];
+
+function umschalten(){
+  S.laeuft = !S.laeuft;
+  const text = S.laeuft ? "Pause" : "Weiter";
+  startKnoepfe.forEach(b => { b.textContent = text; b.setAttribute("aria-pressed", String(!S.laeuft)); });
+}
+startKnoepfe.forEach(b => b.addEventListener("click", umschalten));
+
+[$("btnResetOben"), $("btnReset")].forEach(b =>
+  b.addEventListener("click",()=>{ neuLaden(); aktualisiereAnzeige(); }));
+
+document.addEventListener("keydown",e=>{
+  if(e.code==="Space" && e.target.tagName!=="INPUT" && e.target.tagName!=="BUTTON"){
+    e.preventDefault(); umschalten();
+  }
+});
+
+/* =====================================================================
+   6) ANIMATIONSSCHLEIFE
+   ===================================================================== */
+let letzteZeit = performance.now();
+
+function rahmen(jetzt){
+  let dtReal = (jetzt-letzteZeit)/1000;
+  letzteZeit = jetzt;
+  dtReal = Math.min(dtReal, 0.05);                 // nach Tabwechsel nicht aufholen
+
+  if(S.laeuft){
+    const dtSim = dtReal/P.zeitlupe;
+    const hMax  = T0()/2000;                       // Genauigkeit des Integrators
+    const n     = Math.min(4000, Math.max(1, Math.ceil(dtSim/hMax)));
+    const h     = dtSim/n;
+    const abstand = fenster()/900;                 // Abtastrate der Kurven
+    for(let k=0;k<n;k++){
+      schritt(h);
+      if(S.t-letzteProbe >= abstand){
+        proben.push({t:S.t, u:S.q/P.C, i:S.i});
+        letzteProbe = S.t;
+      }
+    }
+    const tMin = Math.max(0, S.t-fenster());
+    while(proben.length>2 && proben[1].t<tMin) proben.shift();
+    dashPhase -= 130*(S.i/Math.max(Imax(),1e-12))*dtReal;
+    aktualisiereAnzeige();
+  }
+
+  zeichneSchaltbild(S.q/P.C, S.i, $("cbFelder").checked);
+  zeichneScope();
+  requestAnimationFrame(rahmen);
+}
+
+/* Start */
+leseRegler();
+neuLaden();
+aktualisiereAnzeige();
+requestAnimationFrame(rahmen);
+</script>
+</body>
+</html>
