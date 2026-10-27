@@ -1,0 +1,1355 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Druckwerkstatt Klasse 8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: Messprotokoll auf Millimeterpapier – weiße Blätter auf blauem Raster, Manometer-Nadel als einziger Signalton */
+:root{
+  --paper:#EEF3F6; --sheet:#FFFFFF; --ink:#13202B; --ink-2:#4B5B68; --line:#D3DDE5; --grid:rgba(29,95,140,.075);
+  --water:#1D5F8C; --water-soft:#D8E8F3; --needle:#C9501C; --needle-soft:#FBE5DA; --on-accent:#FFFFFF;
+  --ok:#21734A; --ok-soft:#DCEFE3; --bad:#B23535; --bad-soft:#F6DEDE; --warn-soft:#FFF3D6;
+  --sand:#D8C397; --sand-2:#BFA672; --oil:#F2D58A; --alc:#E6EEF5; --gly:#CFE0D4;
+  --f-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --f-body:'Atkinson Hyperlegible','Segoe UI',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E171E; --sheet:#15212B; --ink:#E3EBF1; --ink-2:#9DAEBC; --line:#2A3B48; --grid:rgba(120,175,215,.06);
+  --water:#62A9DB; --water-soft:#18354A; --needle:#EE7A45; --needle-soft:#3A2319; --on-accent:#1A0C05;
+  --ok:#5CC48C; --ok-soft:#163427; --bad:#EE8080; --bad-soft:#3A1D1D; --warn-soft:#3A3115;
+  --sand:#7F6B47; --sand-2:#5F4F33; --oil:#6E5A22; --alc:#2B3946; --gly:#294236; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E171E; --sheet:#15212B; --ink:#E3EBF1; --ink-2:#9DAEBC; --line:#2A3B48; --grid:rgba(120,175,215,.06);
+  --water:#62A9DB; --water-soft:#18354A; --needle:#EE7A45; --needle-soft:#3A2319; --on-accent:#1A0C05;
+  --ok:#5CC48C; --ok-soft:#163427; --bad:#EE8080; --bad-soft:#3A1D1D; --warn-soft:#3A3115;
+  --sand:#7F6B47; --sand-2:#5F4F33; --oil:#6E5A22; --alc:#2B3946; --gly:#294236; color-scheme:dark}
+
+body{background-color:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--sheet)}
+.wrap{max-width:1060px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--water)}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.12;margin:0}
+h1{font-size:clamp(32px,5.4vw,52px);font-weight:800;letter-spacing:-.015em}
+h2{font-size:clamp(25px,3.6vw,32px);font-weight:800;letter-spacing:-.01em}
+h3{font-size:19px;font-weight:600}
+p{margin:0}
+.eyebrow{font:600 12px/1.3 var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--water)}
+.muted{color:var(--ink-2)}
+.m,.mono{font-family:var(--f-mono);font-weight:600;font-size:.95em}
+i.var{font-family:'Times New Roman',Georgia,serif;font-size:1.12em;font-style:italic;font-weight:400}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .18em;line-height:1.25}
+.frac>span:first-child{border-bottom:1.5px solid currentColor;padding:0 .25em .05em}
+.frac>span:last-child{padding:.05em .25em 0}
+sup{font-size:.7em}
+
+/* Kopf */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--sheet);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;padding-block:12px 4px}
+.brand svg{flex:none}
+.brand b{font:800 20px/1 var(--f-display);letter-spacing:-.01em}
+.brand small{display:block;color:var(--ink-2);font-size:13px;margin-top:3px}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -4px}
+nav.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:baseline;gap:6px;padding:10px 10px 9px;color:var(--ink-2);text-decoration:none;font-weight:700;font-size:15px;white-space:nowrap;border-bottom:3px solid transparent}
+.tab .n{font:600 11px var(--f-mono);color:var(--water)}
+.tab:hover{color:var(--ink)}
+.tab[aria-current="page"]{color:var(--ink);border-bottom-color:var(--needle)}
+
+main{padding-block:28px 64px}
+.view{display:grid;gap:22px}
+.view-head{display:grid;gap:8px;max-width:68ch}
+.view-head p{color:var(--ink-2)}
+.sheet{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:14px}
+.stack{display:grid;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* Buttons */
+.btn{font:700 15px/1.2 var(--f-body);padding:10px 16px;border-radius:8px;border:1.5px solid var(--ink);background:var(--ink);color:var(--sheet);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{filter:brightness(1.12)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink-2);filter:none}
+.btn.accent{background:var(--needle);border-color:var(--needle);color:var(--on-accent)}
+.btn.sm{padding:7px 12px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+:focus-visible{outline:3px solid var(--water);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:700 14px var(--f-body);padding:8px 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--sheet);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--water);border-color:var(--water);color:var(--sheet)}
+.chip:disabled{opacity:.45;cursor:not-allowed}
+
+/* Start */
+.hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:center}
+@media (max-width:760px){.hero{grid-template-columns:1fr}}
+.hero-text{display:grid;gap:14px}
+.hero-text p{font-size:18px;max-width:58ch}
+.formulas{display:flex;flex-wrap:wrap;gap:10px}
+.formula{font:600 20px var(--f-mono);background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.formula small{font:400 13px var(--f-body);color:var(--ink-2)}
+.dial{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 12px;display:grid;gap:8px;justify-items:center}
+.dial svg{width:100%;max-width:300px;height:auto}
+.dial .cap{font:600 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.meters{width:100%;display:grid;gap:6px}
+.meter{display:grid;grid-template-columns:118px 1fr 40px;gap:8px;align-items:center;font-size:14px}
+.meter .bar{height:8px;border-radius:4px;background:var(--water-soft);overflow:hidden}
+.meter .bar span{display:block;height:100%;background:var(--water);border-radius:4px;transition:width .5s}
+.meter .val{font:600 12px var(--f-mono);text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.path{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px;counter-reset:st;list-style:none;margin:0;padding:0}
+.path li{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:start}
+.path .num{grid-row:span 4;font:800 34px/1 var(--f-display);color:var(--water);min-width:28px}
+.path h3{font-size:18px}
+.path p{color:var(--ink-2);font-size:15px}
+.path a{justify-self:start;margin-top:6px;font-weight:700;font-size:15px}
+.path .why{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--needle)}
+.tips{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.tips li{display:grid;grid-template-columns:28px 1fr;gap:10px}
+.tips li::before{content:"";width:12px;height:12px;margin-top:6px;border-radius:50%;border:3px solid var(--needle)}
+.tips b{display:block}
+.setting{display:grid;gap:8px}
+
+/* Aufgaben */
+.task{display:grid;gap:14px}
+.task-head{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:13px}
+.tag{font:600 12px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:5px;background:var(--water-soft);color:var(--water)}
+.lvl{font:600 12px var(--f-mono);color:var(--ink-2);display:inline-flex;gap:6px;align-items:center}
+.dots{display:inline-flex;gap:3px}
+.dots i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--needle)}
+.dots i.on{background:var(--needle)}
+.task-count{margin-left:auto;font:600 12px var(--f-mono);color:var(--ink-2)}
+.task-q{font-size:18px;max-width:70ch}
+.task-q .ill{display:block;margin-top:10px;max-width:420px;width:100%;height:auto}
+.answer{display:grid;gap:6px}
+.answer label{font-weight:700;font-size:14px;color:var(--ink-2)}
+.ans-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+input.num{font:600 19px var(--f-mono);padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);width:min(240px,100%)}
+input.num:focus{border-color:var(--water)}
+input.num.sm{font-size:16px;padding:7px 10px;width:min(170px,100%)}
+.unit{font:600 17px var(--f-mono)}
+.parsed{font-size:13px;color:var(--ink-2);min-height:1.2em}
+.opts{display:grid;gap:8px}
+.opt{display:block;width:100%;text-align:left;padding:12px 14px;border:1.5px solid var(--line);background:var(--sheet);border-radius:8px;font:17px/1.4 var(--f-body);color:var(--ink);cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--water)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt:disabled{cursor:default}
+.conf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;color:var(--ink-2)}
+.conf span{margin-right:4px}
+.conf button{font:600 13px var(--f-body);padding:5px 10px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer}
+.conf button[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:var(--paper)}
+.task-actions{display:flex;flex-wrap:wrap;gap:8px}
+.hints{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.hints li{background:var(--warn-soft);border-radius:8px;padding:10px 14px;font-size:16px}
+.hints li b{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;display:block;color:var(--ink-2);margin-bottom:2px}
+.fb:empty{display:none}
+.fb{border-radius:8px;padding:12px 14px;font-size:16px;background:var(--paper)}
+.fb.ok{background:var(--ok-soft)}
+.fb.bad{background:var(--bad-soft)}
+.fb-label{font:600 12px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:3px}
+.fb.ok .fb-label{color:var(--ok)}
+.fb.bad .fb-label{color:var(--bad)}
+.sol{border-top:1px dashed var(--line);padding-top:12px}
+.sol ol{margin:6px 0 0;padding-left:22px;display:grid;gap:6px}
+.fstep{display:grid;gap:8px;padding:12px 14px;border-radius:8px;border:1.5px dashed var(--water)}
+.fstep b{font-size:15px}
+
+/* Umform-Werkstatt */
+.werk{display:grid;gap:12px}
+.eqline{font:600 24px var(--f-mono);padding:14px;background:var(--paper);border-radius:8px;text-align:center;overflow-x:auto}
+.werk-ops{display:flex;flex-wrap:wrap;gap:6px}
+.werk-ops button{font:600 16px var(--f-mono);padding:8px 12px;border-radius:8px;border:1.5px solid var(--water);background:var(--sheet);color:var(--water);cursor:pointer;min-width:58px}
+.werk-ops button:hover:not(:disabled){background:var(--water-soft)}
+.werk-ops button:disabled{opacity:.4;cursor:not-allowed}
+.werk-log{margin:0;padding-left:22px;font:15px var(--f-mono);color:var(--ink-2);display:grid;gap:4px}
+.werk-log .op{color:var(--needle);font-weight:600}
+
+/* Training-Steuerung */
+.controls{display:grid;gap:14px}
+.controls .lab{font:600 12px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2)}
+.banner{border-radius:8px;padding:12px 14px;background:var(--water-soft);font-size:16px}
+.banner:empty{display:none}
+.progressline{height:6px;border-radius:3px;background:var(--water-soft);overflow:hidden}
+.progressline span{display:block;height:100%;background:var(--needle);transition:width .4s}
+
+/* Karten */
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:10px;align-content:start}
+.card-q{font:600 18px/1.3 var(--f-display)}
+.card-a{font-size:16px;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:6px}
+.card-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px}
+.state{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:5px;margin-left:auto}
+.state.ja{background:var(--ok-soft);color:var(--ok)}
+.state.nein{background:var(--needle-soft);color:var(--needle)}
+.card.flash{outline:3px solid var(--needle);outline-offset:2px}
+
+/* Simulationen */
+.sim{display:grid;gap:14px}
+.sim svg{width:100%;height:auto;display:block}
+.sim-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:700px){.sim-grid{grid-template-columns:1fr}}
+.readout{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font:15px var(--f-mono);font-variant-numeric:tabular-nums}
+.readout dt{color:var(--ink-2)}
+.readout dd{margin:0;font-weight:600}
+.predict{display:grid;gap:8px;padding:12px 14px;border-radius:8px;background:var(--needle-soft)}
+.predict b{font-size:15px}
+input[type=range]{width:100%;accent-color:var(--needle)}
+select{font:16px var(--f-body);padding:8px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--sheet);color:var(--ink)}
+.svg-ink{fill:var(--ink)} .svg-ink2{fill:var(--ink-2)}
+
+/* Beispiele */
+.stepper{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0}
+.stepper button{font:600 13px var(--f-body);padding:7px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--sheet);color:var(--ink-2);cursor:pointer}
+.stepper button[aria-current="step"]{border-color:var(--needle);color:var(--ink);background:var(--needle-soft)}
+.stepper .k{font-family:var(--f-mono);color:var(--needle);margin-right:4px}
+.exsteps{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.exstep{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:8px}
+.exstep-t{font:600 12px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.exline{font-size:18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.selfx{display:grid;gap:6px;padding:10px 12px;border-radius:8px;background:var(--water-soft)}
+.selfx b{font-size:15px}
+.selfx .opt{font-size:15px;padding:8px 12px}
+.given{font-family:var(--f-mono);font-size:15px;background:var(--paper);border-radius:8px;padding:10px 12px}
+
+/* Tabellen */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--sheet)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font:600 12px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);background:var(--paper)}
+tr:last-child td{border-bottom:none}
+.prose{display:grid;gap:12px;max-width:72ch}
+.prose ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.sources{margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px}
+
+/* Boxen */
+.boxes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.boxes{grid-template-columns:1fr}}
+.box{border:1.5px solid var(--line);border-radius:var(--r);padding:14px;background:var(--sheet);display:grid;gap:4px}
+.box .big{font:800 34px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.box small{color:var(--ink-2)}
+.summary{display:grid;gap:12px}
+.reslist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.reslist li{display:flex;gap:10px;align-items:center;font-size:15px}
+.mark{font:600 12px var(--f-mono);padding:2px 7px;border-radius:5px}
+.mark.ok{background:var(--ok-soft);color:var(--ok)}
+.mark.bad{background:var(--bad-soft);color:var(--bad)}
+.vw-item{display:grid;gap:8px;padding:14px 0;border-bottom:1px solid var(--line)}
+.vw-item:last-child{border-bottom:none}
+.vw-item .qn{font:600 12px var(--f-mono);color:var(--water)}
+.radio{display:flex;gap:8px;align-items:center;font-size:16px;cursor:pointer}
+.radio input{accent-color:var(--water);width:18px;height:18px}
+.vw-head{display:flex;align-items:center;gap:10px}
+.qh{position:relative;display:inline-flex}
+.qhelp{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--water);background:var(--sheet);color:var(--water);font:700 15px/1 var(--f-body);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.qhelp:hover,.qhelp[aria-expanded="true"]{background:var(--water);color:var(--sheet)}
+.qhelp-pop{position:absolute;left:0;top:calc(100% + 8px);z-index:15;width:max-content;max-width:min(340px,calc(100vw - 48px));background:var(--sheet);border:1.5px solid var(--water);border-radius:8px;padding:10px 12px;font-size:15px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.14)}
+.qhelp-pop b{display:block;font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--water);margin-bottom:3px}
+.mark.help{background:var(--warn-soft);color:var(--ink)}
+@media (max-width:600px){
+  .brand{padding-block:8px 2px}
+  .brand small{display:none}
+  .brand svg{width:30px;height:30px}
+  .vw-head{flex-wrap:wrap}
+  .qh{display:contents}
+  .qhelp{width:34px;height:34px}
+  .qhelp-pop{position:static;flex-basis:100%;max-width:none;width:auto;box-shadow:none}
+  #svgS{max-height:280px}
+  #svgA{max-height:200px}
+  .sim .stack .readout{font-size:14px}
+  .eqline{font-size:21px}
+}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--sheet);padding:12px 16px;border-radius:8px;font-weight:700;z-index:40;max-width:min(92vw,520px);box-shadow:0 6px 24px rgba(0,0,0,.2)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="none" stroke="var(--ink)" stroke-width="2.5"/><path d="M8 24 A13 13 0 0 1 32 24" fill="none" stroke="var(--water)" stroke-width="2"/><line x1="20" y1="22" x2="29" y2="13" stroke="var(--needle)" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="22" r="3" fill="var(--ink)"/></svg>
+      <div><b>Druckwerkstatt</b><small>Klasse 8 · Auflagedruck und Schweredruck</small></div>
+    </div>
+    <nav class="tabs" aria-label="Bereiche">
+      <a class="tab" href="#start" data-v="start">Start</a>
+      <a class="tab" href="#vorwissen" data-v="vorwissen"><span class="n">1</span>Vorwissen</a>
+      <a class="tab" href="#verstehen" data-v="verstehen"><span class="n">2</span>Verstehen</a>
+      <a class="tab" href="#beispiele" data-v="beispiele"><span class="n">3</span>Beispiele</a>
+      <a class="tab" href="#ueben" data-v="ueben"><span class="n">4</span>Üben</a>
+      <a class="tab" href="#gemischt" data-v="gemischt"><span class="n">5</span>Gemischt</a>
+      <a class="tab" href="#wiederholen" data-v="wiederholen"><span class="n">6</span>Wiederholen</a>
+      <a class="tab" href="#lehrkraefte" data-v="lehrkraefte">Für Lehrkräfte</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- START -->
+<section class="view" id="v-start">
+  <div class="hero">
+    <div class="hero-text">
+      <span class="eyebrow">Physik · Mechanik · Druck</span>
+      <h1>Wie stark drückt es – und worauf?</h1>
+      <p>Hier übst du, Druck zu berechnen: unter Schuhen, Kisten und Elefantenfüßen (Auflagedruck) und in Wasser und anderen Flüssigkeiten (Schweredruck). Dazu gehören Formeln umstellen und Einheiten umrechnen.</p>
+      <div class="formulas">
+        <div class="formula"><span><i class="var">p</i> = <span class="frac"><span><i class="var">F</i></span><span><i class="var">A</i></span></span></span><small>Auflagedruck</small></div>
+        <div class="formula"><span><i class="var">p</i> = <i class="var">ρ</i> · <i class="var">g</i> · <i class="var">h</i></span><small>Schweredruck</small></div>
+        <div class="formula"><span>1 Pa = 1 <span class="frac"><span>N</span><span>m²</span></span></span></div>
+      </div>
+    </div>
+    <div class="dial" aria-label="Dein Lernstand">
+      <span class="cap">Dein Lernstand</span>
+      <svg viewBox="0 0 240 150" id="dialSvg" role="img" aria-labelledby="dialTxt"></svg>
+      <div class="meters" id="startMeters"></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h2>Dein Lernweg</h2>
+    <ol class="path">
+      <li><span class="num">1</span><h3>Vorwissen prüfen</h3><p>9 kurze Fragen zu Kraft, Fläche, Dichte und Umstellen. Du erfährst, was du vorher auffrischen solltest.</p><a href="#vorwissen">Zum Check (5 Minuten)</a></li>
+      <li><span class="num">2</span><h3>Verstehen</h3><p>Merkkarten zum Selbstabfragen und zwei Experimente: Quader im Sand und Drucksonde im Wasser.</p><a href="#verstehen">Karten und Experimente</a></li>
+      <li><span class="num">3</span><h3>Beispiele</h3><p>Ein Lösungsweg wird vorgemacht. Mit jeder Stufe fehlt ein Schritt mehr, bis du allein rechnest.</p><a href="#beispiele">Lösungsbeispiele</a></li>
+      <li><span class="num">4</span><h3>Üben</h3><p>Fünf Bereiche mit drei Stufen. Drei richtige Antworten ohne Hilfe heben dich eine Stufe höher.</p><a href="#ueben">Zum Training</a></li>
+      <li><span class="num">5</span><h3>Gemischt</h3><p>Zehn Aufgaben durcheinander. Du musst selbst erkennen, welche Formel passt – wie in der Arbeit.</p><a href="#gemischt">Mix starten</a></li>
+      <li><span class="num">6</span><h3>Wiederholen</h3><p>Aufgaben, die nicht geklappt haben, kommen nach 1, 3 und 7 Tagen mit neuen Zahlen wieder.</p><a href="#wiederholen">Wiederholungsbox</a></li>
+    </ol>
+  </div>
+
+  <div class="grid2">
+    <div class="sheet stack">
+      <h3>So übst du wirksam</h3>
+      <ul class="tips">
+        <li><span><b>Erst erinnern, dann nachsehen.</b> Sich selbst abzufragen bringt mehr als nochmal durchlesen.</span></li>
+        <li><span><b>Kurz und oft.</b> Dreimal 10 Minuten an verschiedenen Tagen wirken länger als einmal 30 Minuten am Abend vorher.</span></li>
+        <li><span><b>Mischen.</b> Im gemischten Training fühlt es sich schwerer an. Genau das sorgt dafür, dass du es behältst.</span></li>
+        <li><span><b>Hilfen nacheinander.</b> Nimm erst Hilfe 1 und überleg dann weiter. Jede Hilfe verrät etwas mehr.</span></li>
+        <li><span><b>Ehrlich einschätzen.</b> Sag vor dem Prüfen, wie sicher du bist. So merkst du, wo du dich verschätzt.</span></li>
+      </ul>
+    </div>
+    <div class="sheet stack">
+      <h3>Einstellungen</h3>
+      <div class="setting">
+        <span class="muted">Mit welchem Ortsfaktor rechnet ihr im Unterricht?</span>
+        <div class="chips" role="group" aria-label="Ortsfaktor g">
+          <button class="chip" type="button" id="g981" data-g="9.81">g = 9,81 N/kg</button>
+          <button class="chip" type="button" id="g10" data-g="10">g = 10 N/kg</button>
+        </div>
+      </div>
+      <div class="setting">
+        <span class="muted">Dein Fortschritt wird nur in diesem Browser auf diesem Gerät gespeichert. Es gibt keine Anmeldung.</span>
+        <div class="row">
+          <button class="btn ghost sm" type="button" id="resetBtn">Fortschritt löschen</button>
+          <span id="resetConfirm" hidden class="row"><span>Wirklich alles löschen?</span><button class="btn sm" type="button" id="resetYes">Ja, löschen</button><button class="btn ghost sm" type="button" id="resetNo">Abbrechen</button></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VORWISSEN -->
+<section class="view" id="v-vorwissen" hidden>
+  <div class="view-head">
+    <span class="eyebrow">Schritt 1</span>
+    <h2>Vorwissen-Check</h2>
+    <p>Für den Druck brauchst du Werkzeuge aus früheren Themen. Beantworte die Fragen ohne nachzuschauen. Danach siehst du, was schon sitzt und was du auffrischen solltest.</p>
+  </div>
+  <div class="sheet" id="vwHost"></div>
+  <div id="vwResult"></div>
+</section>
+
+<!-- VERSTEHEN -->
+<section class="view" id="v-verstehen" hidden>
+  <div class="view-head">
+    <span class="eyebrow">Schritt 2</span>
+    <h2>Verstehen</h2>
+    <p>Jede Karte zeigt zuerst nur eine Frage. Beantworte sie im Kopf oder auf einem Zettel und deck erst dann die Antwort auf. Das Erinnern selbst ist das Training.</p>
+  </div>
+  <div class="grid3" id="cardHost"></div>
+
+  <div class="sheet sim" id="simA">
+    <div class="stack"><span class="eyebrow">Experiment 1 · Auflagedruck</span><h3>Ein Quader im Sand</h3>
+    <p class="muted">Ein Quader (20 cm × 10 cm × 5 cm) liegt auf weichem Sand. Du kannst ihn auf drei verschiedene Seiten legen und seine Masse ändern.</p></div>
+    <div class="predict" id="predA">
+      <b>Vorhersage: In welcher Lage sinkt der Quader am tiefsten ein?</b>
+      <div class="chips">
+        <button class="chip" type="button" data-p="flach">flach</button>
+        <button class="chip" type="button" data-p="seite">auf der Seite</button>
+        <button class="chip" type="button" data-p="hoch">hochkant</button>
+        <button class="chip" type="button" data-p="gleich">überall gleich tief</button>
+      </div>
+      <div class="fb" id="predAfb"></div>
+    </div>
+    <div class="sim-grid">
+      <svg viewBox="0 0 360 230" id="svgA" role="img" aria-label="Quader im Sand"></svg>
+      <div class="stack">
+        <div class="chips" role="group" aria-label="Lage des Quaders">
+          <button class="chip" type="button" data-face="flach" disabled>flach</button>
+          <button class="chip" type="button" data-face="seite" disabled>auf der Seite</button>
+          <button class="chip" type="button" data-face="hoch" disabled>hochkant</button>
+        </div>
+        <label for="massA" class="muted">Masse: <b class="m" id="massAv">2 kg</b></label>
+        <input type="range" id="massA" min="1" max="10" step="0.5" value="2">
+        <dl class="readout" id="readA"></dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet sim" id="simS">
+    <div class="stack"><span class="eyebrow">Experiment 2 · Schweredruck</span><h3>Drucksonde im Gefäß</h3>
+    <p class="muted">Ein 2 m hohes Gefäß ist randvoll. Schiebe die Sonde in die Tiefe, wechsle die Flüssigkeit und die Form des Gefäßes.</p></div>
+    <div class="predict" id="predS">
+      <b>Vorhersage: Alle drei Gefäße sind gleich hoch gefüllt. Wo ist der Druck am Boden am größten?</b>
+      <div class="chips">
+        <button class="chip" type="button" data-p="trichter">im breiten Gefäß</button>
+        <button class="chip" type="button" data-p="zyl">im Zylinder</button>
+        <button class="chip" type="button" data-p="flasche">in der Flasche</button>
+        <button class="chip" type="button" data-p="gleich">überall gleich</button>
+      </div>
+      <div class="fb" id="predSfb"></div>
+    </div>
+    <div class="sim-grid">
+      <svg viewBox="0 0 220 260" id="svgS" role="img" aria-label="Gefäß mit Flüssigkeit und Drucksonde"></svg>
+      <div class="stack">
+        <div class="chips" role="group" aria-label="Gefäßform">
+          <button class="chip" type="button" data-shape="zyl" aria-pressed="true">Zylinder</button>
+          <button class="chip" type="button" data-shape="trichter" disabled>breites Gefäß</button>
+          <button class="chip" type="button" data-shape="flasche" disabled>Flasche</button>
+        </div>
+        <label for="liqS" class="muted">Flüssigkeit</label>
+        <select id="liqS">
+          <option value="1000">Süßwasser (1000 kg/m³)</option>
+          <option value="1025">Meerwasser (1025 kg/m³)</option>
+          <option value="920">Speiseöl (920 kg/m³)</option>
+          <option value="790">Spiritus (790 kg/m³)</option>
+          <option value="1260">Glycerin (1260 kg/m³)</option>
+        </select>
+        <label for="depthS" class="muted">Tiefe der Sonde: <b class="m" id="depthSv">1,00 m</b></label>
+        <input type="range" id="depthS" min="0" max="2" step="0.05" value="1">
+        <dl class="readout" id="readS"></dl>
+      </div>
+    </div>
+    <svg viewBox="0 0 330 215" id="chartS" role="img" aria-label="Diagramm: Schweredruck in Abhängigkeit von der Tiefe"></svg>
+  </div>
+</section>
+
+<!-- BEISPIELE -->
+<section class="view" id="v-beispiele" hidden>
+  <div class="view-head">
+    <span class="eyebrow">Schritt 3</span>
+    <h2>Lösungsbeispiele mit Lücken</h2>
+    <p>Auf Stufe 1 ist alles vorgerechnet. Du beantwortest nur Warum-Fragen. Ab Stufe 2 fehlt hinten ein Schritt, dann zwei, und auf Stufe 4 rechnest du ganz allein. Jede Stufe bringt neue Zahlen.</p>
+  </div>
+  <div class="sheet stack">
+    <div class="chips" role="group" aria-label="Thema">
+      <button class="chip" type="button" data-fam="auflage" aria-pressed="true">Auflagedruck</button>
+      <button class="chip" type="button" data-fam="schwere" aria-pressed="false">Schweredruck</button>
+    </div>
+    <ol class="stepper" id="exStepper"></ol>
+  </div>
+  <div class="sheet stack" id="exHost"></div>
+</section>
+
+<!-- ÜBEN -->
+<section class="view" id="v-ueben" hidden>
+  <div class="view-head">
+    <span class="eyebrow">Schritt 4</span>
+    <h2>Üben nach Bereichen</h2>
+    <p>Wähle einen Bereich. Die Stufe passt sich an: drei richtige Antworten ohne Hilfe in Folge bringen dich eine Stufe höher, zwei Fehler in Folge eine zurück. Aufgaben, die nicht klappen, kommen kurz darauf mit neuen Zahlen wieder.</p>
+  </div>
+  <div class="sheet controls">
+    <div class="stack"><span class="lab">Bereich</span><div class="chips" id="topicChips" role="group" aria-label="Bereich"></div></div>
+    <div class="stack"><span class="lab">Stufe</span><div class="chips" id="lvlChips" role="group" aria-label="Stufe">
+      <button class="chip" type="button" data-l="auto" aria-pressed="true">automatisch</button>
+      <button class="chip" type="button" data-l="1" aria-pressed="false">1 · Grundlagen</button>
+      <button class="chip" type="button" data-l="2" aria-pressed="false">2 · Standard</button>
+      <button class="chip" type="button" data-l="3" aria-pressed="false">3 · Knobeln</button>
+    </div></div>
+  </div>
+  <div class="banner" id="trainBanner" aria-live="polite"></div>
+  <div id="trainHost"></div>
+  <p class="muted" style="font-size:14px">Eingabe: Dezimalzahlen mit Komma (0,025). Sehr große oder kleine Zahlen gehen auch als 5·10^-5 oder 5e-5.</p>
+</section>
+
+<!-- GEMISCHT -->
+<section class="view" id="v-gemischt" hidden>
+  <div class="view-head">
+    <span class="eyebrow">Schritt 5</span>
+    <h2>Gemischtes Training</h2>
+    <p>Zehn Aufgaben aus allen Bereichen, bunt gemischt. Bei Rechenaufgaben entscheidest du zuerst, welche Formel passt. Das ist der Teil, der in Klassenarbeiten am häufigsten schiefgeht.</p>
+  </div>
+  <div class="progressline" aria-hidden="true"><span id="mixBar" style="width:0%"></span></div>
+  <div id="mixHost"></div>
+</section>
+
+<!-- WIEDERHOLEN -->
+<section class="view" id="v-wiederholen" hidden>
+  <div class="view-head">
+    <span class="eyebrow">Schritt 6</span>
+    <h2>Wiederholungsbox</h2>
+    <p>Jede Aufgabe, die beim ersten Versuch nicht geklappt hat, landet in Fach 1. Richtig gelöst wandert sie weiter: Fach 2 kommt nach 3 Tagen wieder, Fach 3 nach einer Woche. Aus Fach 3 richtig gelöst gilt sie als gemeistert. Die Zahlen sind jedes Mal neu.</p>
+  </div>
+  <div id="repHost"></div>
+</section>
+
+<!-- LEHRKRÄFTE -->
+<section class="view" id="v-lehrkraefte" hidden>
+  <div class="view-head">
+    <span class="eyebrow">Für Lehrkräfte</span>
+    <h2>Didaktische Überlegungen</h2>
+    <p>Die Seite ist für Klasse 8 gebaut und deckt Auflagedruck (p = F/A) und Schweredruck in Flüssigkeiten (p = ρ·g·h) ab, einschließlich Umstellen und Einheiten. Unten stehen die Vorkenntnisse, die Aufgabentypen, die berücksichtigten Schülervorstellungen und die Befunde aus der Lernforschung, aus denen der Aufbau abgeleitet ist.</p>
+  </div>
+
+  <div class="stack">
+    <h3>1 · Vorkenntnisse</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Vorkenntnis</th><th>Wozu gebraucht</th><th>Typische Lücke</th><th>Wo auf der Seite</th></tr></thead>
+      <tbody>
+        <tr><td>Masse und Gewichtskraft, F = m·g, Einheit N</td><td>Auflagedruck aus einer Masse berechnen</td><td>Die Masse in kg wird direkt als Kraft eingesetzt; Masse und Gewichtskraft werden gleichgesetzt</td><td>Vorwissen 1–3, Karte „Gewichtskraft“, Fehlermuster „g vergessen“</td></tr>
+        <tr><td>Flächeninhalt und Flächeneinheiten</td><td>A bestimmen, cm² → m²</td><td>Faktor 100 statt 10 000</td><td>Vorwissen 4–5, Einheiten Stufe 1–3</td></tr>
+        <tr><td>Dichte ρ = m/V, g/cm³ und kg/m³</td><td>Schweredruck verschiedener Flüssigkeiten</td><td>Umrechnungsfaktor 1000 unbekannt; Dichte als „Schwere“ statt als Quotient</td><td>Vorwissen 6, Einheiten Stufe 2, Beispiel Schweredruck</td></tr>
+        <tr><td>Formeln umstellen (Äquivalenzumformung)</td><td>F, A, h oder ρ gesucht</td><td>Nur eine Seite umgeformt; falsche Umkehroperation; Kehrwertfehler (A = p/F)</td><td>Vorwissen 7, Umform-Werkstatt, Auswahlaufgaben mit Zahlenprobe</td></tr>
+        <tr><td>Dezimalzahlen und Zehnerpotenzen</td><td>Pa ↔ hPa ↔ bar, große und kleine Werte</td><td>Kommaverschiebung in die falsche Richtung</td><td>Vorwissen 8, Fehlermuster „Größenordnung“</td></tr>
+        <tr><td>Quotienten und Proportionalität</td><td>„doppelte Fläche, halber Druck“; „doppelte Tiefe, doppelter Druck“</td><td>Je-desto-Aussagen bei Quotienten werden umgedreht</td><td>Vorwissen 9, Verständnisaufgaben</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted" style="max-width:72ch">Fachlich setzt die Einheit außerdem voraus, dass Kraft als Ursache von Verformung bekannt ist. Den Luftdruck braucht man nur für eine Profi-Aufgabe (Gesamtdruck unter Wasser). Je nach Kerncurriculum kommt das Thema in Klasse 7 bis 9 vor. Die Stufen lassen sich daher frei wählen.</p>
+  </div>
+
+  <div class="stack">
+    <h3>2 · Aufgabentypen und Progression</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Bereich</th><th>Stufe 1</th><th>Stufe 2</th><th>Stufe 3</th></tr></thead>
+      <tbody>
+        <tr><td><b>Einheiten</b></td><td>cm² ↔ m², hPa ↔ Pa, cm → m, kN → N, t → kg</td><td>mm² → cm², bar ↔ Pa, bar → hPa, g/cm³ → kg/m³</td><td>N/cm² ↔ Pa, mm² → m²</td></tr>
+        <tr><td><b>Formeln umstellen</b></td><td>Einschrittig: F = p·A, m = F/g (Auswahl und Werkstatt)</td><td>Zweischrittig: A = F/p, V = m/ρ, h = p/(ρ·g); „Welcher erste Schritt?“</td><td>ρ = p/(g·h)</td></tr>
+        <tr><td><b>Auflagedruck</b></td><td>p = F/A in N und m²; Druck auf einem Bein</td><td>Kraft aus Masse, Fläche in cm², gesuchte Kraft</td><td>Mindestfläche von Schneeschuhen; Elefant gegen Stöckelschuh (Verhältnis)</td></tr>
+        <tr><td><b>Schweredruck</b></td><td>Wasser, h in m; Tiefe vervielfacht</td><td>Ergebnis in hPa; ρ in g/cm³ und h in cm; Tiefe aus Druck in bar</td><td>Dichte bestimmen; Kraft auf Taucherbrille; Druckunterschied; Gesamtdruck mit Luftdruck</td></tr>
+        <tr><td><b>Verständnis</b></td><td>Pascal, Schneeschuh, Messer, Ziegelstein, Löcher in der Flasche</td><td>Allseitigkeit, Gefäßform, Salzwasser, Staumauer, Messung von h</td><td>See gegen Rohr, Elefant, Kraft auf eine Fläche bei doppelter Tiefe</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted" style="max-width:72ch">Rechenaufgaben werden bei jedem Aufruf mit neuen Zahlen und wechselnden Kontexten erzeugt. Eine Eingabe wird auf typische Fehler geprüft und erhält dann eine passende Rückmeldung: falsche Zehnerpotenz (Einheitenfehler), F·A statt F/A, Kehrwert, Masse statt Gewichtskraft, Druck statt Kraft, fehlender Luftdruck, fehlende Dichte oder vergessene vier Elefantenfüße. Wer mit g = 10 statt 9,81 N/kg rechnet, bekommt die Aufgabe als richtig gewertet, mit Hinweis.</p>
+  </div>
+
+  <div class="stack">
+    <h3>3 · Schülervorstellungen, die gezielt angesprochen werden</h3>
+    <div class="prose">
+      <p>Studien zu Flüssigkeiten zeigen, dass viele Lernende Druck mit Kraft oder Gewicht gleichsetzen, annehmen, dass Druck vor allem nach unten wirkt, und glauben, dass mehr Flüssigkeit mehr Druck bedeutet. Typische Denkmodelle sind ein „Gedränge-Modell“ (enges Gefäß, mehr Druck) und ein „Drück-Modell“ (mehr Wasser drückt stärker). Auch die Messung der Tiefe vom Boden aus ist verbreitet.</p>
+      <ul>
+        <li>Im Experiment 2 muss vor dem Ausprobieren eine Vorhersage zum hydrostatischen Paradoxon abgegeben werden (Vorhersagen – Beobachten – Erklären).</li>
+        <li>Die Auswahlaufgaben nutzen genau diese Vorstellungen als Ablenker. Jede falsche Antwort bekommt eine eigene Erklärung.</li>
+        <li>Beim Auflagedruck trennt das Quader-Experiment Gewichtskraft (bleibt gleich) und Druck (ändert sich).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h3>4 · Was die Lernforschung zum Üben sagt und wie es umgesetzt ist</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Prinzip</th><th>Befund</th><th>Umsetzung auf der Seite</th></tr></thead>
+      <tbody>
+        <tr><td><b>Abrufen statt Wiederlesen</b></td><td>In der Übersichtsarbeit von Dunlosky und Kollegen (2013) erhielten nur zwei von zehn Lerntechniken die Bewertung „hoher Nutzen“: Übungstests und verteiltes Lernen. Wiederlesen, Markieren und Zusammenfassen schnitten schwach ab. Übungstests mit korrigierendem Feedback wirkten am stärksten.</td><td>Alle Bereiche bestehen aus Aufgaben. Merkkarten zeigen zuerst nur die Frage. Jede Antwort bekommt sofort Rückmeldung.</td></tr>
+        <tr><td><b>Verteilt üben</b></td><td>Verteiltes Üben gehört zu den robustesten Befunden. Der Vorteil zeigt sich aber erst nach einiger Zeit. Kurz nach dem Lernen schneidet Pauken oft besser ab, deshalb unterschätzen Lernende das Verteilen (Bjork &amp; Bjork).</td><td>Wiederholungsbox mit Abständen von 1, 3 und 7 Tagen. Fehler kommen im Training zusätzlich nach drei Aufgaben mit neuen Zahlen zurück.</td></tr>
+        <tr><td><b>Vermischt üben</b></td><td>In einer randomisierten Studie mit 54 Klassen und 787 Lernenden der 7. Jahrgangsstufe erzielten Klassen mit gemischten Übungsaufgaben einen Monat später 61 % statt 38 % (Rohrer u. a. 2020). Mischen zwingt dazu, die passende Strategie selbst auszuwählen. Es wirkt am besten, wenn die einzelnen Aufgabentypen schon eingeführt sind.</td><td>Erst geblocktes Üben nach Bereichen (Schritt 4), dann das gemischte Training (Schritt 5) mit dem vorgeschalteten Schritt „Welche Formel?“.</td></tr>
+        <tr><td><b>Lösungsbeispiele, schrittweise ausgeblendet</b></td><td>Wer neu in ein Thema einsteigt, lernt mit Lösungsbeispielen besser als mit reinem Problemlösen. Am wirksamsten ist es, Lösungsschritte nach und nach auszublenden (vom Ende her) und Selbsterklärungen gezielt anzuregen (Atkinson, Renkl &amp; Merrill 2003).</td><td>Schritt 3: vier Stufen, Rückwärts-Ausblendung, Warum-Fragen zu den vorgerechneten Schritten.</td></tr>
+        <tr><td><b>Informatives Feedback</b></td><td>Eine Metaanalyse über 435 Studien fand einen mittleren Effekt von Feedback (d = 0,48) mit großer Streuung. Entscheidend ist, wie viel Information es enthält. Lob allein wirkt kaum (Wisniewski, Zierer &amp; Hattie 2020).</td><td>Fehlerspezifische Rückmeldungen, Erklärung zu jeder Antwortoption, Zahlenprobe bei Umstellaufgaben, vollständiger Lösungsweg nach zwei Versuchen. Keine Punkte, kein Ranking.</td></tr>
+        <tr><td><b>Gestufte Hilfen</b></td><td>Abrufbare, schrittweise Hilfen (Leisen) unterstützen das selbstständige Bearbeiten von Aufgaben. Sie bauen auf der Idee der Lösungsbeispiele auf (Arbeitsgruppe Hänze/Wodzinski, Kassel).</td><td>Jede Aufgabe hat bis zu drei Hilfen: Strategie, Formel, Ansatz mit eingesetzten Zahlen.</td></tr>
+        <tr><td><b>Erschwernisse dosieren</b></td><td>Erschwernisse wie Abrufen, Verteilen und Mischen helfen nur, wenn die Grundlagen da sind. Sonst werden sie zur Überforderung.</td><td>Vorwissen-Check mit Verweis auf passende Karten, Stufenanpassung (3 richtig ohne Hilfe: höher; 2 falsch: tiefer).</td></tr>
+        <tr><td><b>Selbsteinschätzung</b></td><td>Lernende halten Gelerntes nach massiertem Üben oft für sicherer, als es ist.</td><td>„Wie sicher bist du?“ vor dem Prüfen; das gemischte Training zeigt „sicher, aber falsch“ getrennt an.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="sheet prose">
+      <h3>Einsatzideen</h3>
+      <ul>
+        <li><b>Einstieg in die Übungsphase:</b> Vorwissen-Check als Hausaufgabe vor der ersten Rechenstunde; die Auswertung zeigt, ob Gewichtskraft oder Flächeneinheiten wiederholt werden müssen.</li>
+        <li><b>Nach der Einführung:</b> Beispiele Stufe 1–4 in Einzelarbeit, danach Üben im Bereich des aktuellen Unterrichtsinhalts.</li>
+        <li><b>Wöchentlich 10 Minuten:</b> gemischtes Training als Stundeneinstieg, auch nach dem Themenwechsel. Das hält Druck für die Arbeit verfügbar.</li>
+        <li><b>Gespräch über Fehler:</b> Die Verständnisaufgaben mit ihren Ablenkern eignen sich als Abstimmungsfragen im Plenum.</li>
+      </ul>
+    </div>
+    <div class="sheet prose">
+      <h3>Technische Hinweise</h3>
+      <ul>
+        <li>Fortschritt und Wiederholungsbox liegen nur im Browser des jeweiligen Geräts. Es werden keine Daten übertragen, es gibt keine Anmeldung.</li>
+        <li>Auf geteilten Schulgeräten sehen Lernende den Stand der vorherigen Person; „Fortschritt löschen“ auf der Startseite setzt alles zurück.</li>
+        <li>Der Ortsfaktor (9,81 oder 10 N/kg) lässt sich auf der Startseite umstellen.</li>
+        <li>Eingaben: Komma oder Punkt als Dezimalzeichen, Zehnerpotenzen als 5·10^-5 oder 5e-5. Die Seite zeigt an, wie eine Eingabe gelesen wurde.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sheet prose">
+    <h3>Quellen</h3>
+    <ol class="sources">
+      <li>Dunlosky, J., Rawson, K. A., Marsh, E. J., Nathan, M. J. &amp; Willingham, D. T. (2013). Improving Students’ Learning With Effective Learning Techniques. <a href="https://www.psychologicalscience.org/news/releases/which-study-strategies-make-the-grade.html" target="_blank" rel="noopener">Pressemitteilung der APS</a> · <a href="https://texasldcenter.org/?p=346" target="_blank" rel="noopener">Zusammenfassung mit Tabelle</a></li>
+      <li>Bjork, E. L. &amp; Bjork, R. A.: Desirable Difficulties. <a href="https://www.psychologicalscience.org/observer/desirable-difficulties" target="_blank" rel="noopener">APS Observer</a></li>
+      <li>Rohrer, D., Dedrick, R. F., Hartwig, M. K. &amp; Cheung, C.-N. (2020). A randomized controlled trial of interleaved mathematics practice. Journal of Educational Psychology, 112(1). <a href="https://www.structural-learning.com/research-briefings/mix-it-up" target="_blank" rel="noopener">Zusammenfassung</a></li>
+      <li>Rohrer, D., Dedrick, R. F. &amp; Burgess, K. (2014). The benefit of interleaved mathematics practice is not limited to superficially similar kinds of problems. <a href="https://www.learningscientists.org/blog/2021/10/28-1" target="_blank" rel="noopener">The Learning Scientists</a></li>
+      <li>Atkinson, R. K., Renkl, A. &amp; Merrill, M. M. (2003). Transitioning from studying examples to solving problems: Combining fading with prompting fosters learning. <a href="https://en.wikipedia.org/wiki/Worked-example_effect" target="_blank" rel="noopener">Überblick Worked-Example-Effekt</a></li>
+      <li>Wisniewski, B., Zierer, K. &amp; Hattie, J. (2020). The Power of Feedback Revisited. Frontiers in Psychology, 10, 3087. <a href="https://doi.org/10.3389/fpsyg.2019.03087" target="_blank" rel="noopener">doi.org/10.3389/fpsyg.2019.03087</a></li>
+      <li>Aufgaben mit gestuften Lernhilfen, Didaktik der Physik, Universität Kassel. <a href="https://www.uni-kassel.de/fb10/institute/physik/forschungsgruppen/didaktik-der-physik/forschung-projekte/aufgaben-mit-gestuften-lernhilfen/veroeffentlichungen.html" target="_blank" rel="noopener">Veröffentlichungen</a></li>
+      <li>Students’ conceptions of pressure in liquids (Fluids, 2019, 4(4), 194). <a href="https://www.mdpi.com/2311-5521/4/4/194" target="_blank" rel="noopener">mdpi.com</a></li>
+      <li>Schweredruck in Flüssigkeiten. <a href="https://www.lernhelfer.de/schuelerlexikon/physik/artikel/schweredruck-fluessigkeiten" target="_blank" rel="noopener">Schülerlexikon Physik (lernhelfer.de)</a></li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+'use strict';
+/* ---------- Grundlagen ---------- */
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+function h(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstElementChild;}
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sig(x,n=4){if(!isFinite(x)||x===0)return x;const d=Math.ceil(Math.log10(Math.abs(x)));const p=Math.pow(10,n-d);return Math.round(x*p)/p;}
+function fmt(x,n=4){x=sig(x,n);const ax=Math.abs(x);if(ax!==0&&(ax>=1e9||ax<1e-4)){const e=Math.floor(Math.log10(ax));const m=sig(x/Math.pow(10,e),n);return m.toLocaleString('de-DE',{maximumFractionDigits:6})+' · 10<sup>'+e+'</sup>';}return x.toLocaleString('de-DE',{maximumFractionDigits:8});}
+const V=s=>`<i class="var">${s}</i>`;
+const fr=(a,b)=>`<span class="frac"><span>${a}</span><span>${b}</span></span>`;
+const TOPICS={einheit:'Einheiten',umstellen:'Formeln umstellen',auflage:'Auflagedruck',schwere:'Schweredruck',konzept:'Verständnis'};
+const TKEYS=Object.keys(TOPICS);
+
+/* ---------- Speicher ---------- */
+const KEY='druckwerkstatt8-v1';
+function blankProg(){return {level:1,streak:0,wrong:0,done:0,correct:0,mastered:false};}
+function defaultState(){return {g:9.81,prog:Object.fromEntries(TKEYS.map(t=>[t,blankProg()])),box:{},mastered:0,cards:{},ex:{auflage:1,schwere:1},vw:null,predA:null,predS:null};}
+function load(){const b=defaultState();try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);const s=Object.assign(b,d);s.prog=Object.assign(defaultState().prog,d.prog||{});s.ex=Object.assign({auflage:1,schwere:1},d.ex||{});return s;}}catch(e){}return b;}
+let S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+const gS=()=>S.g===10?'10':'9,81';
+const otherG=()=>S.g===10?9.81:10;
+
+function toast(msg){const t=h(`<div class="toast" role="status">${msg}</div>`);document.body.appendChild(t);setTimeout(()=>t.remove(),3200);}
+
+/* ---------- Zahlen einlesen ---------- */
+function parseNum(str){
+  if(str==null)return NaN;
+  let s=String(str).trim().replace(/[\s  ]/g,'').replace(/−/g,'-');
+  if(!s)return NaN;
+  let mult=1;
+  let mm=s.match(/^10\^([+-]?\d+)$/);
+  if(mm)return Math.pow(10,parseInt(mm[1],10));
+  mm=s.match(/^(.+?)(?:[*·×x]10\^|[eE])([+-]?\d+)$/);
+  if(mm){s=mm[1];mult=Math.pow(10,parseInt(mm[2],10));}
+  s=s.replace(/^\+/,'');
+  const hasDot=s.includes('.'),hasComma=s.includes(',');
+  if(hasDot&&hasComma){s=s.replace(/\./g,'').replace(',','.');}
+  else if(hasComma){if((s.match(/,/g)||[]).length>1)return NaN;s=s.replace(',','.');}
+  else if(hasDot){if(/^-?\d{1,3}(\.\d{3})+$/.test(s)&&!/^-?0\./.test(s))s=s.replace(/\./g,'');else if((s.match(/\./g)||[]).length>1)return NaN;}
+  if(!/^-?(\d+\.?\d*|\.\d+)$/.test(s))return NaN;
+  return parseFloat(s)*mult;
+}
+function powTxt(k){return k<=6?Math.pow(10,k).toLocaleString('de-DE'):'10<sup>'+k+'</sup>';}
+function judge(t,u){
+  const a=t.ans,rel=x=>Math.abs(u-x)/Math.max(Math.abs(x),1e-12),tol=t.tol||0.015;
+  if(rel(a)<=tol)return {ok:true};
+  if(t.alt!=null&&rel(t.alt)<=0.01)return {ok:true,note:`Du hast mit g = ${S.g===10?'9,81':'10'} N/kg gerechnet. Vorgegeben ist g = ${gS()} N/kg. Das Ergebnis weicht nur leicht ab, darum zählt es als richtig.`};
+  for(const e of (t.errs||[]))if(rel(e.v)<=0.02)return {ok:false,msg:e.m};
+  if(u!==0&&a!==0&&Math.sign(u)===Math.sign(a)){const k=Math.log10(u/a),kr=Math.round(k);if(kr!==0&&Math.abs(k-kr)<0.01)return {ok:false,msg:`Die Ziffern stimmen, aber dein Ergebnis ist um den Faktor ${powTxt(Math.abs(kr))} zu ${kr>0?'groß':'klein'}. Das passiert meist beim Umrechnen von Einheiten (cm² → m², cm → m, hPa → Pa, bar → Pa …). Prüfe jede Einheit einzeln.`};}
+  return {ok:false,msg:'Das stimmt noch nicht. Geh Schritt für Schritt vor: Formel – Einheiten umrechnen – einsetzen – rechnen. Du kannst auch eine Hilfe aufdecken.'};
+}
+
+/* ---------- Aufgabengeneratoren ---------- */
+const GEN={};
+function def(key,topic,level,name,make){GEN[key]={key,topic,level,name,make};}
+const R1=x=>fmt(x,4);
+
+/* Einheiten */
+function conv(key,level,from,to,factor,vals,idea,rule,wrongs){
+  def(key,'einheit',level,`${from} → ${to}`,()=>{
+    const c=pick(vals),a=c*factor,mul=factor>=1,n=fmt(mul?factor:1/factor);
+    return {type:'num',q:`Rechne um: <b class="m">${fmt(c)} ${from}</b> = ? ${to}`,unit:to,ans:a,
+      errs:(wrongs||[]).map(w=>({v:c*factor*w[0],m:w[1]})),
+      hints:[idea,rule,mul?`${fmt(c)} · ${n} = ?`:`${fr(fmt(c),n)} = ?`],
+      sol:[rule,`${fmt(c)} ${from} = ${mul?fmt(c)+' · '+n:fr(fmt(c),n)} ${to} = <b>${fmt(a)} ${to}</b>`]};});
+}
+conv('e_cm2_m2',1,'cm²','m²',1e-4,[25,40,50,120,250,300,450,600,800,1200,2500],'Stell dir 1 m² als Quadrat mit 1 m = 100 cm Seitenlänge vor. Wie viele kleine cm²-Quadrate passen hinein?','1 m² = 100 cm · 100 cm = 10 000 cm²',[[100,'Du hast durch 100 geteilt. Bei Flächen ist der Faktor aber 100 · 100 = 10 000.'],[1e8,'Du hast multipliziert. Von cm² zur größeren Einheit m² wird die Zahl kleiner, also teilen.']]);
+conv('e_m2_cm2',1,'m²','cm²',1e4,[0.02,0.05,0.15,0.3,0.004,1.2,2.5],'Von der großen Einheit m² zur kleinen Einheit cm² wird die Zahl größer.','1 m² = 100 cm · 100 cm = 10 000 cm²',[[0.01,'Bei Flächen ist der Faktor 100 · 100 = 10 000, nicht 100.'],[1e-8,'Du hast geteilt. Von m² zu cm² wird die Zahl größer.']]);
+conv('e_cm_m',1,'cm','m',0.01,[35,80,250,4,120,15],'Wie viele Zentimeter hat ein Meter?','1 m = 100 cm',[[1e4,'Du hast multipliziert. Von cm zu m wird die Zahl kleiner.']]);
+conv('e_kn_n',1,'kN','N',1000,[1.5,2,12,0.8,25],'k steht für „Kilo“. Was bedeutet Kilo bei kg oder km?','1 kN = 1000 N',[[1e-6,'Du hast geteilt. Von kN zu N wird die Zahl größer.']]);
+conv('e_t_kg',1,'t','kg',1000,[1.2,3,4.5,0.8,12],'Eine Tonne ist die Masse von etwa einem Kleinwagen.','1 t = 1000 kg',[]);
+conv('e_hpa_pa',1,'hPa','Pa',100,[1013,980,500,25,1200],'h steht für „Hekto“, das bedeutet 100.','1 hPa = 100 Pa',[[1e-4,'Du hast geteilt. Von hPa zu Pa wird die Zahl größer.']]);
+conv('e_pa_hpa',1,'Pa','hPa',0.01,[45000,101300,2500,980,60000],'Von der kleinen Einheit Pa zur größeren Einheit hPa wird die Zahl kleiner.','1 hPa = 100 Pa',[[1e4,'Du hast multipliziert. Von Pa zu hPa wird die Zahl kleiner.']]);
+conv('e_mm2_cm2',2,'mm²','cm²',0.01,[20,50,80,150,400,5],'Ein cm² ist ein Quadrat mit 1 cm = 10 mm Seitenlänge.','1 cm² = 10 mm · 10 mm = 100 mm²',[[10,'Bei Flächen ist der Faktor 10 · 10 = 100, nicht 10.']]);
+conv('e_bar_pa',2,'bar','Pa',1e5,[1,2,2.5,0.5,3,8],'Gehe in zwei Schritten: erst bar → hPa, dann hPa → Pa.','1 bar = 1000 hPa = 100 000 Pa',[[0.01,'1000 ist der Faktor von bar zu hPa. Von hPa zu Pa kommt noch einmal · 100 dazu.']]);
+conv('e_pa_bar',2,'Pa','bar',1e-5,[200000,50000,350000,1500000,80000],'Wie viele Pascal sind 1 bar?','1 bar = 100 000 Pa',[[100,'Du hast durch 1000 geteilt. So erhältst du bar nur aus hPa. Aus Pa teilst du durch 100 000.']]);
+conv('e_bar_hpa',2,'bar','hPa',1000,[1,1.5,2,0.8,4],'Der normale Luftdruck ist etwa 1013 hPa – das ist ungefähr 1 bar.','1 bar = 1000 hPa',[[0.1,'1 bar sind 1000 hPa, nicht 100.']]);
+conv('e_gcm3',2,'g/cm³','kg/m³',1000,[0.79,0.9,1.03,1.26,2.7,7.9,13.6],'Wasser hat die Dichte 1 g/cm³. Ein Würfel mit 1 m Kantenlänge voll Wasser wiegt 1000 kg.','1 g/cm³ = 1000 kg/m³',[[1000,`Teile Masse und Volumen getrennt um: 1 g = 0,001 kg und 1 cm³ = 0,000 001 m³. Das ergibt ${fr('0,001','0,000 001')} = 1000.`],[1e-6,'Falsche Richtung: Die Zahl in kg/m³ ist 1000-mal größer als in g/cm³.']]);
+conv('e_ncm2_pa',3,'N/cm²','Pa',1e4,[1,2,5,0.5,12],'Pa bedeutet N/m². Verteilt sich dieselbe Kraft statt auf 1 cm² auf 1 m², wird der Druck kleiner. Umgekehrt: Auf 1 cm² ist er größer.',`1 N/cm² = ${fr('1 N','0,0001 m²')} = 10 000 N/m² = 10 000 Pa`,[[1e-8,'Falsche Richtung: Dieselbe Kraft auf einer 10 000-mal kleineren Fläche ergibt einen 10 000-mal größeren Druck.'],[0.01,'Bei Flächen ist der Faktor 10 000, nicht 100.']]);
+conv('e_pa_ncm2',3,'Pa','N/cm²',1e-4,[50000,120000,250000,8000],'Rechne zuerst aus, wie viel Pa einem N/cm² entsprechen.','1 N/cm² = 10 000 Pa',[[100,'Bei Flächen ist der Faktor 10 000, nicht 100.']]);
+conv('e_mm2_m2',3,'mm²','m²',1e-6,[50,200,500,1200],'1 m = 1000 mm. Wie viele mm² hat dann 1 m²?','1 m² = 1000 mm · 1000 mm = 1 000 000 mm²',[[1000,'Du hast durch 1000 geteilt. Bei Flächen ist der Faktor 1000 · 1000 = 1 000 000.']]);
+
+/* Formeln umstellen: Auswahl */
+function um(key,level,name,q,opts){def(key,'umstellen',level,name,()=>({type:'mc',q,opts:opts.map(o=>({t:o[0],ok:!!o[1],why:o[2]}))}));}
+const P=V('p'),F_=V('F'),A_=V('A'),RHO=V('ρ'),G_=V('g'),H_=V('h'),M_=V('m'),VV=V('V');
+um('u_pFA_F',1,'p = F/A nach F',`Stelle ${P} = ${fr(F_,A_)} nach ${F_} um.`,[
+  [`${F_} = ${P} · ${A_}`,1,`Richtig: Beide Seiten mit A multiplizieren. Probe mit Zahlen: p = 200 Pa, A = 3 m² ergibt F = 600 N. Und ${fr('600 N','3 m²')} = 200 Pa.`],
+  [`${F_} = ${fr(P,A_)}`,0,'A steht im Nenner. Um es dort wegzubekommen, multiplizierst du beide Seiten mit A. Teilen wäre die falsche Umkehroperation.'],
+  [`${F_} = ${fr(A_,P)}`,0,`Probe: Mit p = 200 Pa und A = 3 m² ergibt deine Formel F = 0,015 N. Dann wäre p = ${fr('0,015 N','3 m²')} = 0,005 Pa und nicht 200 Pa.`],
+  [`${F_} = ${P} − ${A_}`,0,'Die Umkehroperation zum Teilen ist das Multiplizieren, nicht das Subtrahieren.']]);
+um('u_Fmg_m',1,'F = m·g nach m',`Stelle ${F_} = ${M_} · ${G_} nach ${M_} um.`,[
+  [`${M_} = ${fr(F_,G_)}`,1,`Richtig: Beide Seiten durch g teilen. Probe: m = 2 kg, g = 10 N/kg ergibt F = 20 N, und ${fr('20 N','10 N/kg')} = 2 kg.`],
+  [`${M_} = ${F_} · ${G_}`,0,'m wird mit g multipliziert. Um g wegzubekommen, musst du durch g teilen.'],
+  [`${M_} = ${fr(G_,F_)}`,0,`Probe: F = 20 N, g = 10 N/kg. Deine Formel ergibt ${fr('10','20')} = 0,5 kg statt 2 kg. Du hast den Kehrwert gebildet.`],
+  [`${M_} = ${F_} − ${G_}`,0,'Die Umkehroperation zum Multiplizieren ist das Teilen.']]);
+um('u_op_A',1,'erster Schritt bei p = F/A',`Du willst ${P} = ${fr(F_,A_)} nach ${A_} umstellen. Welcher erste Schritt ist sinnvoll?`,[
+  ['Beide Seiten mit A multiplizieren.',1,'Richtig: Dann steht p · A = F da, und A ist aus dem Nenner geholt. Im zweiten Schritt teilst du durch p.'],
+  ['Beide Seiten durch A teilen.',0,'Dann stünde A zweimal im Nenner. Was im Nenner steht, holst du durch Multiplizieren heraus.'],
+  ['Nur die rechte Seite mit A multiplizieren.',0,'Eine Gleichung ist wie eine Waage: Was du auf einer Seite tust, musst du auch auf der anderen tun.'],
+  ['Auf beiden Seiten F abziehen.',0,'F und A sind durch Teilen verbunden, nicht durch Addieren. Abziehen hilft hier nicht.']]);
+um('u_pFA_A',2,'p = F/A nach A',`Stelle ${P} = ${fr(F_,A_)} nach ${A_} um.`,[
+  [`${A_} = ${fr(F_,P)}`,1,`Richtig: Erst beide Seiten mal A, das ergibt p · A = F. Dann beide Seiten durch p teilen, das ergibt A = ${fr('F','p')}. Probe: F = 600 N, p = 200 Pa ergibt A = 3 m².`],
+  [`${A_} = ${fr(P,F_)}`,0,`Probe: F = 600 N, p = 200 Pa. Deine Formel ergibt ${fr('200','600')} ≈ 0,33 m² statt 3 m². Das ist der Kehrwert.`],
+  [`${A_} = ${P} · ${F_}`,0,'Probe: 200 · 600 = 120 000 m² – viel zu groß. Die Kraft muss durch den Druck geteilt werden.'],
+  [`${A_} = ${F_} − ${P}`,0,'F und A sind durch Teilen verbunden. Subtrahieren ist keine passende Umkehroperation.']]);
+um('u_rhoV_V',2,'ρ = m/V nach V',`Stelle ${RHO} = ${fr(M_,VV)} nach ${VV} um.`,[
+  [`${VV} = ${fr(M_,RHO)}`,1,'Richtig: Erst beide Seiten mal V, dann beide Seiten durch ρ teilen. Probe: m = 2000 kg, ρ = 1000 kg/m³ ergibt V = 2 m³.'],
+  [`${VV} = ${RHO} · ${M_}`,0,'Probe: 1000 · 2000 = 2 000 000 m³ – viel zu viel. Die Masse muss durch die Dichte geteilt werden.'],
+  [`${VV} = ${fr(RHO,M_)}`,0,`Das ist der Kehrwert. Probe: ${fr('1000','2000')} = 0,5 m³ statt 2 m³.`],
+  [`${VV} = ${M_} − ${RHO}`,0,'m und V sind durch Teilen verbunden, nicht durch Subtrahieren.']]);
+um('u_rgh_h',2,'p = ρ·g·h nach h',`Stelle ${P} = ${RHO} · ${G_} · ${H_} nach ${H_} um.`,[
+  [`${H_} = ${fr(P,RHO+' · '+G_)}`,1,`Richtig: Beide Seiten durch ρ und durch g teilen. Probe: ρ = 1000, g = 10, h = 3 ergibt p = 30 000 Pa, und ${fr('30 000','1000 · 10')} = 3 m.`],
+  [`${H_} = ${P} · ${RHO} · ${G_}`,0,'h wird mit ρ und g multipliziert. Um sie wegzubekommen, musst du teilen.'],
+  [`${H_} = ${fr(RHO+' · '+G_,P)}`,0,`Das ist der Kehrwert. Probe: ${fr('10 000','30 000')} ≈ 0,33 m statt 3 m.`],
+  [`${H_} = ${fr(P,RHO)} · ${G_}`,0,`Hier wird nur durch ρ geteilt, mit g aber multipliziert. Du musst durch beide teilen: h = ${fr('p','ρ · g')}.`]]);
+um('u_op_h',2,'erster Schritt bei p = ρ·g·h',`Du willst ${P} = ${RHO} · ${G_} · ${H_} nach ${H_} umstellen. Welcher Schritt führt zum Ziel?`,[
+  ['Beide Seiten durch (ρ · g) teilen.',1,`Richtig: Rechts kürzen sich ρ und g weg, übrig bleibt h = ${fr('p','ρ · g')}.`],
+  ['Beide Seiten mit (ρ · g) multiplizieren.',0,'Dann stünden ρ und g rechts sogar zweimal. Die Umkehroperation zum Malnehmen ist das Teilen.'],
+  ['Nur die rechte Seite durch (ρ · g) teilen.',0,'Eine Gleichung ist wie eine Waage: Was du auf einer Seite tust, musst du auch auf der anderen tun.'],
+  ['Auf beiden Seiten ρ und g abziehen.',0,'ρ · g · h ist ein Produkt. Mit Abziehen bekommst du ρ und g nicht weg.']]);
+um('u_rgh_rho',3,'p = ρ·g·h nach ρ',`Stelle ${P} = ${RHO} · ${G_} · ${H_} nach ${RHO} um.`,[
+  [`${RHO} = ${fr(P,G_+' · '+H_)}`,1,'Richtig: Beide Seiten durch g und h teilen. Probe: p = 30 000 Pa, g = 10 N/kg, h = 3 m ergibt ρ = 1000 kg/m³.'],
+  [`${RHO} = ${P} · ${G_} · ${H_}`,0,'Probe: 30 000 · 10 · 3 = 900 000 kg/m³ – viel zu dicht. Du musst teilen.'],
+  [`${RHO} = ${fr(G_+' · '+H_,P)}`,0,`Das ist der Kehrwert. Probe: ${fr('30','30 000')} = 0,001 kg/m³ statt 1000 kg/m³.`],
+  [`${RHO} = ${fr(P,G_)} · ${H_}`,0,'Durch g wird geteilt, mit h aber multipliziert. Du musst durch beide teilen.']]);
+
+/* Formeln umstellen: Werkstatt */
+function werk(key,level,name,L,R,target,opt,path){def(key,'umstellen',level,'Werkstatt: '+name,()=>({type:'werk',
+  q:`<b>Umform-Werkstatt.</b> Stelle nach ${V(target)} um. Jeder Knopf wirkt auf <b>beide</b> Seiten der Gleichung.`,
+  eq:{L:JSON.parse(JSON.stringify(L)),R:JSON.parse(JSON.stringify(R))},target,opt,
+  hints:['Wie ist die gesuchte Größe mit den anderen verbunden – durch Malnehmen oder durch Teilen?','Mit der Umkehroperation holst du störende Größen auf die andere Seite: Was multipliziert wird, teilst du weg. Was im Nenner steht, multiplizierst du weg.',path],
+  sol:[path]}));}
+werk('w_pFA_F',1,'p = F/A nach F',{n:['p'],d:[]},{n:['F'],d:['A']},'F',1,'Ein Schritt: · A. Dann steht p · A = F da.');
+werk('w_Fmg_m',1,'F = m·g nach m',{n:['F'],d:[]},{n:['m','g'],d:[]},'m',1,`Ein Schritt: beide Seiten durch g teilen. Dann steht ${fr('F','g')} = m da.`);
+werk('w_FpA_A',1,'F = p·A nach A',{n:['F'],d:[]},{n:['p','A'],d:[]},'A',1,`Ein Schritt: beide Seiten durch p teilen. Dann steht ${fr('F','p')} = A da.`);
+werk('w_pFA_A',2,'p = F/A nach A',{n:['p'],d:[]},{n:['F'],d:['A']},'A',2,`Zuerst · A (ergibt p · A = F), dann durch p teilen (ergibt A = ${fr('F','p')}).`);
+werk('w_rhoV_V',2,'ρ = m/V nach V',{n:['ρ'],d:[]},{n:['m'],d:['V']},'V',2,`Zuerst · V (ergibt ρ · V = m), dann durch ρ teilen (ergibt V = ${fr('m','ρ')}).`);
+werk('w_rgh_h',2,'p = ρ·g·h nach h',{n:['p'],d:[]},{n:['ρ','g','h'],d:[]},'h',2,`Erst durch ρ teilen, dann durch g teilen. Übrig bleibt ${fr('p','ρ · g')} = h.`);
+werk('w_rgh_rho',3,'p = ρ·g·h nach ρ',{n:['p'],d:[]},{n:['ρ','g','h'],d:[]},'ρ',2,`Erst durch g teilen, dann durch h teilen. Übrig bleibt ${fr('p','g · h')} = ρ.`);
+
+/* Auflagedruck */
+def('a_basic','auflage',1,'Druck aus F und A',()=>{
+  const F=pick([300,450,600,800,1200,2000]),A=pick([0.02,0.04,0.05,0.1,0.2,0.5]),p=F/A,c=pick(['Eine Kiste','Ein Sessel','Ein Bücherregal','Ein Aquarium']);
+  return {type:'num',formula:'FA',q:`${c} drückt mit der Gewichtskraft ${F_} = ${fmt(F)} N auf den Boden. Die Auflagefläche ist ${A_} = ${fmt(A)} m². Berechne den Auflagedruck in Pa.`,unit:'Pa',ans:p,
+  errs:[{v:F*A,m:`Du hast F · A gerechnet. Druck ist Kraft <b>geteilt</b> durch Fläche: p = ${fr('F','A')}.`},{v:A/F,m:`Du hast ${fr('A','F')} gerechnet. Die Kraft steht oben: p = ${fr('F','A')}.`}],
+  hints:['Druck gibt an, wie viel Kraft auf jede Flächeneinheit wirkt. Welche Formel gehört dazu?',`${P} = ${fr(F_,A_)}. Die Einheiten passen schon: N und m² ergeben Pa.`,`${P} = ${fr(fmt(F)+' N',fmt(A)+' m²')}`],
+  sol:[`Gegeben: F = ${fmt(F)} N, A = ${fmt(A)} m². Gesucht: p`,`p = ${fr('F','A')} = ${fr(fmt(F)+' N',fmt(A)+' m²')}`,`p = <b>${fmt(p)} Pa</b> (= ${fmt(p/100)} hPa)`]};});
+def('a_onefoot','auflage',1,'Druck auf einem Bein',()=>{
+  const p=pick([12000,14000,15000,16000,18000]);
+  return {type:'num',formula:'FA',q:`Lena steht auf beiden Füßen und übt dabei einen Druck von ${fmt(p)} Pa auf den Boden aus. Dann hebt sie einen Fuß hoch. Wie groß ist jetzt der Druck unter dem anderen Fuß?`,unit:'Pa',ans:2*p,
+  errs:[{v:p/2,m:`Die Fläche wird halbiert, die Gewichtskraft bleibt gleich. Bei p = ${fr('F','A')} wird der Druck dann größer, nicht kleiner.`},{v:p,m:'Die Gewichtskraft bleibt gleich, aber die Fläche ändert sich. Der Druck bleibt deshalb nicht gleich.'}],
+  hints:['Was ändert sich: die Gewichtskraft oder die Fläche?','Die Gewichtskraft bleibt gleich. Die Fläche wird halb so groß.',`In ${P} = ${fr(F_,A_)} wird der Nenner halbiert. Was passiert mit dem Ergebnis?`],
+  sol:['Die Gewichtskraft F bleibt gleich, die Fläche A halbiert sich.','Halber Nenner bedeutet doppelten Wert des Bruchs.',`p = 2 · ${fmt(p)} Pa = <b>${fmt(2*p)} Pa</b>`]};});
+def('a_cm2','auflage',2,'Fläche in cm²',()=>{
+  const c=pick([{n:'Ein Getränkekasten',F:[150,200,250],A:[600,800,1000]},{n:'Eine Waschmaschine steht auf vier Füßen. Zusammen haben sie',F:[700,800,900],A:[16,20,24]},{n:'Ein Schreibtisch steht auf vier Beinen. Zusammen haben sie',F:[400,500,600],A:[16,20,36]},{n:'Ein Hund steht auf vier Pfoten. Zusammen haben sie',F:[200,250,300],A:[40,60,80]}]);
+  const F=pick(c.F),Ac=pick(c.A),A=Ac/1e4,p=F/A;
+  const q=c.n.startsWith('Ein Getränkekasten')?`Ein Getränkekasten drückt mit ${F_} = ${F} N auf den Boden. Seine Grundfläche ist ${A_} = ${Ac} cm². Berechne den Druck in Pa.`:`${c.n} die Auflagefläche ${A_} = ${Ac} cm². Die Gewichtskraft beträgt ${F_} = ${F} N. Berechne den Druck auf den Boden in Pa.`;
+  return {type:'num',formula:'FA',q,unit:'Pa',ans:p,
+  errs:[{v:F/Ac,m:'Du hast mit A in cm² gerechnet. So erhältst du N/cm² und nicht Pa. Rechne A zuerst in m² um (: 10 000).'},{v:F/(Ac/100),m:'Du hast cm² durch 100 geteilt. Richtig ist 1 m² = 10 000 cm².'},{v:F*A,m:'Du hast F · A gerechnet. Druck ist Kraft geteilt durch Fläche.'}],
+  hints:['Pa bedeutet N/m². In welcher Einheit muss die Fläche also stehen?',`Zuerst umrechnen: ${Ac} cm² = ${fr(Ac,'10 000')} m² = ${fmt(A)} m². Dann ${P} = ${fr(F_,A_)}.`,`${P} = ${fr(F+' N',fmt(A)+' m²')}`],
+  sol:[`Gegeben: F = ${F} N, A = ${Ac} cm². Gesucht: p in Pa`,`A = ${Ac} cm² = ${fmt(A)} m²`,`p = ${fr('F','A')} = ${fr(F+' N',fmt(A)+' m²')} = <b>${fmt(p)} Pa</b>`]};});
+def('a_brick','auflage',2,'Quader auf verschiedenen Seiten',()=>{
+  const m=pick([1.5,2,2.4,3]),face=pick([{t:'flach (die Seite mit 20 cm × 10 cm liegt unten)',a:200},{t:'auf der Seite (die Seite mit 20 cm × 5 cm liegt unten)',a:100},{t:'hochkant (die Seite mit 10 cm × 5 cm liegt unten)',a:50}]);
+  const g=S.g,A=face.a/1e4,F=m*g,p=F/A;
+  return {type:'num',formula:'FA',q:`Ein Quader (20 cm × 10 cm × 5 cm) hat die Masse ${fmt(m)} kg. Er liegt ${face.t}. Berechne den Druck auf die Unterlage in Pa. (${G_} = ${gS()} N/kg)`,unit:'Pa',f:gg=>m*gg/A,
+  errs:[{v:m/A,m:'Du hast mit der Masse statt mit der Gewichtskraft gerechnet. Berechne zuerst F = m · g.'},{v:F/face.a,m:'Die Fläche steht noch in cm². Rechne sie in m² um (: 10 000).'}],
+  hints:['Du brauchst zwei Größen: die Kraft und die Fläche. Welche fehlt dir noch direkt?',`${F_} = ${M_} · ${G_} und ${A_} = ${face.a} cm² = ${fmt(A)} m²`,`${P} = ${fr(fmt(F)+' N',fmt(A)+' m²')}`],
+  sol:[`A = ${face.a} cm² = ${fmt(A)} m²`,`F = m · g = ${fmt(m)} kg · ${gS()} N/kg = ${fmt(F)} N`,`p = ${fr('F','A')} = <b>${fmt(p)} Pa</b>`]};});
+def('a_mass','auflage',2,'Person auf weichem Boden',()=>{
+  const m=pick([40,45,50,55,60,65]),Ac=pick([300,350,400,450]),g=S.g,A=Ac/1e4,F=m*g,p=F/A,n=pick(['Jonas','Mia','Emre','Lea']);
+  return {type:'num',formula:'FA',q:`${n} hat eine Masse von ${m} kg und steht auf einer Matte. Beide Schuhsohlen zusammen haben eine Fläche von ${Ac} cm². Wie groß ist der Druck auf die Matte in Pa? (${G_} = ${gS()} N/kg)`,unit:'Pa',f:gg=>m*gg/A,
+  errs:[{v:m/A,m:'Du hast mit der Masse in kg gerechnet. Druck entsteht durch eine Kraft. Berechne zuerst die Gewichtskraft F = m · g.'},{v:F/Ac,m:'Die Fläche steht noch in cm². Rechne sie zuerst in m² um.'},{v:m*g/(Ac/100),m:'1 m² sind 10 000 cm², nicht 100 cm².'}],
+  hints:['Für den Druck brauchst du eine Kraft. Hier ist aber eine Masse gegeben.',`Gewichtskraft: ${F_} = ${M_} · ${G_}. Fläche in m²: ${Ac} cm² = ${fmt(A)} m²`,`${P} = ${fr(fmt(F)+' N',fmt(A)+' m²')}`],
+  sol:[`F = m · g = ${m} kg · ${gS()} N/kg = ${fmt(F)} N`,`A = ${Ac} cm² = ${fmt(A)} m²`,`p = ${fr('F','A')} = ${fr(fmt(F)+' N',fmt(A)+' m²')} = <b>${fmt(p)} Pa</b>`]};});
+def('a_findF','auflage',2,'Kraft gesucht',()=>{
+  const Ac=pick([8,10,12,15]),p=pick([250000,300000,350000]),A=Ac/1e4,F=p*A;
+  return {type:'num',formula:'FA',q:`Ein Fahrradreifen berührt die Straße mit einer Fläche von ${A_} = ${Ac} cm². Der Druck auf die Straße beträgt ${P} = ${fmt(p)} Pa. Mit welcher Kraft drückt der Reifen auf die Straße? Gib ${F_} in N an.`,unit:'N',ans:F,
+  errs:[{v:p*Ac,m:'Die Fläche steht noch in cm². Rechne sie zuerst in m² um.'},{v:p/A,m:`Du hast ${fr('p','A')} gerechnet. Umgestellt gilt F = p · A.`},{v:A/p,m:'Umgestellt gilt F = p · A.'}],
+  hints:[`Gesucht ist die Kraft. Stelle p = ${fr('F','A')} nach F um.`,`${F_} = ${P} · ${A_}, mit ${A_} = ${Ac} cm² = ${fmt(A)} m²`,`${F_} = ${fmt(p)} Pa · ${fmt(A)} m²`],
+  sol:['F = p · A',`A = ${Ac} cm² = ${fmt(A)} m²`,`F = ${fmt(p)} N/m² · ${fmt(A)} m² = <b>${fmt(F)} N</b>`]};});
+def('a_findA','auflage',3,'Mindestfläche Schneeschuh',()=>{
+  const pm=pick([2000,2500,3000,4000]),m=pick([50,60,70,80]),g=S.g,F=m*g,A=F/pm;
+  return {type:'num',formula:'FA',q:`Pulverschnee trägt einen Druck von höchstens ${fmt(pm)} Pa, ohne dass man tief einsinkt. Eine Person hat mit Ausrüstung eine Masse von ${m} kg. Wie groß muss die Fläche beider Schneeschuhe zusammen mindestens sein? Gib ${A_} in cm² an. (${G_} = ${gS()} N/kg)`,unit:'cm²',f:gg=>m*gg/pm*1e4,
+  errs:[{v:m/pm*1e4,m:'Du hast mit der Masse statt mit der Gewichtskraft gerechnet. F = m · g.'},{v:pm/F*1e4,m:`Du hast ${fr('p','F')} gerechnet. Umgestellt gilt A = ${fr('F','p')}.`},{v:F*pm,m:`Umgestellt gilt A = ${fr('F','p')}, nicht F · p.`}],
+  hints:['Gesucht ist die Fläche. Du brauchst die Kraft und den Druck.',`${F_} = ${M_} · ${G_} = ${fmt(F)} N und umgestellt ${A_} = ${fr(F_,P)}`,`${A_} = ${fr(fmt(F)+' N',fmt(pm)+' Pa')} ergibt m². Danach in cm² umrechnen (· 10 000).`],
+  sol:[`F = m · g = ${m} kg · ${gS()} N/kg = ${fmt(F)} N`,`A = ${fr('F','p')} = ${fr(fmt(F)+' N',fmt(pm)+' Pa')} = ${fmt(A)} m²`,`A = ${fmt(A)} · 10 000 cm² = <b>${fmt(A*1e4)} cm²</b>`]};});
+def('a_compare','auflage',3,'Elefant gegen Stöckelschuh',()=>{
+  const me=pick([3000,4000,5000]),af=pick([600,700,800]),mp=pick([50,55,60]),ah=pick([1,1.5,2]);
+  const pe=me/(4*af),ph=mp/ah,r=ph/pe;
+  return {type:'num',formula:'FA',tol:0.03,q:`Ein Elefant (${fmt(me)} kg) steht auf vier Füßen mit je ${af} cm². Eine Frau (${mp} kg) steht kurz auf einem einzigen Absatz ihres Stöckelschuhs mit ${fmt(ah)} cm². Um welchen Faktor ist der Druck unter dem Absatz größer als unter den Elefantenfüßen?`,unit:'mal',ans:r,
+  errs:[{v:r/4,m:'Hast du beachtet, dass der Elefant auf vier Füßen steht? Seine Auflagefläche ist 4 · '+af+' cm².'},{v:1/r,m:'Du hast das Verhältnis umgekehrt gebildet. Teile den größeren Druck (Absatz) durch den kleineren (Elefant).'}],
+  hints:['Berechne beide Drücke und teile dann den einen durch den anderen. Tipp: g kürzt sich am Ende heraus.',`Elefant: A = 4 · ${af} cm² = ${4*af} cm². Für den Vergleich darfst du in cm² bleiben, wenn du beide Drücke gleich behandelst.`,`Faktor = ${fr(fr(fmt(mp)+' kg · g',fmt(ah)+' cm²'),fr(fmt(me)+' kg · g',(4*af)+' cm²'))}`],
+  sol:[`Elefant: F = ${fmt(me)} kg · g, A = ${4*af} cm² → p ∝ ${fmt(pe,4)} kg/cm²`,`Absatz: F = ${mp} kg · g, A = ${fmt(ah)} cm² → p ∝ ${fmt(ph,4)} kg/cm²`,`Faktor = ${fr(fmt(ph,4),fmt(pe,4))} ≈ <b>${fmt(r,3)}</b>. Der Absatz drückt etwa ${Math.round(r)}-mal so stark.`]};});
+
+/* Schweredruck */
+def('s_basic','schwere',1,'Schweredruck in Wasser',()=>{
+  const hh=pick([2,3,4,5,8,10,12]),g=S.g,p=1000*g*hh,c=pick(['am Boden eines Sees','in einem Taucherbecken','am Grund eines Hafenbeckens']);
+  return {type:'num',formula:'rgh',q:`Berechne den Schweredruck des Wassers ${c} in ${hh} m Tiefe. (${RHO}<sub>Wasser</sub> = 1000 kg/m³, ${G_} = ${gS()} N/kg) Gib ${P} in Pa an.`,unit:'Pa',f:gg=>1000*gg*hh,
+  errs:[{v:1000*hh,m:'Du hast g vergessen. Die Formel lautet p = ρ · g · h.'},{v:g*hh,m:'Du hast die Dichte ρ vergessen.'}],
+  hints:['Der Schweredruck hängt von der Dichte der Flüssigkeit und von der Tiefe ab. Welche Formel passt?',`${P} = ${RHO} · ${G_} · ${H_}. Alle Einheiten passen schon.`,`${P} = 1000 kg/m³ · ${gS()} N/kg · ${hh} m`],
+  sol:['p = ρ · g · h',`p = 1000 kg/m³ · ${gS()} N/kg · ${hh} m`,`p = <b>${fmt(p)} Pa</b> (≈ ${fmt(p/1e5,3)} bar)`]};});
+def('s_compare','schwere',1,'Tiefe vervielfacht',()=>{
+  const h1=pick([2,3,4]),k=pick([2,3]),h2=h1*k,g=S.g,p1=sig(1000*g*h1,4);
+  return {type:'num',formula:'rgh',q:`In einem See herrscht in ${h1} m Tiefe ein Schweredruck von ${fmt(p1)} Pa. Wie groß ist der Schweredruck in ${h2} m Tiefe? Rechne möglichst ohne Taschenrechner.`,unit:'Pa',ans:p1*k,
+  errs:[{v:p1,m:'Der Schweredruck hängt von der Tiefe ab. Er bleibt nicht gleich, wenn du tiefer tauchst.'},{v:p1*k*k,m:`Der Schweredruck wächst proportional zur Tiefe: ${k}-fache Tiefe, ${k}-facher Druck. Nicht ${k*k}-fach.`},{v:p1+k,m:'Die Tiefe wird vervielfacht – also wird auch der Druck vervielfacht.'}],
+  hints:['Wie hängt p in p = ρ · g · h von h ab?',`p ist proportional zu h. ${h2} m ist das ${k}-Fache von ${h1} m.`,`${fmt(p1)} Pa · ${k} = ?`],
+  sol:['p ist proportional zu h (ρ und g bleiben gleich).',`Die Tiefe ist ${k}-mal so groß, also auch der Druck.`,`p = ${k} · ${fmt(p1)} Pa = <b>${fmt(p1*k)} Pa</b>`]};});
+def('s_hpa','schwere',2,'Ergebnis in hPa',()=>{
+  const hh=pick([1.5,2,3.5,6,0.8]),g=S.g,p=1000*g*hh;
+  return {type:'num',formula:'rgh',q:`Ein Schwimmbecken ist ${fmt(hh)} m tief. Wie groß ist der Schweredruck am Boden? Gib das Ergebnis in <b>hPa</b> an. (${G_} = ${gS()} N/kg)`,unit:'hPa',f:gg=>1000*gg*hh/100,
+  errs:[{v:p,m:'Das ist der Wert in Pa. Für hPa noch durch 100 teilen.'},{v:p/1e5,m:'Das ist der Wert in bar. Gesucht ist hPa: 1 bar = 1000 hPa.'}],
+  hints:['Berechne zuerst den Druck in Pa, rechne danach um.',`${P} = ${RHO} · ${G_} · ${H_} = 1000 kg/m³ · ${gS()} N/kg · ${fmt(hh)} m`,`${fr(fmt(p),'100')} = ? hPa`],
+  sol:[`p = 1000 kg/m³ · ${gS()} N/kg · ${fmt(hh)} m = ${fmt(p)} Pa`,`1 hPa = 100 Pa`,`p = ${fr(fmt(p),'100')} hPa = <b>${fmt(p/100)} hPa</b>`]};});
+def('s_units','schwere',2,'ρ in g/cm³ und h in cm',()=>{
+  const L=pick([{n:'Speiseöl',d:0.92},{n:'Spiritus',d:0.79},{n:'Glycerin',d:1.26},{n:'Salzwasser',d:1.03}]),hc=pick([20,30,40,50,80]),g=S.g,rho=L.d*1000,hm=hc/100,p=rho*g*hm;
+  return {type:'num',formula:'rgh',q:`Ein Messzylinder ist ${hc} cm hoch mit ${L.n} gefüllt (${RHO} = ${fmt(L.d)} g/cm³). Wie groß ist der Schweredruck am Boden in Pa? (${G_} = ${gS()} N/kg)`,unit:'Pa',f:gg=>rho*gg*hm,
+  errs:[{v:rho*g*hc,m:'Die Höhe steht noch in cm. Rechne sie in m um.'},{v:L.d*g*hm,m:'Die Dichte steht noch in g/cm³. Rechne sie in kg/m³ um (· 1000).'},{v:L.d*g*hc,m:'Dichte und Höhe stehen noch in g/cm³ und cm. Rechne beide um: kg/m³ und m.'}],
+  hints:['Damit Pa herauskommt, brauchst du ρ in kg/m³ und h in m.',`${RHO} = ${fmt(L.d)} g/cm³ = ${fmt(rho)} kg/m³ und ${H_} = ${hc} cm = ${fmt(hm)} m`,`${P} = ${fmt(rho)} kg/m³ · ${gS()} N/kg · ${fmt(hm)} m`],
+  sol:[`ρ = ${fmt(L.d)} g/cm³ = ${fmt(rho)} kg/m³; h = ${hc} cm = ${fmt(hm)} m`,`p = ρ · g · h = ${fmt(rho)} · ${gS()} · ${fmt(hm)} Pa`,`p = <b>${fmt(p)} Pa</b>`]};});
+def('s_find_h','schwere',2,'Tiefe aus Druck in bar',()=>{
+  const pb=pick([1.5,2,2.5,3,4]),g=S.g,p=pb*1e5,hh=p/(1030*g);
+  return {type:'num',formula:'rgh',q:`Eine Taucheruhr zeigt einen Schweredruck des Meerwassers von ${fmt(pb)} bar an (ohne Luftdruck). Wie tief ist die Taucherin? (${RHO}<sub>Meer</sub> = 1030 kg/m³, ${G_} = ${gS()} N/kg) Gib ${H_} in m an.`,unit:'m',f:gg=>p/(1030*gg),
+  errs:[{v:1030*g/p,m:`Du hast den Kehrwert gebildet. Umgestellt gilt h = ${fr('p','ρ · g')}.`},{v:p*1030*g,m:`Umgestellt gilt h = ${fr('p','ρ · g')}. Du musst teilen.`},{v:pb*1000/(1030*g),m:'Du hast bar in hPa umgerechnet. Für die Formel brauchst du Pa: 1 bar = 100 000 Pa.'}],
+  hints:['Gesucht ist h. Stelle p = ρ · g · h nach h um. Achte auf die Einheit von p.',`${H_} = ${fr(P,RHO+' · '+G_)} mit ${P} = ${fmt(pb)} bar = ${fmt(p)} Pa`,`${H_} = ${fr(fmt(p)+' Pa','1030 kg/m³ · '+gS()+' N/kg')}`],
+  sol:[`p = ${fmt(pb)} bar = ${fmt(p)} Pa`,`h = ${fr('p','ρ · g')}`,`h = ${fr(fmt(p),'1030 · '+gS())} m = <b>${fmt(hh,3)} m</b>`]};});
+def('s_find_rho','schwere',3,'Dichte aus Messung',()=>{
+  const L=pick([{n:'Speiseöl',r:920},{n:'Spiritus',r:790},{n:'Glycerin',r:1260},{n:'Meerwasser',r:1025}]),hc=pick([20,25,40,50]),g=S.g,hm=hc/100,p=Math.round(L.r*g*hm),rho=p/(g*hm);
+  return {type:'num',formula:'rgh',tol:0.02,q:`In einem Gefäß misst eine Drucksonde in ${hc} cm Tiefe einen Schweredruck von ${fmt(p)} Pa. Welche Dichte hat die Flüssigkeit? Gib ${RHO} in kg/m³ an. (${G_} = ${gS()} N/kg)`,unit:'kg/m³',f:gg=>p/(gg*hm),
+  errs:[{v:p/(g*hc),m:'Die Tiefe steht noch in cm. Rechne sie in m um.'},{v:(g*hm)/p,m:`Du hast den Kehrwert gebildet. Umgestellt gilt ρ = ${fr('p','g · h')}.`}],
+  hints:['Gesucht ist ρ. Stelle p = ρ · g · h nach ρ um.',`${RHO} = ${fr(P,G_+' · '+H_)} mit ${H_} = ${hc} cm = ${fmt(hm)} m`,`${RHO} = ${fr(fmt(p)+' Pa',gS()+' N/kg · '+fmt(hm)+' m')}`],
+  sol:[`h = ${hc} cm = ${fmt(hm)} m`,`ρ = ${fr('p','g · h')} = ${fr(fmt(p),gS()+' · '+fmt(hm))}`,`ρ ≈ <b>${fmt(rho,3)} kg/m³</b>. Das passt zu ${L.n}.`]};});
+def('s_force','schwere',3,'Kraft auf eine Taucherbrille',()=>{
+  const Ac=pick([100,120,150]),hh=pick([3,5,8,10]),g=S.g,p=1000*g*hh,A=Ac/1e4,F=p*A;
+  return {type:'num',formula:'both',q:`Eine Taucherbrille hat ein Sichtfenster mit ${A_} = ${Ac} cm². Mit welcher Kraft drückt das Wasser in ${hh} m Tiefe auf das Fenster? Berücksichtige nur den Schweredruck des Wassers. (${G_} = ${gS()} N/kg) Gib ${F_} in N an.`,unit:'N',f:gg=>1000*gg*hh*A,
+  errs:[{v:p,m:'Das ist der Druck. Gesucht ist die Kraft: F = p · A.'},{v:p*Ac,m:'Die Fläche steht noch in cm². Rechne sie in m² um.'},{v:p/A,m:`Umgestellt gilt F = p · A, nicht ${fr('p','A')}.`}],
+  hints:['Zwei Schritte: erst den Druck in der Tiefe, dann die Kraft auf die Fläche.',`${P} = ${RHO} · ${G_} · ${H_} und ${F_} = ${P} · ${A_} mit ${A_} = ${fmt(A)} m²`,`${P} = ${fmt(p)} Pa, also ${F_} = ${fmt(p)} Pa · ${fmt(A)} m²`],
+  sol:[`p = 1000 · ${gS()} · ${hh} Pa = ${fmt(p)} Pa`,`A = ${Ac} cm² = ${fmt(A)} m²`,`F = p · A = ${fmt(p)} · ${fmt(A)} N = <b>${fmt(F)} N</b> – so viel wie die Gewichtskraft von etwa ${fmt(F/g,2)} kg.`]};});
+def('s_diff','schwere',3,'Druckunterschied',()=>{
+  const h1=pick([1,2]),h2=pick([4,5,6]),g=S.g,d=1000*g*(h2-h1);
+  return {type:'num',formula:'rgh',q:`Beim Abtauchen von ${h1} m auf ${h2} m Tiefe spürt man den Druck in den Ohren. Um wie viel Pa nimmt der Schweredruck des Wassers zu? (${G_} = ${gS()} N/kg)`,unit:'Pa',f:gg=>1000*gg*(h2-h1),
+  errs:[{v:1000*g*h2,m:`Das ist der Schweredruck in ${h2} m Tiefe. Gesucht ist der Unterschied zwischen beiden Tiefen.`},{v:1000*g*(h2+h1),m:'Gesucht ist der Unterschied – also subtrahieren, nicht addieren.'}],
+  hints:['Berechne den Druck in beiden Tiefen und bilde die Differenz – oder rechne direkt mit dem Höhenunterschied.',`Δ${P} = ${RHO} · ${G_} · Δ${H_} mit Δ${H_} = ${h2} m − ${h1} m = ${h2-h1} m`,`Δ${P} = 1000 kg/m³ · ${gS()} N/kg · ${h2-h1} m`],
+  sol:[`Δh = ${h2} m − ${h1} m = ${h2-h1} m`,`Δp = ρ · g · Δh = 1000 · ${gS()} · ${h2-h1} Pa`,`Δp = <b>${fmt(d)} Pa</b>`]};});
+def('s_total','schwere',3,'Profi: Gesamtdruck mit Luftdruck',()=>{
+  const hh=pick([5,10,15,20]),g=S.g,ps=1000*g*hh/100,pt=1013+ps;
+  return {type:'num',formula:'rgh',q:`<b>Profi-Aufgabe.</b> Auf der Wasseroberfläche lastet der Luftdruck von 1013 hPa. Wie groß ist der <b>gesamte</b> Druck in ${hh} m Tiefe in hPa? (${G_} = ${gS()} N/kg)`,unit:'hPa',f:gg=>1013+1000*gg*hh/100,
+  errs:[{v:ps,m:'Das ist nur der Schweredruck des Wassers. Auf die Wasseroberfläche drückt zusätzlich die Luft.'},{v:1013+1000*g*hh,m:'Der Schweredruck ist in Pa berechnet, der Luftdruck steht in hPa. Bring beide auf dieselbe Einheit, bevor du addierst.'}],
+  hints:['Der Gesamtdruck setzt sich aus zwei Teilen zusammen.',`${P}<sub>ges</sub> = ${P}<sub>Luft</sub> + ${RHO} · ${G_} · ${H_}. Achtung, gleiche Einheiten!`,`Schweredruck: 1000 · ${gS()} · ${hh} Pa = ${fmt(ps*100)} Pa = ${fmt(ps)} hPa`],
+  sol:[`Schweredruck: ${fmt(ps*100)} Pa = ${fmt(ps)} hPa`,`Gesamtdruck: 1013 hPa + ${fmt(ps)} hPa`,`p<sub>ges</sub> = <b>${fmt(pt)} hPa</b> (≈ ${fmt(pt/1000,3)} bar)`]};});
+
+/* Verständnis */
+function kz(key,level,name,q,opts){def(key,'konzept',level,name,()=>({type:'mc',q:typeof q==='function'?q():q,opts:opts.map(o=>({t:o[0],ok:!!o[1],why:o[2]}))}));}
+const svgVessels=`<svg class="ill" viewBox="0 0 300 135" role="img" aria-label="Drei Gefäße gleicher Füllhöhe: A Zylinder, B oben breit, C Flasche mit engem Hals"><g style="stroke:var(--ink);stroke-width:2;fill:var(--water-soft)"><polygon points="30,15 70,15 70,110 30,110"/><polygon points="105,15 195,15 168,110 132,110"/><polygon points="243,15 257,15 257,52 282,68 282,110 218,110 218,68 243,52"/></g><g style="fill:var(--ink-2);font:600 13px var(--f-mono)" text-anchor="middle"><text x="50" y="130">A</text><text x="150" y="130">B</text><text x="250" y="130">C</text></g><line x1="10" y1="15" x2="290" y2="15" style="stroke:var(--needle);stroke-width:1.5;stroke-dasharray:4 4"/></svg>`;
+kz('k_brick',1,'Ziegelstein hochkant','Ein Ziegelstein liegt flach auf dem Boden. Dann wird er hochkant aufgestellt. Was ändert sich?',[
+  ['Der Druck auf den Boden wird größer, die Gewichtskraft bleibt gleich.',1,`Genau. Die Gewichtskraft hängt nur von der Masse ab. Hochkant ist die Auflagefläche kleiner, also ist p = ${fr('F','A')} größer.`],
+  ['Die Gewichtskraft wird größer.',0,'Die Gewichtskraft F = m · g hängt nur von der Masse ab. Die ändert sich nicht, wenn man den Stein dreht.'],
+  ['Nichts. Druck und Gewichtskraft bleiben gleich.',0,'Die Gewichtskraft bleibt gleich, die Fläche wird aber kleiner. Gleiche Kraft auf kleinerer Fläche bedeutet größeren Druck.'],
+  ['Der Druck wird kleiner, weil der Stein jetzt höher ist.',0,'Die Höhe spielt keine Rolle. Entscheidend sind Gewichtskraft und Auflagefläche.']]);
+kz('k_snow',1,'Schneeschuhe','Warum sinkt man mit Schneeschuhen weniger tief in den Schnee ein?',[
+  ['Die Gewichtskraft verteilt sich auf eine größere Fläche. Dadurch ist der Druck kleiner.',1,'Richtig. Gleiche Kraft, größere Fläche, kleinerer Druck.'],
+  ['Schneeschuhe verringern die Gewichtskraft.',0,'Die Masse bleibt gleich, mit Schneeschuhen ist sie sogar etwas größer. Die Gewichtskraft sinkt also nicht.'],
+  ['Schneeschuhe erhöhen den Druck auf den Schnee.',0,'Ein größerer Druck würde zu tieferem Einsinken führen. Es ist umgekehrt.'],
+  ['Unter Schneeschuhen ist der Schnee härter.',0,'Der Schnee ist derselbe. Es ändert sich nur die Fläche, auf die sich die Kraft verteilt.']]);
+kz('k_knife',1,'scharfes Messer','Warum schneidet ein scharfes Messer besser als ein stumpfes?',[
+  ['Die Schneide hat eine sehr kleine Fläche. Bei gleicher Kraft entsteht ein großer Druck.',1,'Richtig. Kleine Fläche, großer Druck. Das gilt auch für Nadeln und Reißzwecken.'],
+  ['Ein scharfes Messer ist schwerer.',0,'Das Gewicht des Messers spielt kaum eine Rolle. Die Kraft kommt von deiner Hand.'],
+  ['Die Schneide eines scharfen Messers hat eine größere Fläche.',0,'Umgekehrt: Je schärfer, desto schmaler die Schneide, desto kleiner die Fläche.'],
+  ['Mit einem scharfen Messer drückt man automatisch stärker.',0,'Du kannst bei beiden Messern gleich stark drücken. Der Unterschied liegt in der Fläche.']]);
+kz('k_pa',1,'Einheit Pascal','Was bedeutet 1 Pascal (1 Pa)?',[
+  ['1 Newton pro Quadratmeter (1 N/m²)',1,'Richtig. 1 Pa ist ein sehr kleiner Druck – etwa so viel, wie ein Blatt Papier auf den Tisch drückt.'],
+  ['1 Newton pro Quadratzentimeter (1 N/cm²)',0,'1 N/cm² sind 10 000 Pa, weil 1 m² = 10 000 cm².'],
+  ['1 Newton mal Quadratmeter (1 N · m²)',0,'Druck ist Kraft geteilt durch Fläche, nicht Kraft mal Fläche.'],
+  ['1 Kilogramm pro Quadratmeter (1 kg/m²)',0,'Kilogramm ist eine Masse, keine Kraft. Für den Druck braucht man Newton.']]);
+kz('k_def',1,'Was ist Druck?','Welche Aussage über Druck ist richtig?',[
+  ['Druck gibt an, wie groß die Kraft auf jede Flächeneinheit ist.',1,`Richtig. Darum gilt p = ${fr('F','A')}.`],
+  ['Druck ist dasselbe wie die Gewichtskraft.',0,'Kraft misst man in N, Druck in Pa. Dieselbe Kraft kann je nach Fläche ganz unterschiedliche Drücke erzeugen.'],
+  ['Bei gleicher Kraft ist der Druck umso größer, je größer die Fläche ist.',0,'Umgekehrt: Je größer die Fläche, desto kleiner der Druck.'],
+  ['Druck wird in Newton angegeben.',0,'Newton ist die Einheit der Kraft. Druck wird in Pascal angegeben.']]);
+kz('k_double',1,'doppelte Tiefe','Ein Taucher taucht von 4 m auf 8 m Tiefe. Wie ändert sich der Schweredruck des Wassers?',[
+  ['Er verdoppelt sich.',1,'Richtig. Der Schweredruck ist proportional zur Tiefe: p = ρ · g · h.'],
+  ['Er vervierfacht sich.',0,'h kommt in der Formel nur einfach vor, nicht als h². Doppelte Tiefe bedeutet doppelten Druck.'],
+  ['Er bleibt gleich.',0,'Je tiefer, desto mehr Wasser liegt darüber, desto größer der Schweredruck.'],
+  ['Er wird nur ein kleines bisschen größer.',0,'Er wächst gleichmäßig mit der Tiefe: doppelte Tiefe, doppelter Druck.']]);
+kz('k_hole',1,'Löcher in der Flasche','In eine volle Wasserflasche werden drei Löcher in verschiedenen Höhen gestochen. Aus welchem Loch spritzt das Wasser am weitesten?',[
+  ['Aus dem untersten, weil dort der Schweredruck am größten ist.',1,'Richtig. Unten ist die Wassersäule darüber am höchsten, also ist der Druck dort am größten.'],
+  ['Aus dem obersten, weil das Wasser dort am höchsten startet.',0,'Oben liegt nur wenig Wasser darüber. Der Druck dort ist am kleinsten.'],
+  ['Aus allen gleich weit.',0,'Der Schweredruck nimmt mit der Tiefe zu. Die Löcher liegen in verschiedenen Tiefen.'],
+  ['Aus dem mittleren.',0,'Der Druck nimmt von oben nach unten gleichmäßig zu. Das Maximum liegt ganz unten.']]);
+const WHICH=[
+  ['Wie groß ist der Druck unter den Ketten einer Pistenraupe?','FA'],['Wie groß ist der Druck am Boden eines 3 m tiefen Pools?','rgh'],
+  ['Mit welcher Kraft drückt das Wasser in 20 m Tiefe auf ein Bullauge?','both'],['Welchen Druck übt ein Tischbein auf den Teppich aus?','FA'],
+  ['Wie tief darf ein Taucher, wenn seine Kamera 5 bar aushält?','rgh'],['Welche Fläche müssen Schneeschuhe mindestens haben?','FA'],
+  ['Mit welcher Kraft drückt das Wasser auf eine Klappe in einer Staumauer?','both'],['Wie groß ist der Druck in 40 cm Tiefe in einem Glas Öl?','rgh']];
+const FOPTS={FA:`${P} = ${fr(F_,A_)} (Auflagedruck)`,rgh:`${P} = ${RHO} · ${G_} · ${H_} (Schweredruck)`,both:`erst ${P} = ${RHO} · ${G_} · ${H_}, dann ${F_} = ${P} · ${A_}`};
+const FWHY={FA:`Hier drückt ein fester Körper auf eine Fläche. Das ist Auflagedruck: p = ${fr('F','A')}.`,rgh:'Hier geht es um den Druck in einer Flüssigkeit, der durch ihr eigenes Gewicht entsteht. Das ist Schweredruck: p = ρ · g · h.',both:'Hier ist eine Kraft auf eine Fläche unter Wasser gesucht. Erst den Schweredruck in der Tiefe berechnen, dann die Kraft: F = p · A.'};
+function whichMake(){const w=pick(WHICH);return {type:'mc',q:`Welche Formel brauchst du? <br><b>„${w[0]}“</b>`,opts:['FA','rgh','both'].map(k=>({t:FOPTS[k],ok:k===w[1],why:k===w[1]?'Richtig. '+FWHY[k]:FWHY[w[1]]}))};}
+def('k_which','konzept',1,'Welche Formel?',whichMake);
+def('k_which2','konzept',2,'Welche Formel?',whichMake);
+kz('k_onefoot',2,'auf einem Bein','Du stehst auf beiden Füßen. Dann hebst du einen Fuß hoch. Was passiert?',[
+  ['Der Druck unter dem Fuß verdoppelt sich, die Gewichtskraft bleibt gleich.',1,'Richtig. Halbe Fläche bei gleicher Kraft bedeutet doppelten Druck.'],
+  ['Die Gewichtskraft halbiert sich.',0,'Deine Masse ändert sich nicht, also auch nicht deine Gewichtskraft.'],
+  ['Der Druck halbiert sich.',0,`Die Fläche wird halbiert. Bei p = ${fr('F','A')} wird der Druck dadurch größer.`],
+  ['Es ändert sich nichts.',0,'Die Fläche ändert sich – und damit der Druck.']]);
+kz('k_shape',2,'Gefäßform',`Die drei Gefäße sind bis zur gleichen Höhe mit Wasser gefüllt. In welchem Gefäß ist der Schweredruck am Boden am größten?${svgVessels}`,[
+  ['In allen drei gleich groß.',1,'Richtig. Der Schweredruck hängt nur von Dichte und Tiefe ab, nicht von Form oder Wassermenge. Man nennt das hydrostatisches Paradoxon.'],
+  ['In B, weil es das meiste Wasser enthält.',0,'Die Wassermenge spielt keine Rolle. Bei B tragen die schrägen Wände einen Teil des Wassers. Am Boden zählt nur die Höhe der Wassersäule.'],
+  ['In C, weil das Wasser im engen Hals zusammengedrückt wird.',0,'Ein enger Hals erhöht den Druck nicht. Entscheidend ist nur, wie hoch das Wasser über dem Boden steht.'],
+  ['In A, weil die Wände senkrecht sind.',0,'Die Form der Wände spielt keine Rolle. Alle drei haben dieselbe Füllhöhe.']]);
+kz('k_alldir',2,'allseitiger Druck','Ein Taucher ist in 5 m Tiefe. Wie wirkt der Schweredruck auf ihn?',[
+  ['Von allen Seiten gleich stark – von oben, von unten und von der Seite.',1,'Richtig. In einer Flüssigkeit wirkt der Druck in einer bestimmten Tiefe in alle Richtungen gleich.'],
+  ['Nur von oben nach unten.',0,'Das gilt für einen Stein auf dem Tisch. In Flüssigkeiten wirkt der Druck in alle Richtungen. Deshalb spritzt Wasser auch seitlich aus einem Loch.'],
+  ['Von oben stärker als von der Seite.',0,'In derselben Tiefe ist der Druck in alle Richtungen gleich groß.'],
+  ['Von unten gar nicht.',0,'Auch von unten drückt das Wasser. Daher kommt übrigens der Auftrieb.']]);
+kz('k_sea',2,'Salzwasser','Gleiche Tiefe: einmal in einem Süßwassersee, einmal im Meer. Salzwasser hat eine größere Dichte. Wo ist der Schweredruck größer?',[
+  ['Im Meer, weil Salzwasser eine größere Dichte hat.',1,'Richtig. Bei gleicher Tiefe entscheidet die Dichte: p = ρ · g · h.'],
+  ['Gleich groß, denn nur die Tiefe zählt.',0,'Neben der Tiefe zählt auch die Dichte der Flüssigkeit.'],
+  ['Im See, weil Süßwasser leichter ist.',0,'Kleinere Dichte bedeutet bei gleicher Tiefe kleineren Druck.'],
+  ['Im Meer, weil das Meer viel mehr Wasser enthält.',0,'Die Antwort stimmt, die Begründung nicht. Die Wassermenge spielt keine Rolle, nur Dichte und Tiefe.']]);
+kz('k_dam',2,'Staumauer','Warum ist eine Staumauer unten viel dicker als oben?',[
+  ['Der Schweredruck nimmt mit der Tiefe zu. Unten ist die Belastung am größten.',1,'Richtig. Am Fuß der Mauer steht die höchste Wassersäule.'],
+  ['Weil hinter der Staumauer sehr viel Wasser liegt.',0,'Wie lang der Stausee ist, spielt für den Druck keine Rolle. Entscheidend ist die Tiefe.'],
+  ['Damit die Mauer bei Wind nicht umkippt.',0,'Der Wind ist hier nicht entscheidend. Der Wasserdruck nimmt nach unten zu.'],
+  ['Weil Wasser nur nach unten drückt.',0,'Wasser drückt in alle Richtungen, auch seitlich gegen die Mauer.']]);
+kz('k_10m',2,'Faustregel 10 m','Wie tief muss man ungefähr tauchen, damit der Schweredruck des Wassers etwa 1 bar beträgt?',[
+  ['etwa 10 m',1,'Richtig: 1000 kg/m³ · 9,81 N/kg · 10 m ≈ 98 000 Pa ≈ 1 bar. Faustregel: je 10 m Wasser etwa 1 bar mehr.'],
+  ['etwa 1 m',0,'In 1 m Tiefe sind es nur rund 10 000 Pa = 0,1 bar.'],
+  ['etwa 100 m',0,'In 100 m Tiefe sind es schon rund 10 bar.'],
+  ['etwa 1 km',0,'In 1 km Tiefe herrschen rund 100 bar.']]);
+kz('k_depth',2,'Tiefe messen',()=>`Von wo aus misst man die Tiefe ${H_} in der Formel ${P} = ${RHO} · ${G_} · ${H_}?`,[
+  ['Von der Flüssigkeitsoberfläche senkrecht nach unten bis zur Messstelle.',1,'Richtig. h ist die Höhe der Flüssigkeitssäule über der Messstelle.'],
+  ['Vom Boden des Gefäßes nach oben bis zur Messstelle.',0,'Der Druck entsteht durch die Flüssigkeit über der Messstelle. Darum misst man von der Oberfläche nach unten.'],
+  ['Vom oberen Rand des Gefäßes.',0,'Ist das Gefäß nicht randvoll, liegt der Rand über der Oberfläche. Maßgeblich ist die Oberfläche der Flüssigkeit.'],
+  ['Entlang der schrägen Gefäßwand.',0,'h wird immer senkrecht gemessen.']]);
+kz('k_lake',3,'See gegen Rohr','Ein Stausee ist 3 km lang und 20 m tief. Ein schmales Rohr ist 20 m hoch und mit Wasser gefüllt. Vergleiche den Schweredruck am Boden.',[
+  ['Er ist gleich groß, weil die Wassersäule gleich hoch ist.',1,'Richtig. Nur Dichte und Höhe der Wassersäule zählen, nicht die Wassermenge.'],
+  ['Im See ist er viel größer, weil dort viel mehr Wasser ist.',0,'Die Menge des Wassers spielt keine Rolle. Beide Wassersäulen sind 20 m hoch.'],
+  ['Im Rohr ist er größer, weil das Wasser dort eingeengt ist.',0,'Enge erhöht den Schweredruck nicht.'],
+  ['Man kann es nicht vergleichen, weil die Formen verschieden sind.',0,'Doch: Die Form spielt keine Rolle, nur Tiefe und Dichte.']]);
+kz('k_elef',3,'Elefant und Absatz','Ein Elefant (4 t) übt auf den Boden einen kleineren Druck aus als eine Frau (60 kg) auf einem Stöckelschuh-Absatz. Wie ist das möglich?',[
+  ['Die Gewichtskraft des Elefanten ist viel größer, verteilt sich aber auf eine sehr viel größere Fläche.',1,'Richtig. Der Druck hängt von Kraft und Fläche ab. Ein Absatz hat nur etwa 1 cm², ein Elefantenfuß mehrere hundert cm².'],
+  ['Der Elefant ist leichter, als man denkt.',0,'4 t ist sehr schwer. Die Erklärung liegt in der Fläche.'],
+  ['Absätze erhöhen die Gewichtskraft.',0,'Die Gewichtskraft hängt nur von der Masse ab.'],
+  ['Das ist nicht möglich – mehr Gewicht bedeutet immer mehr Druck.',0,'Druck hängt von Kraft und Fläche ab. Eine große Kraft auf sehr großer Fläche kann einen kleineren Druck ergeben.']]);
+kz('k_window',3,'Kraft bei doppelter Tiefe','Ein Bullauge hat immer dieselbe Fläche. Das U-Boot taucht doppelt so tief. Wie ändert sich die Kraft des Wassers auf das Bullauge?',[
+  ['Sie verdoppelt sich.',1,'Richtig. Der Druck verdoppelt sich, und F = p · A mit gleicher Fläche verdoppelt sich ebenfalls.'],
+  ['Sie vervierfacht sich.',0,'Der Druck verdoppelt sich, die Fläche bleibt gleich. Die Kraft verdoppelt sich also nur.'],
+  ['Sie bleibt gleich, weil die Fläche gleich bleibt.',0,'Die Fläche bleibt gleich, aber der Druck verdoppelt sich. Damit auch die Kraft.'],
+  ['Sie halbiert sich.',0,'Tiefer bedeutet mehr Druck, also mehr Kraft.']]);
+
+/* ---------- Aufgabenkarte ---------- */
+const dots=l=>`<span class="dots">${[1,2,3].map(i=>`<i class="${i<=l?'on':''}"></i>`).join('')}</span>`;
+const sideHTML=s=>{const n=s.n.length?s.n.map(V).join(' · '):'1';return s.d.length?fr(n,s.d.map(V).join(' · ')):n;};
+const eqHTML=e=>`${sideHTML(e.L)} = ${sideHTML(e.R)}`;
+function applyOp(e,op,x){const E=JSON.parse(JSON.stringify(e));for(const s of [E.L,E.R]){if(op==='mul'){const i=s.d.indexOf(x);if(i>=0)s.d.splice(i,1);else s.n.push(x);}else{const i=s.n.indexOf(x);if(i>=0)s.n.splice(i,1);else s.d.push(x);}}return E;}
+function isolated(e,t){for(const [X,Y] of [[e.L,e.R],[e.R,e.L]]){if(X.n.length===1&&X.n[0]===t&&X.d.length===0&&!Y.n.includes(t)&&!Y.d.includes(t))return X===e.L?'L':'R';}return null;}
+
+function makeTask(key){const G0=GEN[key];const t=G0.make();Object.assign(t,{key,topic:G0.topic,level:G0.level});if(t.f){t.ans=t.f(S.g);t.alt=t.f(otherG());}t.hints=t.hints||[];return t;}
+
+function runTask(host,key,o={}){
+  const t=makeTask(key),id=o.id||'x';
+  let attempts=0,first=null,hints=0,conf=null,done=false,formulaOk=null;
+  const el=h(`<article class="task sheet">
+    <div class="task-head"><span class="tag">${TOPICS[t.topic]}</span><span class="lvl">${dots(t.level)} Stufe ${t.level}</span>${o.label?`<span class="task-count">${o.label}</span>`:''}</div>
+    <div class="task-q">${t.q}</div>
+    <div class="fstep" hidden></div>
+    <div class="task-body"></div>
+    <div class="conf" role="group" aria-label="Wie sicher bist du?"><span>Wie sicher bist du?</span><button type="button" data-c="1" aria-pressed="false">geraten</button><button type="button" data-c="2" aria-pressed="false">unsicher</button><button type="button" data-c="3" aria-pressed="false">sicher</button></div>
+    <div class="task-actions"><button class="btn" data-a="check" type="button">Prüfen</button><button class="btn ghost" data-a="hint" type="button">Hilfe 1 von ${t.hints.length}</button><button class="btn ghost" data-a="sol" type="button" hidden>Lösungsweg zeigen</button><button class="btn accent" data-a="next" type="button" hidden>Weiter</button></div>
+    <ol class="hints"></ol>
+    <div class="fb" aria-live="polite"></div>
+    <div class="sol" hidden></div>
+  </article>`);
+  host.innerHTML='';host.appendChild(el);
+  const body=$('.task-body',el),fb=$('.fb',el),bCheck=$('[data-a=check]',el),bHint=$('[data-a=hint]',el),bSol=$('[data-a=sol]',el),bNext=$('[data-a=next]',el),solEl=$('.sol',el),confEl=$('.conf',el),actions=$('.task-actions',el);
+  if(!t.hints.length)bHint.hidden=true;
+  if(t.type!=='num')bCheck.hidden=true;
+  $$('.conf button',el).forEach(b=>b.addEventListener('click',()=>{if(done)return;conf=+b.dataset.c;$$('.conf button',el).forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));}));
+  function setFb(kind,label,html){fb.className='fb '+kind;fb.innerHTML=`<span class="fb-label">${label}</span>${html}`;}
+  function finish(){done=true;bCheck.hidden=true;bHint.hidden=true;bNext.hidden=false;$$('input,.opt,.werk-ops button',body).forEach(x=>x.disabled=true);if(t.sol&&solEl.hidden)bSol.hidden=false;setTimeout(()=>bNext.focus({preventScroll:true}),30);}
+  function answered(ok,msg){attempts++;if(first===null)first=ok;
+    if(ok){setFb('ok','Richtig',msg||'');finish();}
+    else{setFb('bad','Noch nicht',msg+(attempts>=2&&t.sol?' Wenn du festhängst, sieh dir den Lösungsweg an.':' Versuch es noch einmal.'));if(attempts>=2&&t.sol)bSol.hidden=false;}}
+  bHint.addEventListener('click',()=>{if(hints>=t.hints.length)return;const lab=['Tipp','Formel','Ansatz'][hints]||'Hilfe';$('.hints',el).appendChild(h(`<li><b>Hilfe ${hints+1} · ${lab}</b>${t.hints[hints]}</li>`));hints++;bHint.textContent=hints<t.hints.length?`Hilfe ${hints+1} von ${t.hints.length}`:'Keine weitere Hilfe';bHint.disabled=hints>=t.hints.length;});
+  bSol.addEventListener('click',()=>{solEl.hidden=false;solEl.innerHTML=`<b>Lösungsweg</b><ol>${t.sol.map(s=>`<li>${s}</li>`).join('')}</ol>`;bSol.hidden=true;if(!done){if(first===null)first=false;finish();if(!fb.innerHTML)setFb('','Lösung','Lies den Lösungsweg und versuch die nächste Aufgabe dieser Art allein.');}});
+  bNext.addEventListener('click',()=>{o.onDone&&o.onDone({key:t.key,topic:t.topic,level:t.level,ok:first===true,clean:first===true&&hints===0,hints,conf,formulaOk});});
+
+  if(t.type==='num'){
+    body.innerHTML=`<div class="answer"><label for="ans-${id}">Dein Ergebnis</label><div class="ans-row"><input id="ans-${id}" class="num" inputmode="decimal" autocomplete="off" spellcheck="false"><span class="unit">${t.unit}</span></div><div class="parsed"></div></div>`;
+    const inp=$('input',body),parsed=$('.parsed',body);
+    const check=()=>{if(done)return;const u=parseNum(inp.value);if(isNaN(u)){setFb('','Eingabe','Bitte gib eine Zahl ein. Dezimalzahlen mit Komma, zum Beispiel 0,025. Große Zahlen ohne Punkte oder mit Leerzeichen, zum Beispel 15000 oder 15 000.');return;}
+      parsed.innerHTML=`Gelesen als: ${fmt(u,6)} ${t.unit}`;const r=judge(t,u);
+      if(r.ok)answered(true,`${r.note?r.note+' ':''}Ergebnis: ${fmt(t.ans)} ${t.unit}.${conf===1?' Du hast geraten – rechne die nächste Aufgabe ganz bewusst.':''}`);else answered(false,(conf===3?'Du warst dir sicher – schau besonders genau hin. ':'')+r.msg);};
+    bCheck.addEventListener('click',check);inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check();}});
+  } else if(t.type==='mc'){
+    body.innerHTML=`<div class="opts">${shuffle(t.opts).map((op,i)=>`<button class="opt" type="button" data-i="${t.opts.indexOf(op)}">${op.t}</button>`).join('')}</div>`;
+    let wrongs=0;
+    $$('.opt',body).forEach(b=>b.addEventListener('click',()=>{if(done)return;const op=t.opts[+b.dataset.i];
+      if(op.ok){b.classList.add('right');answered(true,op.why);}
+      else{b.classList.add('wrong');b.disabled=true;wrongs++;
+        if(wrongs>=2){attempts++;if(first===null)first=false;const right=$$('.opt',body).find(x=>t.opts[+x.dataset.i].ok);right.classList.add('right');setFb('bad','Noch nicht',`${op.why} <br><b>Richtig ist:</b> ${t.opts.find(x=>x.ok).why}`);finish();}
+        else answered(false,op.why);}}));
+  } else if(t.type==='werk'){
+    const vars=[...new Set([...t.eq.L.n,...t.eq.L.d,...t.eq.R.n,...t.eq.R.d])];
+    let eq=t.eq,hist=[];
+    body.innerHTML=`<div class="werk"><div class="eqline" aria-live="polite"></div><div class="werk-ops">${vars.map(x=>`<button type="button" data-op="mul" data-v="${x}" aria-label="beide Seiten mal ${x}">· ${V(x)}</button><button type="button" data-op="div" data-v="${x}" aria-label="beide Seiten geteilt durch ${x}">· ${fr('1',V(x))}</button>`).join('')}</div><div class="row"><button class="btn ghost sm" type="button" data-w="undo">Schritt zurück</button><button class="btn ghost sm" type="button" data-w="reset">Neu beginnen</button></div><ol class="werk-log"></ol></div>`;
+    const line=$('.eqline',body),log=$('.werk-log',body);
+    const draw=()=>{line.innerHTML=eqHTML(eq);log.innerHTML=hist.map(s=>`<li>${eqHTML(s.e)} <span class="op">| · ${s.op==='mul'?V(s.v):fr('1',V(s.v))}</span></li>`).join('');};
+    draw();
+    $$('.werk-ops button',body).forEach(b=>b.addEventListener('click',()=>{if(done)return;hist.push({e:eq,op:b.dataset.op,v:b.dataset.v});eq=applyOp(eq,b.dataset.op,b.dataset.v);draw();
+      const side=isolated(eq,t.target);
+      if(side){const n=hist.length,fin=side==='L'?eq:{L:eq.R,R:eq.L};first=n<=t.opt+2;attempts++;
+        setFb('ok','Geschafft',`${V(t.target)} steht allein: <span class="m">${eqHTML(fin)}</span>. ${n<=t.opt?`Mit ${n} ${n===1?'Schritt':'Schritten'} – kürzer geht es nicht.`:`Du hast ${n} Schritte gebraucht. Es geht auch mit ${t.opt}.`}`);finish();}
+      else if(hist.length>=t.opt+4&&t.sol){bSol.hidden=false;setFb('','Tipp','Das wird gerade länger als nötig. Nutze „Schritt zurück“ oder sieh dir den Lösungsweg an.');}}));
+    $('[data-w=undo]',body).addEventListener('click',()=>{if(done||!hist.length)return;eq=hist.pop().e;draw();});
+    $('[data-w=reset]',body).addEventListener('click',()=>{if(done)return;eq=t.eq;hist=[];draw();});
+  }
+
+  if(o.formulaStep&&t.formula){
+    const fs=$('.fstep',el);fs.hidden=false;body.hidden=true;confEl.hidden=true;actions.hidden=true;
+    fs.innerHTML=`<b>Schritt 1: Welche Formel brauchst du hier?</b><div class="chips">${['FA','rgh','both'].map(k=>`<button class="chip" type="button" data-f="${k}">${FOPTS[k]}</button>`).join('')}</div><div class="fb"></div>`;
+    $$('[data-f]',fs).forEach(b=>b.addEventListener('click',()=>{const ok=b.dataset.f===t.formula,f2=$('.fb',fs);
+      if(formulaOk===null)formulaOk=ok;
+      if(ok){b.setAttribute('aria-pressed','true');$$('[data-f]',fs).forEach(x=>x.disabled=true);f2.className='fb ok';f2.innerHTML=`<span class="fb-label">Passt</span>${FWHY[t.formula]} Jetzt rechnen.`;body.hidden=false;confEl.hidden=false;actions.hidden=false;const i=$('input',body);i&&i.focus({preventScroll:true});}
+      else{b.disabled=true;f2.className='fb bad';f2.innerHTML=`<span class="fb-label">Noch nicht</span>Diese Formel passt hier nicht. Achte darauf: Geht es um einen festen Körper auf einer Fläche, um den Druck in einer Flüssigkeit oder um eine Kraft unter Wasser?`;}}));
+  }
+  return t;
+}
+
+/* ---------- Fortschritt ---------- */
+function mastery(t){const p=S.prog[t];if(p.mastered)return 100;return Math.min(95,(p.level-1)*33+p.streak*11);}
+function overall(){return Math.round(TKEYS.reduce((s,t)=>s+mastery(t),0)/TKEYS.length);}
+function stat(r){const p=S.prog[r.topic];p.done++;if(r.ok)p.correct++;}
+function boxWrong(key){const it=S.box[key];if(it){it.b=1;it.due=Date.now()+864e5;}else S.box[key]={b:1,due:Date.now()+864e5};}
+function metersHTML(){return TKEYS.map(t=>{const m=mastery(t);return `<div class="meter"><span>${TOPICS[t]}</span><span class="bar"><span style="width:${m}%"></span></span><span class="val">${m} %</span></div>`;}).join('');}
+
+function drawDial(){
+  const pct=overall(),svg=$('#dialSvg'),cx=120,cy=120,r=92;
+  const pt=(a,rr)=>[cx+rr*Math.cos(a),cy-rr*Math.sin(a)];
+  let ticks='';for(let i=0;i<=20;i++){const a=Math.PI*(1-i/20),big=i%5===0,[x1,y1]=pt(a,r),[x2,y2]=pt(a,r-(big?14:7));ticks+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" style="stroke:var(--ink);stroke-width:${big?2:1}"/>`;if(big){const [tx,ty]=pt(a,r-28);ticks+=`<text x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="middle" style="fill:var(--ink-2);font:600 11px var(--f-mono)">${i*5}</text>`;}}
+  const [ax,ay]=pt(Math.PI,r+6),[bx,by]=pt(0,r+6),a2=Math.PI*(1-pct/100),[ex,ey]=pt(a2,r+6);
+  const na=Math.PI*(1-pct/100),[nx,ny]=pt(na,r-18);
+  svg.innerHTML=`<path d="M${ax} ${ay} A${r+6} ${r+6} 0 0 1 ${bx} ${by}" style="fill:none;stroke:var(--water-soft);stroke-width:8;stroke-linecap:round"/>
+  ${pct>0?`<path d="M${ax} ${ay} A${r+6} ${r+6} 0 0 1 ${ex.toFixed(1)} ${ey.toFixed(1)}" style="fill:none;stroke:var(--water);stroke-width:8;stroke-linecap:round"/>`:''}
+  ${ticks}
+  <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" style="stroke:var(--needle);stroke-width:4;stroke-linecap:round"/>
+  <circle cx="${cx}" cy="${cy}" r="8" style="fill:var(--ink)"/>
+  <text id="dialTxt" x="${cx}" y="${cy+26}" text-anchor="middle" style="fill:var(--ink);font:800 22px var(--f-display)">${pct} %</text>`;
+  $('#startMeters').innerHTML=metersHTML();
+}
+
+/* ---------- Router ---------- */
+const VIEWS=['start','vorwissen','verstehen','beispiele','ueben','gemischt','wiederholen','lehrkraefte'];
+const onShow={start:drawDial,ueben:()=>{if(!T.started)trainNext();renderTopicChips();},wiederholen:()=>{if(!RP.active)renderRep();},gemischt:()=>{if(!M.active)mixIntro();}};
+function show(v){if(!VIEWS.includes(v))v='start';$$('.view').forEach(s=>s.hidden=s.id!=='v-'+v);$$('.tab').forEach(b=>b.setAttribute('aria-current',b.dataset.v===v?'page':'false'));onShow[v]&&onShow[v]();window.scrollTo(0,0);const cur=$(`.tab[data-v="${v}"]`);cur&&cur.scrollIntoView({block:'nearest',inline:'nearest'});}
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+
+/* ---------- Start: Einstellungen ---------- */
+function syncG(){$('#g981').setAttribute('aria-pressed',S.g!==10?'true':'false');$('#g10').setAttribute('aria-pressed',S.g===10?'true':'false');}
+$$('[data-g]').forEach(b=>b.addEventListener('click',()=>{S.g=+b.dataset.g;save();syncG();renderVW();renderSims();toast(`Gerechnet wird jetzt mit g = ${gS()} N/kg.`);}));
+$('#resetBtn').addEventListener('click',()=>{$('#resetConfirm').hidden=false;$('#resetBtn').hidden=true;});
+$('#resetNo').addEventListener('click',()=>{$('#resetConfirm').hidden=true;$('#resetBtn').hidden=false;});
+$('#resetYes').addEventListener('click',()=>{const g=S.g;S=defaultState();S.g=g;save();$('#resetConfirm').hidden=true;$('#resetBtn').hidden=false;drawDial();renderCards();renderVW();T.started=false;M.active=false;RP.active=false;renderEx();toast('Fortschritt gelöscht.');});
+
+/* ---------- Vorwissen ---------- */
+const VW=[
+  {id:'kraft',q:()=>`Ein Rucksack hat die Masse 5 kg. Wie groß ist seine Gewichtskraft? (g = ${gS()} N/kg)`,type:'num',unit:'N',f:g=>5*g,card:'gewicht',skill:'Gewichtskraft aus der Masse berechnen'},
+  {id:'einheitF',q:()=>'In welcher Einheit gibt man Kräfte an?',type:'mc',opts:['Kilogramm (kg)','Newton (N)','Pascal (Pa)','Joule (J)'],ok:1,card:'gewicht',skill:'Kraft und Masse unterscheiden'},
+  {id:'masse',q:()=>'Eine Astronautin fliegt von der Erde zum Mond. Was bleibt dabei gleich?',type:'mc',opts:['ihre Masse','ihre Gewichtskraft','beides','nichts von beidem'],ok:0,card:'gewicht',skill:'Kraft und Masse unterscheiden'},
+  {id:'flaeche',q:()=>'Eine Tischplatte ist 80 cm lang und 50 cm breit. Wie groß ist ihre Fläche?',type:'num',unit:'cm²',ans:4000,card:'flaeche',skill:'Flächeninhalt berechnen'},
+  {id:'qm',q:()=>'Wie viele cm² sind 1 m²?',type:'num',unit:'cm²',ans:10000,card:'flaeche',skill:'Flächeneinheiten umrechnen'},
+  {id:'dichte',q:()=>'Was gibt die Dichte ρ eines Stoffes an?',type:'mc',opts:['Masse pro Volumen','Volumen pro Masse','Kraft pro Fläche','wie hart ein Stoff ist'],ok:0,card:'dichte',skill:'Dichte verstehen'},
+  {id:'umst',q:()=>`Für die Geschwindigkeit gilt v = ${fr('s','t')}. Wie lautet die Formel nach s umgestellt?`,type:'mc',opts:['s = v · t',`s = ${fr('v','t')}`,`s = ${fr('t','v')}`,'s = v − t'],ok:0,card:'umstellen',skill:'Formeln umstellen'},
+  {id:'komma',q:()=>'Berechne ohne Taschenrechner: 0,005 · 10 000',type:'num',unit:'',ans:50,card:'flaeche',skill:'Mit Zehnerpotenzen rechnen'},
+  {id:'prop',q:()=>`Der Bruch ${fr('12','x')} wird größer, wenn x …`,type:'mc',opts:['kleiner wird','größer wird','gleich bleibt','negativ wird'],ok:0,card:'druck',skill:`Brüche verstehen (wichtig für p = ${fr('F','A')})`}];
+const VWorder={};
+const VWused=new Set();
+const VWHELP={
+  kraft:()=>`Gewichtskraft: <span class="m">F = m · g</span><br>Masse in kg, g = ${gS()} N/kg. Das Ergebnis hat die Einheit N.`,
+  einheitF:()=>'Zur Erinnerung: kg ist die Einheit der Masse, Pa die Einheit des Drucks, J die Einheit der Energie.',
+  masse:()=>'Die Masse gibt an, wie viel Stoff ein Körper hat. Die Gewichtskraft hängt davon ab, wie stark ein Himmelskörper anzieht – der Mond zieht schwächer an als die Erde.',
+  flaeche:()=>'Flächeninhalt eines Rechtecks: <span class="m">A = Länge · Breite</span>',
+  qm:()=>'1 m = 100 cm. Ein Quadratmeter ist ein Quadrat mit 100 cm Seitenlänge: <span class="m">A = 100 cm · 100 cm</span>',
+  dichte:()=>`Formel für die Dichte: <span class="m">ρ = ${fr('m','V')}</span><br>m = Masse, V = Volumen`,
+  umst:()=>'Was du auf einer Seite der Gleichung machst, machst du auch auf der anderen. Die Umkehrung von „geteilt durch t“ ist „mal t“.',
+  komma:()=>'Beim Multiplizieren mit 10 000 rückt das Komma um 4 Stellen nach rechts.',
+  prop:()=>`Probiere es mit Zahlen aus: ${fr('12','6')} = 2, ${fr('12','3')} = 4, ${fr('12','2')} = 6.`};
+function renderVW(){
+  const host=$('#vwHost');$('#vwResult').innerHTML='';
+  host.innerHTML=`<form id="vwForm" class="stack">${VW.map((it,i)=>{
+    if(!VWorder[it.id]&&it.type==='mc')VWorder[it.id]=shuffle(it.opts.map((_,k)=>k));
+    return `<div class="vw-item" data-id="${it.id}"><div class="vw-head"><span class="qn">Frage ${i+1} von ${VW.length}</span><span class="qh"><button type="button" class="qhelp" id="qhb-${it.id}" aria-expanded="false" aria-controls="qh-${it.id}" aria-label="Hilfe zu Frage ${i+1}">?</button><span class="qhelp-pop" id="qh-${it.id}" role="tooltip" hidden><b>Hilfe</b>${VWHELP[it.id]()}</span></span></div><div>${it.q()}</div>${it.type==='num'?`<div class="ans-row"><input class="num sm" id="vw-${it.id}" inputmode="decimal" autocomplete="off" aria-label="Antwort"><span class="unit">${it.unit}</span></div>`:`<div class="stack" role="radiogroup">${VWorder[it.id].map(k=>`<label class="radio"><input type="radio" name="vw-${it.id}" value="${k}"> ${it.opts[k]}</label>`).join('')}</div>`}<div class="vw-res"></div></div>`;}).join('')}
+    <div class="row"><button class="btn accent" type="submit">Auswerten</button><span class="muted" style="font-size:14px">Das ? zeigt eine Hilfe, wenn du mit der Maus darauf gehst oder es antippst. Die Auswertung merkt sich, wo du sie genutzt hast. Lass eine Frage lieber leer, als zu raten.</span></div></form>`;
+  VWused.clear();
+  $$('.qh',host).forEach(w=>{const b=$('.qhelp',w),p=$('.qhelp-pop',w),id=b.id.slice(4);let pinned=false;
+    const open=()=>{p.hidden=false;b.setAttribute('aria-expanded','true');VWused.add(id);};
+    const shut=()=>{p.hidden=true;b.setAttribute('aria-expanded','false');};
+    w.addEventListener('mouseenter',open);w.addEventListener('mouseleave',()=>{if(!pinned)shut();});
+    b.addEventListener('focus',open);b.addEventListener('blur',()=>{pinned=false;shut();});
+    b.addEventListener('click',e=>{e.preventDefault();pinned=!pinned;if(pinned)open();else shut();});
+    b.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=false;shut();}});});
+  $('#vwForm').addEventListener('submit',e=>{e.preventDefault();evalVW();});
+}
+function evalVW(){
+  let right=0;const miss=[],helped=[];
+  VW.forEach(it=>{const box=$(`.vw-item[data-id="${it.id}"] .vw-res`);let ok=false,sol='';
+    if(it.type==='num'){const u=parseNum($('#vw-'+it.id).value);const ans=it.f?it.f(S.g):it.ans;const r=isNaN(u)?{ok:false}:judge({ans,alt:it.f?it.f(otherG()):null},u);ok=r.ok;sol=`${fmt(ans)} ${it.unit}`;}
+    else{const c=$(`input[name="vw-${it.id}"]:checked`);ok=!!c&&+c.value===it.ok;sol=it.opts[it.ok];}
+    const used=VWused.has(it.id);if(ok&&used)helped.push(it);
+    if(ok)right++;else miss.push(it);
+    box.innerHTML=ok?(used?`<span class="mark help">richtig mit Hilfe</span>`:`<span class="mark ok">richtig</span>`):`<span class="mark bad">noch nicht</span> <span class="muted">Richtig: ${sol}</span>`;});
+  const skills=[...new Map(miss.map(m=>[m.skill,m])).values()];
+  S.vw={date:Date.now(),score:right,miss:skills.map(s=>s.skill)};save();
+  const cards=[...new Set(miss.map(m=>m.card))];
+  $('#vwResult').innerHTML=`<div class="sheet stack"><h3>${right} von ${VW.length} richtig</h3>
+    <p>${right>=8?'Gute Grundlage. Starte mit den Merkkarten zum Druck oder direkt mit den Lösungsbeispielen.':right>=5?'Einiges sitzt schon. Frische die Punkte unten auf, bevor du mit dem Rechnen loslegst.':'Hier lohnt es sich, zuerst die Grundlagen aufzufrischen. Die Karten unten helfen dir dabei. Danach geht der Druck viel leichter.'}</p>
+    ${skills.length?`<div class="stack"><b>Das solltest du auffrischen:</b><ul class="reslist">${skills.map(s=>`<li><span class="mark bad">auffrischen</span>${s.skill}</li>`).join('')}</ul></div><div class="row">${cards.map(c=>`<button class="btn ghost sm" type="button" data-card="${c}">Karte: ${CARDS.find(x=>x.id===c).short}</button>`).join('')}</div>`:''}
+    ${helped.length?`<p class="muted">Mit Hilfe gelöst: ${[...new Set(helped.map(x=>x.skill))].join(', ')}. Das klappt schon fast allein. Schau dir die passende Karte bei Schritt 2 noch einmal an.</p>`:''}
+    <div class="row"><a class="btn" href="#verstehen">Weiter zu Schritt 2</a><button class="btn ghost" type="button" id="vwAgain">Neu beginnen</button></div></div>`;
+  $$('[data-card]',$('#vwResult')).forEach(b=>b.addEventListener('click',()=>goCard(b.dataset.card)));
+  $('#vwAgain').addEventListener('click',()=>{renderVW();window.scrollTo(0,0);});
+  $('#vwResult').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- Merkkarten ---------- */
+const CARDS=[
+  {id:'druck',short:'Druck',q:'Was ist Druck, und wie berechnet man ihn?',a:`<p>Druck gibt an, wie groß die Kraft ist, die senkrecht auf jede Flächeneinheit wirkt.</p><p class="m">${P} = ${fr(F_,A_)}</p><p>Einheit: 1 Pa = 1 N/m². Doppelte Kraft ergibt doppelten Druck, doppelte Fläche halben Druck.</p>`},
+  {id:'schwere',short:'Schweredruck',q:'Wodurch entsteht Schweredruck, und wovon hängt er ab?',a:`<p>Durch die Gewichtskraft der Flüssigkeit, die über einer Stelle liegt.</p><p class="m">${P} = ${RHO} · ${G_} · ${H_}</p><p>Er hängt nur von der Dichte ρ und der Tiefe h ab, nicht von Form oder Menge der Flüssigkeit. In einer Tiefe wirkt er in alle Richtungen gleich.</p>`},
+  {id:'einheiten',short:'Druckeinheiten',q:'Wie hängen Pa, hPa, bar und N/cm² zusammen?',a:`<p class="m">1 hPa = 100 Pa<br>1 bar = 1000 hPa = 100 000 Pa<br>1 N/cm² = 10 000 Pa</p><p>Der Luftdruck beträgt etwa 1013 hPa, also rund 1 bar.</p>`},
+  {id:'flaeche',short:'Flächeneinheiten',q:'Wie rechnet man Flächeneinheiten um?',a:`<p class="m">1 m² = 100 dm² = 10 000 cm²<br>1 cm² = 100 mm²</p><p>Bei Flächen wird der Längenfaktor quadriert: 1 m = 100 cm, also 1 m² = 100 · 100 cm².</p>`},
+  {id:'gewicht',short:'Gewichtskraft',q:'Was ist der Unterschied zwischen Masse und Gewichtskraft?',a:`<p>Die Masse (kg) sagt, wie schwer und träge ein Körper ist. Sie ist überall gleich. Die Gewichtskraft (N) ist die Kraft, mit der die Erde ihn anzieht.</p><p class="m">${F_} = ${M_} · ${G_}, g ≈ 9,81 N/kg</p>`},
+  {id:'dichte',short:'Dichte',q:'Was gibt die Dichte an, und welche Dichte hat Wasser?',a:`<p class="m">${RHO} = ${fr(M_,VV)}</p><p>Masse pro Volumen. Wasser: 1 g/cm³ = 1000 kg/m³. Für Rechnungen mit Pa brauchst du kg/m³.</p>`},
+  {id:'umstellen',short:'Formeln umstellen',q:'Nach welcher Regel stellt man eine Formel um?',a:`<p>Eine Gleichung ist wie eine Waage: Was du auf einer Seite machst, machst du auch auf der anderen. Nutze die Umkehroperation: Malnehmen durch Teilen aufheben und umgekehrt.</p><p class="m">${P} = ${fr(F_,A_)} &nbsp;| · ${A_} &nbsp;→ &nbsp;${F_} = ${P} · ${A_}</p>`},
+  {id:'faust',short:'Faustregel Wasser',q:'Um wie viel nimmt der Druck im Wasser pro 10 m Tiefe zu?',a:`<p>Um etwa 1 bar (100 000 Pa). In 10 m Tiefe herrscht also zusätzlich zum Luftdruck noch einmal etwa so viel Druck.</p>`},
+  {id:'auflage',short:'Druck verkleinern',q:'Wie kann man bei gleicher Kraft den Druck verkleinern oder vergrößern? Nenne je ein Beispiel.',a:`<p>Größere Fläche, kleinerer Druck: Schneeschuhe, Raupenketten, breite Reifen.</p><p>Kleinere Fläche, größerer Druck: Messer, Nadel, Reißzwecke, Stöckelschuh.</p>`}];
+function renderCards(){
+  $('#cardHost').innerHTML=CARDS.map(c=>{const st=S.cards[c.id];return `<article class="card" id="card-${c.id}"><p class="card-q">${c.q}</p><div class="card-a" hidden>${c.a}</div><div class="card-act"><button class="btn ghost sm" type="button" data-rev>Antwort aufdecken</button><span data-rate hidden class="row">Gewusst? <button class="btn ghost sm" type="button" data-r="ja">Ja</button><button class="btn ghost sm" type="button" data-r="nein">Noch nicht</button></span>${st?`<span class="state ${st}">${st==='ja'?'gewusst':'üben'}</span>`:''}</div></article>`;}).join('');
+  $$('#cardHost .card').forEach(card=>{const id=card.id.slice(5);
+    $('[data-rev]',card).addEventListener('click',e=>{$('.card-a',card).hidden=false;e.target.hidden=true;$('[data-rate]',card).hidden=false;});
+    $$('[data-r]',card).forEach(b=>b.addEventListener('click',()=>{S.cards[id]=b.dataset.r;save();let s=$('.state',card);if(!s){s=h('<span class="state"></span>');$('.card-act',card).appendChild(s);}s.className='state '+b.dataset.r;s.textContent=b.dataset.r==='ja'?'gewusst':'üben';$('[data-rate]',card).hidden=true;}));});
+}
+function goCard(id){location.hash='verstehen';setTimeout(()=>{const c=$('#card-'+id);if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),2200);}},80);}
+
+/* ---------- Experiment 1: Quader ---------- */
+const FACES={flach:{w:20,h:5,a:200,t:'flach'},seite:{w:20,h:10,a:100,t:'auf der Seite'},hoch:{w:10,h:20,a:50,t:'hochkant'}};
+let faceA='flach';
+function drawA(){
+  const m=+$('#massA').value,f=FACES[faceA],F=m*S.g,A=f.a/1e4,p=F/A,sink=Math.min(48,p/20000*48),sc=6,w=f.w*sc,hh=f.h*sc,x=180-w/2,top=150+sink-hh;
+  $('#massAv').textContent=fmt(m)+' kg';
+  $('#svgA').innerHTML=`<rect x="0" y="150" width="360" height="80" style="fill:var(--sand)"/>
+  <rect x="${x-2}" y="150" width="${w+4}" height="${sink.toFixed(1)}" style="fill:var(--sand-2)"/>
+  <line x1="0" y1="150" x2="${x-2}" y2="150" style="stroke:var(--sand-2);stroke-width:2"/><line x1="${x+w+2}" y1="150" x2="360" y2="150" style="stroke:var(--sand-2);stroke-width:2"/>
+  <rect x="${x}" y="${top.toFixed(1)}" width="${w}" height="${hh}" rx="2" style="fill:var(--needle);stroke:var(--ink);stroke-width:1.5"/>
+  <line x1="${x+w+18}" y1="150" x2="${x+w+18}" y2="${(150+sink).toFixed(1)}" style="stroke:var(--ink);stroke-width:1.5"/>
+  <text x="${x+w+26}" y="${(150+sink/2+4).toFixed(1)}" style="fill:var(--ink);font:600 12px var(--f-mono)">Eindrucktiefe</text>
+  <line x1="180" y1="${(top-30).toFixed(1)}" x2="180" y2="${(top-6).toFixed(1)}" style="stroke:var(--water);stroke-width:2.5"/><polygon points="174,${(top-10).toFixed(1)} 186,${(top-10).toFixed(1)} 180,${(top-2).toFixed(1)}" style="fill:var(--water)"/>
+  <text x="190" y="${(top-16).toFixed(1)}" style="fill:var(--water);font:600 12px var(--f-mono)">F = ${fmt(F,3)} N</text>
+  <text x="10" y="222" style="fill:var(--ink);font:600 12px var(--f-mono)">Sand</text>`;
+  $('#readA').innerHTML=`<dt>Lage</dt><dd>${f.t}</dd><dt>Gewichtskraft F</dt><dd>${fmt(m)} kg · ${gS()} N/kg = ${fmt(F,4)} N</dd><dt>Auflagefläche A</dt><dd>${f.a} cm² = ${fmt(A)} m²</dd><dt>Druck p</dt><dd>${fmt(p,4)} Pa = ${fmt(p/100,4)} hPa</dd>`;
+  $$('[data-face]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.face===faceA?'true':'false'));
+}
+function unlockA(){$$('[data-face]').forEach(b=>b.disabled=false);}
+$$('#predA [data-p]').forEach(b=>b.addEventListener('click',()=>{const c=b.dataset.p;S.predA=c;save();$$('#predA [data-p]').forEach(x=>{x.setAttribute('aria-pressed',x===b?'true':'false');x.disabled=true;});
+  const fbx=$('#predAfb');fbx.className='fb '+(c==='hoch'?'ok':'bad');fbx.innerHTML=`<span class="fb-label">${c==='hoch'?'Gut vorhergesagt':'Probier es aus'}</span>${c==='hoch'?'Hochkant ist die Fläche am kleinsten. Prüfe es jetzt mit den Knöpfen.':'Lege den Quader nacheinander auf alle drei Seiten und beobachte die Eindrucktiefe. Achte darauf, was sich ändert und was gleich bleibt.'} <br><b>Erklärung:</b> Die Gewichtskraft ist in jeder Lage gleich. Die Fläche ist hochkant viermal kleiner als flach, darum ist der Druck viermal größer.`;unlockA();}));
+$$('[data-face]').forEach(b=>b.addEventListener('click',()=>{faceA=b.dataset.face;drawA();}));
+$('#massA').addEventListener('input',drawA);
+
+/* ---------- Experiment 2: Schweredruck ---------- */
+const SHAPES={zyl:[[70,30],[150,30],[150,230],[70,230]],trichter:[[20,30],[200,30],[138,230],[82,230]],flasche:[[98,30],[122,30],[122,110],[185,140],[185,230],[35,230],[35,140],[98,110]]};
+const LIQ={1000:['--water-soft','Süßwasser'],1025:['--water-soft','Meerwasser'],920:['--oil','Speiseöl'],790:['--alc','Spiritus'],1260:['--gly','Glycerin']};
+let shapeS='zyl';
+function drawS(){
+  const rho=+$('#liqS').value,d=+$('#depthS').value,g=S.g,p=rho*g*d,y=30+d*100,pts=SHAPES[shapeS].map(q=>q.join(',')).join(' ');
+  $('#depthSv').textContent=d.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' m';
+  $('#svgS').innerHTML=`<polygon points="${pts}" style="fill:var(${LIQ[rho][0]});stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round"/>
+  <line x1="5" y1="30" x2="215" y2="30" style="stroke:var(--water);stroke-width:1.5;stroke-dasharray:5 4"/>
+  <text x="6" y="22" style="fill:var(--water);font:600 11px var(--f-mono)">Oberfläche</text>
+  <line x1="110" y1="30" x2="110" y2="${y}" style="stroke:var(--needle);stroke-width:2;stroke-dasharray:3 3"/>
+  ${d>0.05?`<text x="116" y="${(30+y)/2+4}" style="fill:var(--needle);font:600 12px var(--f-mono)">h</text>`:''}
+  <circle cx="110" cy="${y}" r="7" style="fill:var(--needle);stroke:var(--ink);stroke-width:1.5"/>
+  <text x="110" y="252" text-anchor="middle" style="fill:var(--ink-2);font:600 11px var(--f-mono)">Füllhöhe 2 m</text>`;
+  $('#readS').innerHTML=`<dt>Dichte ρ</dt><dd>${rho} kg/m³</dd><dt>Tiefe h</dt><dd>${fmt(d)} m</dd><dt>Schweredruck p</dt><dd>${fmt(p,4)} Pa</dd><dt></dt><dd>= ${fmt(p/100,4)} hPa = ${fmt(p/1e5,3)} bar</dd>`;
+  $$('[data-shape]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.shape===shapeS?'true':'false'));
+  drawChart(rho,d);
+}
+function drawChart(rho,d){
+  const x0=58,x1=315,y0=175,y1=15,PM=26000,X=h=>x0+(x1-x0)*h/2,Y=p=>y0-(y0-y1)*p/PM,g=S.g;
+  let s=`<rect x="${x0}" y="${y1}" width="${x1-x0}" height="${y0-y1}" style="fill:none;stroke:var(--line)"/>`;
+  for(let p=0;p<=25000;p+=5000)s+=`<line x1="${x0}" y1="${Y(p)}" x2="${x1}" y2="${Y(p)}" style="stroke:var(--line);stroke-width:1"/><text x="${x0-6}" y="${Y(p)+4}" text-anchor="end" style="fill:var(--ink-2);font:11px var(--f-mono)">${p.toLocaleString('de-DE')}</text>`;
+  for(let hh=0;hh<=2;hh+=0.5)s+=`<text x="${X(hh)}" y="${y0+16}" text-anchor="middle" style="fill:var(--ink-2);font:11px var(--f-mono)">${hh.toLocaleString('de-DE')}</text>`;
+  s+=`<text x="${(x0+x1)/2}" y="${y0+34}" text-anchor="middle" style="fill:var(--ink-2);font:600 11px var(--f-mono)">Tiefe h in m</text><text x="${x0}" y="10" style="fill:var(--ink-2);font:600 11px var(--f-mono)">p in Pa</text>`;
+  if(rho!==1000)s+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(2)}" y2="${Y(1000*g*2)}" style="stroke:var(--ink-2);stroke-width:1.5;stroke-dasharray:5 4"/><text x="${X(2)-4}" y="${Y(1000*g*2)-6}" text-anchor="end" style="fill:var(--ink-2);font:11px var(--f-mono)">Süßwasser</text>`;
+  s+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(2)}" y2="${Y(rho*g*2)}" style="stroke:var(--water);stroke-width:2.5"/>`;
+  s+=`<line x1="${X(d)}" y1="${Y(rho*g*d)}" x2="${X(d)}" y2="${y0}" style="stroke:var(--needle);stroke-width:1;stroke-dasharray:3 3"/><circle cx="${X(d)}" cy="${Y(rho*g*d)}" r="5.5" style="fill:var(--needle);stroke:var(--sheet);stroke-width:2"/>`;
+  $('#chartS').innerHTML=s;
+}
+$$('#predS [data-p]').forEach(b=>b.addEventListener('click',()=>{const c=b.dataset.p;S.predS=c;save();$$('#predS [data-p]').forEach(x=>{x.setAttribute('aria-pressed',x===b?'true':'false');x.disabled=true;});
+  const fbx=$('#predSfb');fbx.className='fb '+(c==='gleich'?'ok':'bad');
+  fbx.innerHTML=`<span class="fb-label">${c==='gleich'?'Gut vorhergesagt':'Überraschung?'}</span>${c==='gleich'?'Prüfe es: Schiebe die Sonde ganz nach unten und wechsle die Gefäßform.':'Schiebe die Sonde ganz nach unten (2 m) und wechsle die Gefäßform. Was zeigt die Anzeige?'} <br><b>Erklärung:</b> Der Schweredruck hängt nur von der Dichte und der Tiefe ab, nicht von der Wassermenge oder der Form. Das nennt man hydrostatisches Paradoxon.`;
+  $$('[data-shape]').forEach(x=>x.disabled=false);}));
+$$('[data-shape]').forEach(b=>b.addEventListener('click',()=>{shapeS=b.dataset.shape;drawS();}));
+$('#liqS').addEventListener('change',drawS);$('#depthS').addEventListener('input',drawS);
+function renderSims(){drawA();drawS();}
+
+/* ---------- Lösungsbeispiele ---------- */
+const EX={
+  auflage:()=>{const m=pick([45,50,55,60,65]),Ac=pick([300,350,400,450]),n=pick(['Eine Schülerin','Ein Schüler']),A=Ac/1e4,g=S.g,F=m*g,p=F/A;
+    return {intro:`${n} (m = ${m} kg) steht mit beiden Schuhen auf weichem Waldboden. Die Schuhsohlen haben zusammen eine Fläche von ${Ac} cm². Welchen Druck übt ${n==='Eine Schülerin'?'sie':'er'} auf den Boden aus?`,
+      given:`Gegeben: m = ${m} kg; A = ${Ac} cm²; g = ${gS()} N/kg &nbsp;·&nbsp; Gesucht: p in Pa`,
+      steps:[
+        {t:'Fläche in m² umrechnen',show:`A = ${Ac} cm² = ${fr(Ac,'10 000')} m² = <b>${fmt(A)} m²</b>`,lead:`A = ${Ac} cm² =`,unit:'m²',ans:A,why:{q:'Warum wird durch 10 000 geteilt?',o:[['Weil 1 m² = 100 cm · 100 cm = 10 000 cm² sind.',1],['Weil 1 m = 10 000 cm sind.',0],['Weil man bei Pascal immer durch 10 000 teilt.',0]]}},
+        {t:'Gewichtskraft berechnen',show:`F = m · g = ${m} kg · ${gS()} N/kg = <b>${fmt(F)} N</b>`,lead:'F = m · g =',unit:'N',ans:F,f:gg=>m*gg,why:{q:'Warum rechnet man hier m · g?',o:[['Für den Druck braucht man eine Kraft. Die Gewichtskraft berechnet man mit F = m · g.',1],['Damit das Ergebnis größer wird.',0],['Weil g die Fläche angibt.',0]]}},
+        {t:'Druck berechnen',show:`p = ${fr('F','A')} = ${fr(fmt(F)+' N',fmt(A)+' m²')} = <b>${fmt(p)} Pa</b>`,lead:`p = ${fr('F','A')} =`,unit:'Pa',ans:p,f:gg=>m*gg/A}],
+      answer:`Antwort: Der Druck auf den Boden beträgt etwa ${fmt(p,3)} Pa, also rund ${fmt(p/100,3)} hPa.`};},
+  schwere:()=>{const L=pick([{n:'Speiseöl',d:0.92},{n:'Salzwasser',d:1.03},{n:'Glycerin',d:1.26},{n:'Spiritus',d:0.79}]),hc=pick([30,40,60,80,120]),rho=L.d*1000,hm=hc/100,g=S.g,p=rho*g*hm;
+    return {intro:`Ein hoher Standzylinder ist ${hc} cm hoch mit ${L.n} gefüllt (ρ = ${fmt(L.d)} g/cm³). Wie groß ist der Schweredruck am Boden?`,
+      given:`Gegeben: ρ = ${fmt(L.d)} g/cm³; h = ${hc} cm; g = ${gS()} N/kg &nbsp;·&nbsp; Gesucht: p in Pa`,
+      steps:[
+        {t:'Dichte in kg/m³ umrechnen',show:`ρ = ${fmt(L.d)} g/cm³ = ${fmt(L.d)} · 1000 kg/m³ = <b>${fmt(rho)} kg/m³</b>`,lead:`ρ = ${fmt(L.d)} g/cm³ =`,unit:'kg/m³',ans:rho,why:{q:'Warum wird mit 1000 multipliziert?',o:[['Weil 1 g/cm³ = 1000 kg/m³ sind.',1],['Weil 1 kg = 1000 g sind. Die cm³ spielen keine Rolle.',0],['Damit die Zahl schöner aussieht.',0]]}},
+        {t:'Tiefe in m umrechnen',show:`h = ${hc} cm = ${fr(hc,'100')} m = <b>${fmt(hm)} m</b>`,lead:`h = ${hc} cm =`,unit:'m',ans:hm,why:{q:'Warum muss h in Metern stehen?',o:[['Damit die Einheiten zusammenpassen: kg/m³ · N/kg · m ergibt N/m² = Pa.',1],['Weil man Flüssigkeiten immer in Metern misst.',0],['Das ist egal, mit cm geht es genauso.',0]]}},
+        {t:'Schweredruck berechnen',show:`p = ρ · g · h = ${fmt(rho)} kg/m³ · ${gS()} N/kg · ${fmt(hm)} m = <b>${fmt(p)} Pa</b>`,lead:'p = ρ · g · h =',unit:'Pa',ans:p,f:gg=>rho*gg*hm}],
+      answer:`Antwort: Der Schweredruck am Boden beträgt etwa ${fmt(p,3)} Pa, also rund ${fmt(p/100,3)} hPa.`};}};
+const EXSTAGE={1:{blank:[],prompt:[0,1],t:'Vollständig gelöst'},2:{blank:[2],prompt:[0],t:'Eine Lücke'},3:{blank:[1,2],prompt:[],t:'Zwei Lücken'},4:{blank:[0,1,2],prompt:[],t:'Selbst lösen'}};
+let exFam='auflage';
+function renderEx(){
+  const st=S.ex[exFam]||1,cfg=EXSTAGE[st],d=EX[exFam]();
+  $$('[data-fam]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.fam===exFam?'true':'false'));
+  $('#exStepper').innerHTML=[1,2,3,4].map(i=>`<li><button type="button" data-st="${i}" ${i===st?'aria-current="step"':''}><span class="k">${i}</span>${EXSTAGE[i].t}</button></li>`).join('');
+  $$('#exStepper [data-st]').forEach(b=>b.addEventListener('click',()=>{S.ex[exFam]=+b.dataset.st;save();renderEx();}));
+  const host=$('#exHost');const pending=new Set();
+  host.innerHTML=`<div class="stack"><span class="eyebrow">Stufe ${st} · ${cfg.t}</span><p class="task-q">${d.intro}</p><div class="given">${d.given}</div>
+    ${st===4?'<p class="muted">Jetzt du – ganz ohne Vorlage. Geh vor wie in den Beispielen: erst Einheiten umrechnen, dann rechnen.</p>':''}</div>
+    <ol class="exsteps">${d.steps.map((s,i)=>{const blank=cfg.blank.includes(i),pr=cfg.prompt.includes(i)&&s.why;if(blank)pending.add('b'+i);if(pr)pending.add('p'+i);
+      return `<li class="exstep" data-i="${i}"><span class="exstep-t">Schritt ${i+1} · ${s.t}</span>
+      ${blank?`<div class="exline"><label for="ex-${i}">${s.lead}</label><input class="num sm" id="ex-${i}" inputmode="decimal" autocomplete="off"><span class="unit">${s.unit}</span><button class="btn sm" type="button" data-chk="${i}">Prüfen</button></div><div class="fb"></div>`:`<div class="exline">${s.show}</div>`}
+      ${pr?`<div class="selfx" data-p="${i}"><b>Erkläre dir selbst: ${s.why.q}</b><div class="opts">${shuffle(s.why.o).map(o=>`<button class="opt" type="button" data-ok="${o[1]}">${o[0]}</button>`).join('')}</div></div>`:''}</li>`;}).join('')}</ol>
+    <div class="fb ok" id="exDone" hidden></div>
+    <div class="row" id="exNav" hidden></div>`;
+  const tick=()=>{if(pending.size)return;const done=$('#exDone');done.hidden=false;done.innerHTML=`<span class="fb-label">Geschafft</span>${d.answer}`;const nav=$('#exNav');nav.hidden=false;
+    nav.innerHTML=st<4?`<button class="btn accent" type="button" id="exNext">Weiter zu Stufe ${st+1}</button><button class="btn ghost" type="button" id="exSame">Noch ein Beispiel auf Stufe ${st}</button>`:`<a class="btn accent" href="#ueben">Weiter zu Schritt 4: Üben</a><button class="btn ghost" type="button" id="exSame">Noch eine Aufgabe auf Stufe 4</button>`;
+    const nx=$('#exNext');nx&&nx.addEventListener('click',()=>{S.ex[exFam]=st+1;save();renderEx();$('#exHost').scrollIntoView({behavior:'smooth',block:'start'});});
+    $('#exSame').addEventListener('click',()=>{renderEx();});
+    nav.querySelector('.btn').focus({preventScroll:true});};
+  d.steps.forEach((s,i)=>{const li=$(`.exstep[data-i="${i}"]`,host);
+    const b=$('[data-chk]',li);if(b){let tries=0;const inp=$('input',li),f=$('.fb',li);
+      const chk=()=>{if(inp.disabled)return;const u=parseNum(inp.value);if(isNaN(u)){f.className='fb';f.innerHTML='<span class="fb-label">Eingabe</span>Bitte eine Zahl eingeben, Dezimalzahlen mit Komma.';return;}
+        const r=judge({ans:s.ans,alt:s.f?s.f(otherG()):null},u);tries++;
+        if(r.ok){f.className='fb ok';f.innerHTML=`<span class="fb-label">Richtig</span>${s.show}`;inp.disabled=true;b.disabled=true;pending.delete('b'+i);tick();}
+        else if(tries>=2){f.className='fb bad';f.innerHTML=`<span class="fb-label">So geht es</span>${s.show}`;inp.disabled=true;b.disabled=true;pending.delete('b'+i);tick();}
+        else{f.className='fb bad';f.innerHTML=`<span class="fb-label">Noch nicht</span>${r.msg} Schau dir den entsprechenden Schritt in Stufe 1 an, wenn du unsicher bist.`;}};
+      b.addEventListener('click',chk);inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();chk();}});}
+    const sx=$('.selfx',li);if(sx){$$('.opt',sx).forEach(o=>o.addEventListener('click',()=>{if(o.dataset.ok==='1'){o.classList.add('right');$$('.opt',sx).forEach(x=>x.disabled=true);pending.delete('p'+i);tick();}else{o.classList.add('wrong');o.disabled=true;}}));}});
+  if(!pending.size)tick();
+}
+$$('[data-fam]').forEach(b=>b.addEventListener('click',()=>{exFam=b.dataset.fam;renderEx();}));
+
+/* ---------- Üben ---------- */
+const T={topic:'einheit',lvl:'auto',count:0,queue:[],last:null,started:false};
+function renderTopicChips(){$('#topicChips').innerHTML=TKEYS.map(t=>`<button class="chip" type="button" data-t="${t}" aria-pressed="${t===T.topic}">${TOPICS[t]} · ${S.prog[t].mastered?'gemeistert':'Stufe '+S.prog[t].level}</button>`).join('');
+  $$('#topicChips [data-t]').forEach(b=>b.addEventListener('click',()=>{T.topic=b.dataset.t;T.queue=[];T.last=null;$('#trainBanner').textContent='';renderTopicChips();trainNext();}));}
+$$('#lvlChips [data-l]').forEach(b=>b.addEventListener('click',()=>{T.lvl=b.dataset.l;$$('#lvlChips [data-l]').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));$('#trainBanner').textContent='';trainNext();}));
+function pickKey(topic,L,avoid){let c=Object.values(GEN).filter(g=>g.topic===topic&&g.level===L).map(g=>g.key);if(c.length>1)c=c.filter(k=>k!==avoid);return pick(c);}
+function trainNext(){
+  T.started=true;const L=T.lvl==='auto'?S.prog[T.topic].level:+T.lvl;
+  let key=null;const qi=T.queue.findIndex(q=>q.at<=T.count&&GEN[q.key].topic===T.topic);
+  if(qi>=0){key=T.queue[qi].key;T.queue.splice(qi,1);}
+  if(!key)key=pickKey(T.topic,L,T.last);
+  T.last=key;
+  runTask($('#trainHost'),key,{id:'tr',label:qi>=0?'Wiederholung mit neuen Zahlen':`Aufgabe ${T.count+1}`,onDone:trainDone});
+}
+function trainDone(r){
+  T.count++;stat(r);const p=S.prog[r.topic];let msg='';
+  if(!r.ok){boxWrong(r.key);T.queue.push({key:r.key,at:T.count+3});}
+  if(T.lvl==='auto'){
+    if(r.clean){p.streak++;p.wrong=0;if(p.streak>=3){if(p.level<3){p.level++;p.streak=0;msg=`Drei richtig ohne Hilfe – weiter auf Stufe ${p.level}.`;}else if(!p.mastered){p.mastered=true;msg=`Stark! ${TOPICS[r.topic]} ist auf Stufe 3 gemeistert. Mach mit dem gemischten Training weiter.`;}}}
+    else if(!r.ok){p.streak=0;p.wrong++;if(p.wrong>=2&&p.level>1){p.level--;p.wrong=0;msg=`Wir gehen zurück auf Stufe ${p.level}. Das ist kein Rückschritt: Festigen lohnt sich. Die Lösungsbeispiele in Schritt 3 können helfen.`;}}
+    else{p.streak=0;}
+  }
+  save();$('#trainBanner').textContent=msg;renderTopicChips();trainNext();
+  $('#trainBanner').textContent&&$('#trainBanner').scrollIntoView({block:'nearest'});
+}
+
+/* ---------- Gemischt ---------- */
+const M={list:[],i:0,res:[],active:false};
+function buildMix(n){const out=[],used=new Set();let prev=null;
+  for(let i=0;i<n;i++){const cand=TKEYS.filter(t=>t!==prev),pool=[...cand,...cand.filter(t=>t==='auflage'||t==='schwere')],tp=pick(pool),L=S.prog[tp].level;
+    let keys=Object.values(GEN).filter(g=>g.topic===tp&&g.level<=L&&!used.has(g.key)).map(g=>g.key);
+    if(!keys.length)keys=Object.values(GEN).filter(g=>g.topic===tp&&g.level<=L).map(g=>g.key);
+    const cur=keys.filter(k=>GEN[k].level===L),k=pick(cur.length&&Math.random()<0.6?cur:keys);out.push(k);used.add(k);prev=tp;}
+  return out;}
+function mixIntro(){$('#mixBar').style.width='0%';
+  $('#mixHost').innerHTML=`<div class="sheet stack"><h3>So läuft der Mix</h3><ul class="tips"><li><span>Zehn Aufgaben, jeder Bereich kommt vor, nie zweimal derselbe hintereinander.</span></li><li><span>Bei Rechenaufgaben wählst du zuerst die passende Formel.</span></li><li><span>Die Schwierigkeit richtet sich nach deinen Stufen aus dem Üben.</span></li><li><span>Es fühlt sich schwerer an als geblocktes Üben. Genau dadurch behältst du es länger.</span></li></ul><div><button class="btn accent" type="button" id="mixGo">Mix starten</button></div></div>`;
+  $('#mixGo').addEventListener('click',()=>{M.list=buildMix(10);M.i=0;M.res=[];M.active=true;mixNext();});}
+function mixNext(){const n=M.list.length;$('#mixBar').style.width=(M.i/n*100)+'%';
+  if(M.i>=n){mixSummary();return;}
+  runTask($('#mixHost'),M.list[M.i],{id:'mx',formulaStep:true,label:`Aufgabe ${M.i+1} von ${n}`,onDone:r=>{M.res.push(r);stat(r);if(!r.ok)boxWrong(r.key);save();M.i++;mixNext();$('#mixHost').scrollIntoView({block:'nearest'});}});}
+function mixSummary(){M.active=false;const R=M.res,ok=R.filter(r=>r.ok).length,sureWrong=R.filter(r=>r.conf===3&&!r.ok).length,unsureRight=R.filter(r=>r.conf&&r.conf<3&&r.ok).length,fw=R.filter(r=>r.formulaOk===false).length,fAll=R.filter(r=>r.formulaOk!==null).length,noConf=R.filter(r=>!r.conf).length;
+  $('#mixHost').innerHTML=`<div class="sheet summary"><span class="eyebrow">Auswertung</span><h3>${ok} von ${R.length} beim ersten Versuch richtig</h3>
+  <ul class="reslist">${R.map((r,i)=>`<li><span class="mark ${r.ok?'ok':'bad'}">${r.ok?'richtig':'üben'}</span>${i+1}. ${TOPICS[r.topic]}: ${GEN[r.key].name}</li>`).join('')}</ul>
+  ${fAll?`<p><b>Formel erkannt:</b> ${fAll-fw} von ${fAll} Rechenaufgaben beim ersten Versuch. ${fw?'Die Auswahl der Formel ist der Knackpunkt – genau das trainiert der Mix.':'Sehr gut. Du unterscheidest Auflage- und Schweredruck sicher.'}</p>`:''}
+  <p><b>Selbsteinschätzung:</b> ${noConf===R.length?'Du hast diesmal keine Sicherheit angegeben. Probier es beim nächsten Mix: Es zeigt dir, wo du dich verschätzt.':`${sureWrong?`${sureWrong}-mal warst du sicher, aber es war falsch. Diese Stellen sind tückisch: Lies dort die Rückmeldung noch einmal genau.`:'Wenn du dir sicher warst, lagst du richtig.'} ${unsureRight?`${unsureRight}-mal warst du unsicher und hattest trotzdem recht – du kannst mehr, als du denkst.`:''}`}</p>
+  <p class="muted">${R.length-ok?`${R.length-ok} Aufgabenart${R.length-ok===1?'':'en'} liegt jetzt in deiner Wiederholungsbox.`:'Nichts Neues in der Wiederholungsbox.'} Am besten machst du den nächsten Mix an einem anderen Tag.</p>
+  <div class="row"><button class="btn accent" type="button" id="mixAgain">Neuer Mix</button><a class="btn ghost" href="#wiederholen">Zur Wiederholungsbox</a></div></div>`;
+  $('#mixBar').style.width='100%';$('#mixAgain').addEventListener('click',()=>{M.list=buildMix(10);M.i=0;M.res=[];M.active=true;mixNext();});}
+
+/* ---------- Wiederholen ---------- */
+const RP={list:[],i:0,res:[],active:false};
+const INT={1:1,2:3,3:7};
+function boxResult(key,ok){const it=S.box[key];if(!it)return;if(ok){if(it.b>=3){delete S.box[key];S.mastered++;}else{it.b++;it.due=Date.now()+INT[it.b]*864e5;}}else{it.b=1;it.due=Date.now()+864e5;}save();}
+function dueKeys(){const now=Date.now();return Object.keys(S.box).filter(k=>GEN[k]&&S.box[k].due<=now);}
+function renderRep(){
+  const keys=Object.keys(S.box).filter(k=>GEN[k]),cnt=[1,2,3].map(b=>keys.filter(k=>S.box[k].b===b).length),due=dueKeys(),next=keys.length?Math.min(...keys.map(k=>S.box[k].due)):null;
+  const when=t=>{const d=Math.ceil((t-Date.now())/864e5);return d<=0?'heute':d===1?'morgen':`in ${d} Tagen`;};
+  $('#repHost').innerHTML=`<div class="stack"><div class="boxes">${[1,2,3].map((b,i)=>`<div class="box"><span class="eyebrow">Fach ${b}</span><span class="big">${cnt[i]}</span><small>${b===1?'kommt nach 1 Tag wieder':b===2?'kommt nach 3 Tagen wieder':'kommt nach 7 Tagen wieder'}</small></div>`).join('')}</div>
+  <div class="sheet stack">${keys.length?`<h3>${due.length?`${due.length} Aufgabe${due.length===1?'':'n'} ${due.length===1?'ist':'sind'} heute fällig`:'Heute ist nichts fällig'}</h3>
+    <p class="muted">${due.length?'Die Aufgaben kommen mit neuen Zahlen. Richtig gelöst wandern sie ein Fach weiter.':`Die nächste Aufgabe ist ${when(next)} dran. Der Abstand ist Absicht: Wenn du kurz vor dem Vergessen wiederholst, bleibt es am längsten.`}</p>
+    <div class="row">${due.length?`<button class="btn accent" type="button" id="repGo">Fällige üben</button>`:''}<button class="btn ghost" type="button" id="repAll">Alle ${keys.length} jetzt üben</button></div>
+    <ul class="reslist">${keys.sort((a,b)=>S.box[a].b-S.box[b].b).map(k=>`<li><span class="mark ${S.box[k].due<=Date.now()?'bad':'ok'}">Fach ${S.box[k].b}</span>${TOPICS[GEN[k].topic]}: ${GEN[k].name} <span class="muted">· ${when(S.box[k].due)}</span></li>`).join('')}</ul>`
+  :`<h3>Deine Box ist leer</h3><p class="muted">Sobald eine Aufgabe beim ersten Versuch nicht klappt, landet sie hier. Bisher gemeistert: ${S.mastered}.</p><div class="row"><a class="btn" href="#ueben">Zum Üben</a></div>`}</div></div>`;
+  const go=$('#repGo');go&&go.addEventListener('click',()=>repStart(dueKeys()));
+  const all=$('#repAll');all&&all.addEventListener('click',()=>repStart(Object.keys(S.box).filter(k=>GEN[k])));
+}
+function repStart(keys){RP.list=shuffle(keys);RP.i=0;RP.res=[];RP.active=true;repNext();}
+function repNext(){if(RP.i>=RP.list.length){RP.active=false;const ok=RP.res.filter(r=>r.ok).length;renderRep();$('#repHost').prepend(h(`<div class="sheet"><span class="eyebrow">Runde beendet</span><h3>${ok} von ${RP.res.length} richtig</h3><p class="muted">Richtig gelöste Aufgaben sind ein Fach weitergewandert, die anderen zurück in Fach 1.</p></div>`));return;}
+  runTask($('#repHost'),RP.list[RP.i],{id:'rp',formulaStep:true,label:`Wiederholung ${RP.i+1} von ${RP.list.length}`,onDone:r=>{RP.res.push(r);stat(r);boxResult(r.key,r.ok);RP.i++;repNext();}});}
+
+/* ---------- Start ---------- */
+syncG();renderVW();renderCards();renderSims();renderEx();
+if(S.predA){const b=$(`#predA [data-p="${S.predA}"]`);b&&b.click();}
+if(S.predS){const b=$(`#predS [data-p="${S.predS}"]`);b&&b.click();}
+show(location.hash.slice(1)||'start');
+window.__druck={GEN,makeTask,parseNum,judge,fmt,S:()=>S};
+})();
+</script>
+
+</body>
+</html>
