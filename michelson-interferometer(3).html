@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Michelson-Interferometer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: optical bench — top-view drawing + live readouts on the left, step notes + controls on the right */
+:root{
+  --bg:#E8ECEF; --surface:#F7F9FA; --fg:#141C24; --muted:#55626E; --line:#C8D0D7;
+  --accent:#1F5C9E; --accent-soft:#DCE7F3; --on-accent:#FFFFFF;
+  --table:#DAE0E5; --hole:#BFC8CF; --metal:#7C8893; --metal-hi:#B3BDC6; --metal-lo:#3E4954;
+  --glass:rgba(110,165,215,.45); --beam-edge:rgba(20,28,36,.32);
+  --w1:#0E7A72; --w2:#B4531A;
+  --screen:#05070A; --screen-text:#9AA5AF; --screen-face:#F3F5F6;
+  --font-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1217; --surface:#141B22; --fg:#E2E8ED; --muted:#8E9BA7; --line:#27323D;
+    --accent:#72A9E8; --accent-soft:#1B2B3D; --on-accent:#0D1217;
+    --table:#111820; --hole:#1F2A35; --metal:#6F7C88; --metal-hi:#9AA6B1; --metal-lo:#4A5662;
+    --glass:rgba(120,175,230,.35); --beam-edge:rgba(0,0,0,.55);
+    --w1:#4CC2B6; --w2:#EE8F55;
+    --screen:#05070A; --screen-text:#9AA5AF; --screen-face:#C9D1D8;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1217; --surface:#141B22; --fg:#E2E8ED; --muted:#8E9BA7; --line:#27323D;
+  --accent:#72A9E8; --accent-soft:#1B2B3D; --on-accent:#0D1217;
+  --table:#111820; --hole:#1F2A35; --metal:#6F7C88; --metal-hi:#9AA6B1; --metal-lo:#4A5662;
+  --glass:rgba(120,175,230,.35); --beam-edge:rgba(0,0,0,.55);
+  --w1:#4CC2B6; --w2:#EE8F55;
+  --screen:#05070A; --screen-text:#9AA5AF; --screen-face:#C9D1D8;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 32px;margin-bottom:18px}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--font-display);font-stretch:118%;font-weight:760;font-size:clamp(1.7rem,3.2vw,2.5rem);line-height:1.05;letter-spacing:-.01em;margin:4px 0 0;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:52ch}
+
+.bench{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr);gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0;transition:border-color .25s,box-shadow .25s}
+.panel.is-focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+.setup{padding:0;overflow:hidden;background-color:var(--table);background-image:radial-gradient(circle,var(--hole) 1.6px,transparent 2.1px);background-size:24px 24px;background-position:12px 12px}
+.setup canvas{display:block;width:100%}
+.setup .foot{display:flex;flex-wrap:wrap;gap:4px 18px;justify-content:space-between;align-items:center;padding:9px 14px;border-top:1px solid var(--line);background:var(--surface);font-size:12.5px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.readouts .panel{transition:opacity .3s,border-color .25s,box-shadow .25s}
+.readouts.dormant .rd-dim{opacity:.45}
+.rhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.label{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:500}
+.cap{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin:10px 0 0;font-variant-numeric:tabular-nums;min-height:3.1em;line-height:1.5}
+.cap b{color:var(--fg);font-weight:500}
+.screenbox{position:relative;aspect-ratio:1/1;width:100%;max-width:100%;background:var(--screen);border-radius:6px;overflow:hidden}
+.screenbox canvas{display:block;width:100%;height:100%}
+.screen-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--screen-text);font-size:13px;line-height:1.45}
+.plotbox canvas,.wavebox canvas{display:block;width:100%}
+
+.stepnav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.stepnav button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:500 13px var(--font-mono);cursor:pointer;padding:0}
+.stepnav button.done{background:var(--accent-soft);border-color:transparent}
+.stepnav button[aria-current="step"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+h2{font-family:var(--font-display);font-stretch:112%;font-weight:700;font-size:1.45rem;line-height:1.15;margin:4px 0 10px;text-wrap:balance}
+.st-body p{margin:0 0 10px;max-width:62ch}
+.st-body ul{margin:0 0 10px;padding-left:18px}
+.st-body li{margin:2px 0}
+.st-body .note{font-size:13.5px;color:var(--muted)}
+.formula{font-family:var(--font-mono);font-size:14px;background:var(--accent-soft);border-radius:6px;padding:10px 12px;margin:12px 0 0;line-height:1.75;font-variant-numeric:tabular-nums;overflow-x:auto}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.actions:empty{display:none}
+.st-buttons{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.hint{font-size:12px;color:var(--muted)}
+
+.btn{font:500 14px var(--font-body);padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;cursor:pointer;line-height:1.2}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.controls h3{margin:0 0 6px}
+.ctl{padding:14px 0;border-top:1px solid var(--line);transition:background .25s}
+.ctl.first{border-top:0;padding-top:6px}
+.ctl.is-focus{background:var(--accent-soft);margin-inline:-16px;padding-inline:16px;border-top-color:transparent}
+.ctl-head{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:4px}
+.ctl-head label,.ctl-head .lbl{font-weight:600;font-size:14px}
+output{font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--fg);display:inline-flex;align-items:center;gap:6px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:6px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.sub{font-size:12.5px;color:var(--muted);margin:2px 0 6px}
+.check{display:inline-flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin:6px 0 4px}
+.check input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+.readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}
+.readout div{background:var(--bg);border-radius:6px;padding:8px 10px;min-width:0}
+.readout dt{font-size:11.5px;color:var(--muted);line-height:1.3}
+.readout dd{margin:3px 0 0;font:500 15px var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap;overflow-x:auto}
+
+@media (max-width:980px){
+  .bench{display:flex;flex-direction:column}
+  .col{display:contents}
+  .stepcard{order:1}.setup{order:2}.readouts{order:3}.controls{order:4}
+}
+@media (max-width:460px){
+  .readout{grid-template-columns:1fr 1fr}
+  .readout div:last-child{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Wellenoptik · Interferenz</p>
+      <h1>Michelson-Interferometer</h1>
+    </div>
+    <p class="lede">Folge dem Strahlengang Schritt für Schritt. Das Interferenzbild auf dem Schirm wird live aus deinen Einstellungen berechnet.</p>
+  </header>
+
+  <main class="bench">
+    <div class="col">
+      <section class="panel setup" aria-label="Aufbau in der Draufsicht">
+        <div id="setupWrap"><canvas id="setup" role="img" aria-label="Draufsicht des Michelson-Interferometers mit Strahlengang"></canvas></div>
+        <div class="foot">
+          <div class="legend">
+            <span><i class="sw" style="background:var(--w1)"></i>Teilstrahl ① über S1</span>
+            <span><i class="sw" style="background:var(--w2)"></i>Teilstrahl ② über S2</span>
+          </div>
+          <span>Punkte = Wellenberge · Wellenlänge und Verschiebung von S2 stark vergrößert</span>
+        </div>
+      </section>
+
+      <div class="readouts" id="readouts">
+        <section class="panel" id="p-screen">
+          <div class="rhead"><h3 class="label">Schirmbild</h3><span class="label" id="screen-tag">λ = 632,8 nm</span></div>
+          <div class="screenbox"><canvas id="screen" aria-label="Interferenzbild auf dem Schirm"></canvas><div class="screen-msg" id="screen-msg">Noch kein Licht auf dem Schirm.<br>Das Bild erscheint ab Schritt 5.</div></div>
+          <p class="cap" id="cap-screen"></p>
+        </section>
+        <section class="panel rd-dim" id="p-waves">
+          <div class="rhead"><h3 class="label">Wellen am Schirm</h3><span class="label">stark vergrößert</span></div>
+          <div class="wavebox"><canvas id="waves" height="196" style="height:196px" aria-label="Teilwellen und ihre Summe"></canvas></div>
+          <p class="cap" id="cap-waves"></p>
+        </section>
+        <section class="panel rd-dim" id="p-plot">
+          <div class="rhead"><h3 class="label">Intensität in der Mitte</h3></div>
+          <div class="plotbox"><canvas id="plot" height="196" style="height:196px" aria-label="Intensität in Abhängigkeit vom Gangunterschied"></canvas></div>
+          <p class="cap" id="cap-plot"></p>
+        </section>
+      </div>
+    </div>
+
+    <div class="col">
+      <section class="panel stepcard" aria-live="polite">
+        <nav class="stepnav" id="stepnav" aria-label="Schritte"></nav>
+        <p class="eyebrow" id="st-eyebrow"></p>
+        <h2 id="st-title"></h2>
+        <div class="st-body" id="st-body"></div>
+        <div class="formula" id="st-formula"></div>
+        <div class="actions" id="st-actions"></div>
+        <div class="st-buttons">
+          <button class="btn ghost" id="prev">Zurück</button>
+          <span class="hint">Pfeiltasten ← → wechseln</span>
+          <button class="btn primary" id="next">Weiter</button>
+        </div>
+      </section>
+
+      <section class="panel controls">
+        <h3 class="label">Steuerung</h3>
+        <div class="ctl first" id="ctl-lambda">
+          <div class="ctl-head"><label for="in-lambda">Wellenlänge λ</label><output id="out-lambda"></output></div>
+          <input type="range" id="in-lambda" min="400" max="700" step="0.1" value="632.8">
+          <div class="chips">
+            <button class="btn sm" data-lam="632.8">He-Ne 632,8 nm</button>
+            <button class="btn sm" data-lam="532">Grün 532 nm</button>
+            <button class="btn sm" data-lam="450">Blau 450 nm</button>
+          </div>
+        </div>
+        <div class="ctl" id="ctl-lens">
+          <div class="ctl-head"><span class="lbl">Aufweitungslinse</span><output id="out-lens"></output></div>
+          <label class="check"><input type="checkbox" id="in-lens" checked> Linse im Strahlengang</label>
+          <p class="sub">Ohne Linse läuft ein schmaler, paralleler Strahl. Auf dem Schirm erscheint dann nur ein Fleck, der als Ganzes hell oder dunkel wird.</p>
+        </div>
+        <div class="ctl" id="ctl-d">
+          <div class="ctl-head"><label for="in-d">Armlängendifferenz d = L₂ − L₁</label><output id="out-d"></output></div>
+          <input type="range" id="in-d" min="0" max="25" step="0.001" value="8">
+          <div class="chips">
+            <button class="btn sm" data-dstep="-0.5">− λ/2</button>
+            <button class="btn sm" data-dstep="-0.25">− λ/4</button>
+            <button class="btn sm" data-dstep="0.25">+ λ/4</button>
+            <button class="btn sm" data-dstep="0.5">+ λ/2</button>
+          </div>
+        </div>
+        <div class="ctl" id="ctl-tilt">
+          <div class="ctl-head"><label for="in-tilt">Verkippung von S1</label><output id="out-tilt"></output></div>
+          <input type="range" id="in-tilt" min="0" max="150" step="1" value="0">
+          <p class="sub">0 µrad: Ringe · größere Werte: zunehmend parallele Streifen</p>
+        </div>
+        <div class="ctl" id="ctl-motor">
+          <div class="ctl-head"><span class="lbl">Motor und Ringzähler</span><output id="out-speed">0,25 µm/s</output></div>
+          <div class="chips">
+            <button class="btn sm primary" id="btn-motor">Motor starten</button>
+            <button class="btn sm" id="btn-zero">Zähler nullen</button>
+          </div>
+          <dl class="readout">
+            <div><dt>Gezählte Ringe N</dt><dd id="o-n">0</dd></div>
+            <div><dt>Verschiebung Δd</dt><dd id="o-dd">0,000 µm</dd></div>
+            <div><dt>λ = 2·Δd / N</dt><dd id="o-lm">–</dd></div>
+          </dl>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+"use strict";
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DMAX = 25, MOTOR_RATE = 0.25;
+const S = { step:0, lambda:632.8, d:8, tilt:0, lens:true, motor:false, dRef:8, revealAt:performance.now() };
+const lamUm = () => S.lambda/1000;
+const fmt = (x,n) => x.toLocaleString('de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
+const $ = id => document.getElementById(id);
+
+/* ---------- Schritte ---------- */
+const STEPS = [
+ { title:'Aufbau im Überblick', beams:0, hl:[], allLabels:true, focus:[],
+   body:`<p>Das Michelson-Interferometer teilt einen Lichtstrahl in zwei Teilstrahlen, schickt sie durch zwei senkrecht zueinander stehende Arme und überlagert sie danach wieder. Am Interferenzbild auf dem Schirm lassen sich Längenänderungen ablesen, die kleiner sind als eine Lichtwellenlänge.</p>
+   <ul><li><b>Laser</b> mit <b>Linse</b> zur Strahlaufweitung</li><li><b>Strahlteiler</b>: halbdurchlässiger Spiegel unter 45°</li><li><b>Spiegel S1</b>, fest montiert</li><li><b>Spiegel S2</b>, mit einer Mikrometerschraube verschiebbar</li><li><b>Schirm</b> zur Beobachtung</li></ul>`,
+   formula:`Arm 1: Strahlteiler → S1, Länge L₁<br>Arm 2: Strahlteiler → S2, Länge L₂` },
+ { title:'Die Lichtquelle', beams:1, hl:['laser','lens'], focus:['ctl-lambda','ctl-lens'],
+   body:`<p>Der Laser liefert <b>monochromatisches</b> und <b>kohärentes</b> Licht: eine einzige Wellenlänge, deren Phase über eine lange Strecke festgelegt ist. Ein Helium-Neon-Laser sendet rotes Licht mit λ = 632,8 nm.</p>
+   <p>Die Linse weitet den Strahl etwas auf. Dadurch entsteht auf dem Schirm später kein Punkt, sondern ein flächiges Bild. Unter „Steuerung“ kannst du die Linse entfernen.</p>`,
+   formula:`Interferenz ist nur sichtbar, wenn<br>Gangunterschied Δs &lt; Kohärenzlänge l<sub>K</sub>`,
+   actions:[{label:'He-Ne 632,8 nm',run:()=>setLambda(632.8)},{label:'Grün 532 nm',run:()=>setLambda(532)}] },
+ { title:'Teilung am Strahlteiler', beams:2, hl:['bs'], focus:[],
+   body:`<p>Der Strahlteiler ist eine Glasplatte mit einer halbdurchlässigen Schicht. Etwa die Hälfte des Lichts wird reflektiert und läuft als <b>Teilstrahl ①</b> nach oben zum festen Spiegel S1. Der Rest geht hindurch und läuft als <b>Teilstrahl ②</b> zum beweglichen Spiegel S2.</p>
+   <p>Beide Teilstrahlen stammen aus derselben Welle (Amplitudenteilung). Deshalb sind sie zueinander kohärent und können später interferieren.</p>
+   <p class="note">In echten Geräten sorgt eine zusätzliche Kompensationsplatte dafür, dass beide Teilstrahlen gleich oft durch Glas laufen.</p>`,
+   formula:`I₁ ≈ I₂ ≈ ½ · I₀` },
+ { title:'Reflexion an den Spiegeln', beams:3, hl:['m1','m2','dims'], focus:[],
+   body:`<p>Beide Teilstrahlen treffen senkrecht auf ihren Spiegel und laufen auf demselben Weg zurück zum Strahlteiler. In der Zeichnung ist der Rückweg leicht versetzt, damit du ihn erkennst.</p>
+   <p>Teilstrahl ① legt dabei die Strecke 2·L₁ zurück, Teilstrahl ② die Strecke 2·L₂. Jeder Arm wird zweimal durchlaufen. Eine Längenänderung eines Arms wirkt sich deshalb doppelt auf den Lichtweg aus.</p>`,
+   formula:`s₁ = 2·L₁<br>s₂ = 2·L₂` },
+ { title:'Wiedervereinigung', beams:4, hl:['bs','screen'], focus:['p-screen'],
+   body:`<p>Am Strahlteiler wird jeder Teilstrahl noch einmal geteilt. Ein Teil läuft zum Schirm, der andere zurück in Richtung Laser (blass gestrichelt). Auf dem Schirm überlagern sich ① und ②.</p>
+   <p>Beide haben unterschiedlich lange Wege hinter sich. Diese Differenz heißt <b>Gangunterschied</b>. Mit der Armlängendifferenz d = L₂ − L₁ gilt:</p>`,
+   formula:`Δs = s₂ − s₁ = 2·(L₂ − L₁) = 2·d` },
+ { title:'Interferenz', beams:4, hl:['screen'], focus:['p-waves','p-plot','ctl-d'],
+   body:`<p>Auf dem Schirm addieren sich die Felder beider Wellen. Unten siehst du beide Teilwellen und ihre Summe.</p>
+   <p>Ist der Gangunterschied ein ganzzahliges Vielfaches von λ, schwingen beide im Takt und verstärken sich: Die Bildmitte ist hell. Kommt ein halbes λ hinzu, schwingen sie gegeneinander und löschen sich aus.</p>
+   <p>Die Punkte auf den Strahlen markieren Wellenberge. Bei konstruktiver Interferenz liegen die Punkte von ① und ② auf dem Weg zum Schirm auf gleicher Höhe. Bei destruktiver Interferenz sind sie um einen halben Abstand versetzt.</p>
+   <p>Verschiebe S2 um λ/4. Der Gangunterschied ändert sich dann um λ/2, und aus hell wird dunkel.</p>`,
+   formula:`konstruktiv: Δs = k·λ<br>destruktiv:  Δs = (k + ½)·λ<br>I = I₀ · cos²(π·Δs / λ)`,
+   actions:[{label:'Mitte hell einstellen',run:()=>{setD(Math.round(2*S.d/lamUm())*lamUm()/2)}},
+            {label:'Mitte dunkel einstellen',run:()=>{setD((Math.floor(2*S.d/lamUm())+0.5)*lamUm()/2)}},
+            {label:'S2 um + λ/4',run:()=>setD(S.d+lamUm()/4)}] },
+ { title:'Ringe und Streifen', beams:4, hl:['screen','m1'], focus:['p-screen','ctl-tilt','ctl-d','ctl-lens'],
+   body:`<p>Der aufgeweitete Strahl enthält auch Anteile, die unter einem kleinen Winkel θ zur Achse laufen. Für sie ist der Gangunterschied etwas kleiner. Alle Punkte mit gleichem θ liegen auf einem Kreis um die Mitte, deshalb siehst du <b>konzentrische Ringe</b>.</p>
+   <p>Je größer d, desto enger liegen die Ringe. Bei d = 0 ist das ganze Bild gleich hell. Ist ein Spiegel leicht verkippt, bilden die beiden Arme einen Keil und es entstehen <b>parallele Streifen</b>.</p>
+   <p>Entfernst du die Linse, laufen alle Strahlen parallel zur Achse (θ = 0) und haben denselben Gangunterschied. Dann gibt es keine Ringe mehr, sondern nur einen Fleck, der als Ganzes hell oder dunkel wird.</p>`,
+   formula:`Δs(θ) = 2·d·cos θ`,
+   actions:[{label:'d = 1 µm',run:()=>setD(1)},{label:'d = 20 µm',run:()=>setD(20)},
+            {label:'S1 verkippen',run:()=>setTilt(90)},{label:'Kippung aufheben',run:()=>setTilt(0)},
+            {label:()=>S.lens?'Linse entfernen':'Linse einsetzen',run:()=>setLens(!S.lens)}] },
+ { title:'Messen durch Verschieben', beams:4, hl:['m2'], focus:['ctl-motor','p-screen'],
+   body:`<p>Wird S2 um Δd verschoben, ändert sich der Gangunterschied um 2·Δd. Jedes Mal, wenn er um eine ganze Wellenlänge wächst, quillt in der Bildmitte ein neuer Ring hervor. Fährt man den Spiegel heran, verschwinden die Ringe in der Mitte.</p>
+   <p>Starte den Motor und beobachte die Bildmitte. Der Zähler zählt die Ringe und berechnet daraus die Wellenlänge. Umgekehrt misst man mit bekanntem λ Längen auf Bruchteile eines Mikrometers genau. Gravitationswellendetektoren wie LIGO nutzen dasselbe Prinzip mit kilometerlangen Armen.</p>`,
+   formula:`2·Δd = N·λ  ⇒  λ = 2·Δd / N`,
+   actions:[{label:()=>S.motor?'Motor stoppen':'Motor starten',run:()=>toggleMotor(),primary:true},
+            {label:'Zähler nullen',run:()=>zeroCounter()}] }
+];
+
+/* ---------- Farben ---------- */
+let T = {};
+function readTokens(){
+  const cs = getComputedStyle(document.documentElement);
+  const g = n => cs.getPropertyValue(n).trim();
+  T = { fg:g('--fg'), muted:g('--muted'), line:g('--line'), accent:g('--accent'), surface:g('--surface'),
+        table:g('--table'), metal:g('--metal'), metalHi:g('--metal-hi'), metalLo:g('--metal-lo'),
+        glass:g('--glass'), beamEdge:g('--beam-edge'), w1:g('--w1'), w2:g('--w2'), screenFace:g('--screen-face') };
+}
+function waveRGB(nm){
+  let r=0,g=0,b=0;
+  if(nm<440){ r=-(nm-440)/60; b=1; }
+  else if(nm<490){ g=(nm-440)/50; b=1; }
+  else if(nm<510){ g=1; b=-(nm-510)/20; }
+  else if(nm<580){ r=(nm-510)/70; g=1; }
+  else if(nm<645){ r=1; g=-(nm-645)/65; }
+  else { r=1; }
+  let f = nm<420 ? .3+.7*(nm-380)/40 : nm>700 ? .3+.7*(780-nm)/80 : 1;
+  return [r,g,b].map(c=>Math.pow(Math.max(0,c*f),.8));
+}
+let RGB = waveRGB(S.lambda);
+const rgba = (a) => `rgba(${Math.round(RGB[0]*255)},${Math.round(RGB[1]*255)},${Math.round(RGB[2]*255)},${a})`;
+
+/* ---------- Physik ---------- */
+const deltaS = () => 2*S.d;                              // µm, in der Bildmitte
+const Icenter = () => { const c=Math.cos(Math.PI*deltaS()/lamUm()); return c*c; };
+const orderAt = d => Math.floor(2*d/lamUm()+1e-9);
+function statusText(I){ return I>0.95?'konstruktiv, hell':I<0.05?'destruktiv, dunkel':'teilweise Auslöschung'; }
+
+/* ---------- Setup-Zeichnung ---------- */
+const W=760, H=560;
+const setupWrap=$('setupWrap'), cv=$('setup'), ctx=cv.getContext('2d');
+let scale=1, dpr=1;
+function sizeSetup(){
+  dpr = window.devicePixelRatio||1;
+  const w = setupWrap.clientWidth; scale = w/W;
+  cv.width = Math.round(w*dpr); cv.height = Math.round(H*scale*dpr);
+  cv.style.height = (H*scale)+'px';
+}
+const FONT = '"IBM Plex Sans",system-ui,sans-serif';
+const xM2 = () => 640 + S.d*1.2;
+function rr(x,y,w,h,r){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else ctx.rect(x,y,w,h); }
+function seg(a,b,p){ ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(a[0]+(b[0]-a[0])*p,a[1]+(b[1]-a[1])*p); ctx.stroke(); }
+function beam(a,b,p,alpha,dash){
+  if(p<=0) return;
+  ctx.save(); ctx.lineCap='round'; ctx.globalAlpha=alpha==null?1:alpha;
+  if(dash) ctx.setLineDash(dash);
+  ctx.strokeStyle=T.beamEdge; ctx.lineWidth=5.5; seg(a,b,p);
+  ctx.strokeStyle=rgba(1); ctx.lineWidth=3; ctx.shadowColor=rgba(.9); ctx.shadowBlur=10*dpr; seg(a,b,p);
+  ctx.restore();
+}
+function halo(x,y,w,h,now){
+  ctx.save();
+  const pulse = reduced?1:.75+.25*Math.sin(now/300);
+  ctx.globalAlpha=.1*pulse; ctx.fillStyle=T.accent; rr(x,y,w,h,8); ctx.fill();
+  ctx.globalAlpha=.95*pulse; ctx.strokeStyle=T.accent; ctx.lineWidth=1.6; ctx.setLineDash([5,4]); ctx.stroke();
+  ctx.restore();
+}
+let fs=12;
+function label(txt,x,y,align,hi,color,weight){
+  ctx.save(); ctx.font=`${weight||(hi?600:500)} ${fs}px ${FONT}`; ctx.textAlign=align||'center'; ctx.textBaseline='middle';
+  ctx.fillStyle=color||(hi?T.accent:T.fg); ctx.fillText(txt,x,y); ctx.restore();
+}
+function arrowDim(a,b,txt,tx,ty,align,hi){
+  ctx.save(); ctx.strokeStyle=hi?T.accent:T.muted; ctx.fillStyle=ctx.strokeStyle; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke();
+  const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+  [[a,ang+Math.PI],[b,ang]].forEach(([p,an])=>{
+    ctx.beginPath(); ctx.moveTo(p[0],p[1]);
+    ctx.lineTo(p[0]-7*Math.cos(an-.4),p[1]-7*Math.sin(an-.4));
+    ctx.lineTo(p[0]-7*Math.cos(an+.4),p[1]-7*Math.sin(an+.4)); ctx.closePath(); ctx.fill();
+  });
+  ctx.restore();
+  label(txt,tx,ty,align,hi,hi?T.accent:T.muted,600);
+}
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+
+function geometry(){
+  const xm=xM2();
+  const L=[150,300], B=[400,300];
+  return {
+    xm,
+    beams:[
+      {a:L,b:B,st:1},
+      {a:B,b:[400,72],st:2},{a:B,b:[xm,300],st:2},
+      {a:[404,72],b:[404,296],st:3},{a:[xm,304],b:[396,304],st:3},
+      {a:[404,296],b:[404,511],st:4},{a:[396,304],b:[396,511],st:4}
+    ],
+    path1:{pts:[L,B,[400,72],[404,72],[404,296],[404,511]],st:[1,2,2,3,4]},
+    path2:{pts:[L,B,[xm,300],[xm,304],[396,304],[396,511]],st:[1,2,2,3,4]}
+  };
+}
+
+function drawSetup(now){
+  const st=STEPS[S.step], stage=st.beams;
+  fs = Math.min(19, Math.max(12, 12.5/scale));
+  ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0);
+  ctx.clearRect(0,0,W,H);
+  const G=geometry(), xm=G.xm;
+  const prog = s => s<stage?1 : s>stage?0 : (reduced?1:ease((now-S.revealAt)/900));
+  const hl = id => st.hl.includes(id);
+
+  // Halos
+  if(hl('laser')) halo(22,274,138,52,now);
+  if(hl('lens')) halo(188,266,34,68,now);
+  if(hl('bs')) halo(366,266,68,68,now);
+  if(hl('m1')) halo(354,38,92,42,now);
+  if(hl('m2')) halo(xm-10,254,760-xm,92,now);
+  if(hl('screen')) halo(344,500,112,30,now);
+
+  // Strahlen
+  G.beams.forEach(bm=>beam(bm.a,bm.b,prog(bm.st)));
+  if(stage>=4){
+    const p=prog(4);
+    beam([392,296],[152,296],p,.28,[6,6]);
+    beam([392,304],[152,304],p,.28,[6,6]);
+  }
+
+  // Wellenberge (Punkte). Abstand = dargestellte Wellenlänge.
+  // Teilstrahl ② bekommt am Spiegel S2 eine Zusatzphase, sodass der Versatz der Punkte
+  // auf dem Weg zum Schirm genau dem echten Gangunterschied (mod λ) entspricht.
+  if(stage>=1){
+    const t=reduced?0:now/1000, speed=95, gap=36, off=(t*speed)%gap;
+    const segLens=P=>P.pts.slice(0,-1).map((a,i)=>{const b=P.pts[i+1];return Math.hypot(b[0]-a[0],b[1]-a[1]);});
+    const l1=segLens(G.path1), l2=segLens(G.path2);
+    const A1=l1[1]+l1[2]+l1[3], A2=l2[1]+l2[2]+l2[3];
+    const phi=((deltaS()/lamUm())%1+1)%1;
+    const delta=(((A1+8+phi*gap-A2)%gap)+gap)%gap;
+    const v2=l2.slice(); v2[2]+=delta;
+    [[G.path1,l1,l1,T.w1,true],[G.path2,l2,v2,T.w2,false]].forEach(([P,lens,vl,col,first])=>{
+      const tot=vl.reduce((a,b)=>a+b,0);
+      for(let sv=off; sv<tot; sv+=gap){
+        let i=0, acc=0; while(i<vl.length-1 && sv>acc+vl[i]){ acc+=vl[i]; i++; }
+        if(i===0 && !first) continue;
+        const local=vl[i]?(sv-acc)*lens[i]/vl[i]:0;
+        if(local > prog(P.st[i])*lens[i]) continue;
+        const a=P.pts[i], b=P.pts[i+1], f=lens[i]?local/lens[i]:0;
+        const x=a[0]+(b[0]-a[0])*f, y=a[1]+(b[1]-a[1])*f;
+        ctx.beginPath(); ctx.arc(x,y,i===0?2.4:3.2,0,Math.PI*2);
+        ctx.fillStyle = i===0 ? T.surface : col; ctx.fill();
+        ctx.lineWidth=1; ctx.strokeStyle=T.beamEdge; ctx.stroke();
+      }
+    });
+  }
+
+  // Laser
+  ctx.fillStyle=T.metalLo; rr(30,284,118,32,6); ctx.fill();
+  ctx.fillStyle=T.metal; rr(140,292,12,16,2); ctx.fill();
+  ctx.fillStyle=rgba(.9); ctx.fillRect(40,296,8,8);
+  // Linse
+  ctx.save(); ctx.beginPath(); ctx.ellipse(205,300,7,27,0,0,Math.PI*2);
+  if(S.lens){ ctx.fillStyle=T.glass; ctx.fill(); ctx.strokeStyle=T.metal; ctx.lineWidth=1.3; ctx.stroke(); }
+  else { ctx.globalAlpha=.6; ctx.setLineDash([3,3]); ctx.strokeStyle=T.muted; ctx.lineWidth=1.1; ctx.stroke(); }
+  ctx.restore();
+  ctx.fillStyle=T.metal; ctx.fillRect(201,327,8,10);
+  // Strahlteiler
+  ctx.save(); ctx.translate(400,300); ctx.rotate(-Math.PI/4);
+  ctx.fillStyle=T.glass; ctx.fillRect(-38,-4,76,8);
+  ctx.strokeStyle=T.metalHi; ctx.lineWidth=1.2; ctx.strokeRect(-38,-4,76,8);
+  ctx.strokeStyle=T.accent; ctx.globalAlpha=.7; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(-38,4); ctx.lineTo(38,4); ctx.stroke();
+  ctx.restore();
+  // Spiegel S1 (fest, ggf. verkippt)
+  ctx.save(); ctx.translate(400,66); ctx.rotate(S.tilt/150*0.07);
+  ctx.fillStyle=T.metalLo; ctx.fillRect(-20,-24,40,18);
+  ctx.fillStyle=T.metalHi; ctx.fillRect(-38,-6,76,9);
+  ctx.strokeStyle=T.metal; ctx.lineWidth=1; ctx.strokeRect(-38,-6,76,9);
+  ctx.restore();
+  // Spiegel S2 mit Schlitten und Mikrometerschraube
+  ctx.fillStyle=T.metal; ctx.fillRect(600,344,148,6);
+  ctx.fillStyle=T.metalHi; ctx.fillRect(xm,262,9,76);
+  ctx.strokeStyle=T.metal; ctx.lineWidth=1; ctx.strokeRect(xm,262,9,76);
+  ctx.fillStyle=T.metalLo; ctx.fillRect(xm+9,280,16,62);
+  ctx.fillStyle=T.metal; ctx.fillRect(xm+25,296,712-(xm+25),8);
+  ctx.fillStyle=T.metalLo; rr(712,284,34,32,3); ctx.fill();
+  ctx.strokeStyle=T.metalHi; ctx.lineWidth=1;
+  for(let k=0;k<7;k++){ const x=716+k*4.5; ctx.beginPath(); ctx.moveTo(x,287); ctx.lineTo(x,313); ctx.stroke(); }
+  // Schirm
+  if(stage>=4){
+    const I=Icenter(), g=ctx.createRadialGradient(400,512,0,400,512,34);
+    g.addColorStop(0,rgba(.95*I)); g.addColorStop(1,rgba(0));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(400,512,34,0,Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle=T.screenFace; ctx.fillRect(350,511,100,8);
+  ctx.strokeStyle=T.metalLo; ctx.lineWidth=1.2; ctx.strokeRect(350,511,100,8);
+  ctx.fillStyle=T.metalLo; ctx.fillRect(390,519,20,10);
+
+  // Maße
+  if(stage>=3){
+    arrowDim([446,284],[446,80],'L₁',456,182,'left',hl('dims'));
+    arrowDim([414,268],[xm-4,268],'L₂',(414+xm)/2,254,'center',hl('dims'));
+  }
+
+  // Beschriftungen
+  const A = st.allLabels;
+  label('Draufsicht',20,24,'left',false,T.muted,500);
+  label('Laser',89,340,'center',A||hl('laser'));
+  if(S.lens) label('Linse',205,350,'center',A||hl('lens'));
+  else label('Linse entfernt',205,350,'center',false,T.muted,500);
+  label('Strahlteiler',384,342,'right',A||hl('bs'));
+  label('S1 (fest)',452,56,'left',A||hl('m1'));
+  label('S2 (beweglich)',xm+4,240,'center',A||hl('m2'));
+  label('Mikrometerschraube',748,368,'right',A||hl('m2'),A||hl('m2')?null:T.muted,500);
+  label('d = '+fmt(S.d,3)+' µm',748,368+fs*1.35,'right',false,T.fg,500);
+  label('Schirm',460,515,'left',A||hl('screen'));
+  if(stage>=2){
+    label('①',384,190,'right',false,T.w1,700);
+    label('②',520,324,'center',false,T.w2,700);
+  }
+  if(stage>=4) label('① + ②',414,462,'left',false,T.fg,600);
+}
+
+/* ---------- Schirmbild ---------- */
+const N=240, off=document.createElement('canvas'); off.width=off.height=N;
+const octx=off.getContext('2d'), img=octx.createImageData(N,N);
+const sc=$('screen'), sctx=sc.getContext('2d');
+function sizeScreen(){ const w=sc.clientWidth; sc.width=Math.round(w*dpr); sc.height=Math.round(w*dpr); }
+function renderScreen(){
+  const lit = STEPS[S.step].beams>=4;
+  $('screen-msg').hidden = lit;
+  const data=img.data, half=10, F2=400, k=Math.PI/lamUm(), tilt=S.tilt*2e-3;
+  const [r,g,b]=RGB;
+  for(let j=0;j<N;j++){
+    const y=((j+.5)/N*2-1)*half;
+    for(let i=0;i<N;i++){
+      const x=((i+.5)/N*2-1)*half, r2=x*x+y*y;
+      let v=0;
+      if(lit){
+        const ds=(S.lens?2*S.d*(1-r2/(2*F2)):2*S.d) + tilt*x;
+        const c=Math.cos(k*ds);
+        v=c*c*Math.exp(-r2/(S.lens?144.5:3.9));
+      }
+      const idx=(j*N+i)*4;
+      data[idx]=255*r*v; data[idx+1]=255*g*v; data[idx+2]=255*b*v; data[idx+3]=255;
+    }
+  }
+  octx.putImageData(img,0,0);
+  sctx.setTransform(1,0,0,1,0,0);
+  sctx.imageSmoothingEnabled=true;
+  sctx.drawImage(off,0,0,sc.width,sc.height);
+  if(lit){
+    const w=sc.width, c=w/2;
+    sctx.strokeStyle='rgba(255,255,255,.28)'; sctx.lineWidth=dpr;
+    sctx.beginPath(); sctx.moveTo(c-w*.06,c); sctx.lineTo(c-w*.02,c); sctx.moveTo(c+w*.02,c); sctx.lineTo(c+w*.06,c);
+    sctx.moveTo(c,c-w*.06); sctx.lineTo(c,c-w*.02); sctx.moveTo(c,c+w*.02); sctx.lineTo(c,c+w*.06); sctx.stroke();
+  }
+}
+
+/* ---------- Wellen ---------- */
+const wv=$('waves'), wctx=wv.getContext('2d');
+function sizeCanvas(c,h){ c.width=Math.round(c.clientWidth*dpr); c.height=Math.round(h*dpr); }
+function drawWaves(now){
+  const w=wv.clientWidth, x=wctx;
+  x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,w,196);
+  const t=reduced?0:now/1000, lamPx=64, ph=2*Math.PI*0.7*t;
+  const phi=2*Math.PI*deltaS()/lamUm();
+  const lanes=[
+    {cy:34,amp:13,col:T.w1,name:'① von S1',f:u=>Math.sin(u)},
+    {cy:94,amp:13,col:T.w2,name:'② von S2',f:u=>Math.sin(u-phi)},
+    {cy:160,amp:13,col:T.fg,name:'Summe ① + ②',f:u=>Math.sin(u)+Math.sin(u-phi)}
+  ];
+  lanes.forEach(L=>{
+    x.strokeStyle=T.line; x.lineWidth=1; x.beginPath(); x.moveTo(0,L.cy); x.lineTo(w,L.cy); x.stroke();
+    x.strokeStyle=L.col; x.lineWidth=2; x.beginPath();
+    for(let X=0;X<=w;X+=2){ const u=2*Math.PI*X/lamPx-ph; const y=L.cy-L.amp*L.f(u); X?x.lineTo(X,y):x.moveTo(X,y); }
+    x.stroke();
+    x.font=`500 11px ${FONT}`; x.fillStyle=L.col===T.fg?T.muted:L.col; x.textBaseline='middle';
+    const ly = L.cy - (L===lanes[2]?27:L.amp) - 8;
+    x.fillText(L.name,0,ly);
+  });
+}
+
+/* ---------- Plot ---------- */
+const pl=$('plot'), pctx=pl.getContext('2d');
+function drawPlot(){
+  const w=pl.clientWidth, h=196, x=pctx;
+  x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,w,h);
+  const l=30,r=10,t=10,b=26, pw=w-l-r, ph=h-t-b;
+  const c=deltaS()/lamUm(), x0=c-2.5, x1=c+2.5;
+  const X=u=>l+(u-x0)/(x1-x0)*pw, Y=v=>t+(1-v)*ph;
+  x.font=`400 11px "IBM Plex Mono",ui-monospace,monospace`; x.fillStyle=T.muted;
+  x.strokeStyle=T.line; x.lineWidth=1;
+  [[0,'0'],[.5,'0,5'],[1,'1']].forEach(([v,s])=>{ x.beginPath(); x.moveTo(l,Y(v)); x.lineTo(l+pw,Y(v)); x.stroke(); x.textAlign='right'; x.textBaseline='middle'; x.fillText(s,l-6,Y(v)); });
+  for(let k=Math.ceil(x0);k<=x1;k++){
+    x.beginPath(); x.moveTo(X(k),t); x.lineTo(X(k),t+ph); x.stroke();
+    x.textAlign='center'; x.textBaseline='top'; x.fillText(k+'λ',X(k),t+ph+6);
+  }
+  // Kurve
+  x.beginPath();
+  for(let i=0;i<=pw;i++){ const u=x0+i/pw*(x1-x0); const v=Math.cos(Math.PI*u)**2; i?x.lineTo(l+i,Y(v)):x.moveTo(l+i,Y(v)); }
+  x.strokeStyle=T.fg; x.lineWidth=1.6; x.stroke();
+  x.lineTo(l+pw,Y(0)); x.lineTo(l,Y(0)); x.closePath(); x.globalAlpha=.12; x.fillStyle=T.accent; x.fill(); x.globalAlpha=1;
+  // Markierung
+  const I=Icenter();
+  x.strokeStyle=T.accent; x.setLineDash([4,3]); x.beginPath(); x.moveTo(X(c),t); x.lineTo(X(c),t+ph); x.stroke(); x.setLineDash([]);
+  x.beginPath(); x.arc(X(c),Y(I),4.5,0,Math.PI*2); x.fillStyle=T.accent; x.fill();
+  x.lineWidth=2; x.strokeStyle=T.surface; x.stroke();
+}
+
+/* ---------- Ausgaben ---------- */
+function updateReadouts(){
+  const lam=lamUm(), I=Icenter();
+  $('out-lambda').innerHTML = `<i class="sw" style="background:${rgba(1)}"></i>${fmt(S.lambda,1)} nm`;
+  $('screen-tag').textContent = 'λ = '+fmt(S.lambda,1)+' nm';
+  $('out-d').textContent = `${fmt(S.d,3)} µm = ${fmt(S.d/lam,2)} λ`;
+  $('out-tilt').textContent = `${S.tilt} µrad`;
+  $('out-lens').textContent = S.lens?'eingesetzt':'entfernt';
+  $('in-lens').checked = S.lens;
+  $('cap-screen').innerHTML = STEPS[S.step].beams>=4
+    ? `Mitte: <b>I/I₀ = ${fmt(I,2)}</b><br>${!S.lens?'ohne Linse: einzelner Fleck':S.tilt>0?'verkippt: Streifen':'Ringe'} · d = ${fmt(S.d,3)} µm`
+    : 'Schirm noch unbeleuchtet';
+  const ph = (deltaS()/lam)%1;
+  $('cap-waves').innerHTML = `Δs = 2d = <b>${fmt(deltaS(),3)} µm</b> = ${fmt(deltaS()/lam,2)} λ<br>Phasendifferenz Δφ = ${fmt(ph,2)} · 2π`;
+  $('cap-plot').innerHTML = `I/I₀ = cos²(π·Δs/λ) = <b>${fmt(I,2)}</b><br>${statusText(I)}`;
+  const n=Math.abs(orderAt(S.d)-orderAt(S.dRef)), dd=Math.abs(S.d-S.dRef);
+  $('o-n').textContent = n;
+  $('o-dd').textContent = fmt(dd,3)+' µm';
+  $('o-lm').textContent = n>0 ? fmt(2*dd/n*1000,1)+' nm' : '–';
+  $('in-d').value = S.d; $('in-lambda').value = S.lambda; $('in-tilt').value = S.tilt;
+}
+let dirty=true;
+function setD(v){ S.d=Math.min(DMAX,Math.max(0,v)); dirty=true; }
+function setTilt(v){ S.tilt=v; dirty=true; }
+function setLens(v){ S.lens=v; dirty=true; renderActions(); }
+function setLambda(v){ S.lambda=v; RGB=waveRGB(v); S.dRef=S.d; dirty=true; }
+function zeroCounter(){ S.dRef=S.d; dirty=true; }
+function toggleMotor(){
+  S.motor=!S.motor;
+  if(S.motor && S.d>=DMAX-0.01) setD(0);
+  $('btn-motor').textContent = S.motor?'Motor stoppen':'Motor starten';
+  renderActions();
+}
+
+/* ---------- Schritt-Navigation ---------- */
+const nav=$('stepnav');
+STEPS.forEach((s,i)=>{
+  const b=document.createElement('button'); b.type='button'; b.textContent=i+1; b.title=s.title;
+  b.setAttribute('aria-label',`Schritt ${i+1}: ${s.title}`);
+  b.addEventListener('click',()=>setStep(i)); nav.appendChild(b);
+});
+function renderActions(){
+  const box=$('st-actions'); box.innerHTML='';
+  (STEPS[S.step].actions||[]).forEach(a=>{
+    const b=document.createElement('button'); b.type='button';
+    b.className='btn sm'+(a.primary?' primary':'');
+    b.textContent = typeof a.label==='function'?a.label():a.label;
+    b.addEventListener('click',a.run); box.appendChild(b);
+  });
+}
+const FOCUSABLE=['p-screen','p-waves','p-plot','ctl-lambda','ctl-lens','ctl-d','ctl-tilt','ctl-motor'];
+function setStep(i){
+  i=Math.max(0,Math.min(STEPS.length-1,i));
+  const forward=i>S.step || i===0 && S.step===0;
+  S.step=i; S.revealAt = forward?performance.now():-1e9;
+  const st=STEPS[i];
+  $('st-eyebrow').textContent=`Schritt ${i+1} von ${STEPS.length}`;
+  $('st-title').textContent=st.title;
+  $('st-body').innerHTML=st.body;
+  const f=$('st-formula'); f.innerHTML=st.formula||''; f.hidden=!st.formula;
+  renderActions();
+  [...nav.children].forEach((b,k)=>{ b.classList.toggle('done',k<i); if(k===i) b.setAttribute('aria-current','step'); else b.removeAttribute('aria-current'); });
+  $('prev').disabled = i===0;
+  $('next').disabled = i===STEPS.length-1;
+  $('next').textContent = i===STEPS.length-1 ? 'Fertig' : 'Weiter';
+  FOCUSABLE.forEach(id=>$(id).classList.toggle('is-focus',st.focus.includes(id)));
+  $('readouts').classList.toggle('dormant',st.beams<4);
+  dirty=true;
+}
+$('prev').addEventListener('click',()=>setStep(S.step-1));
+$('next').addEventListener('click',()=>setStep(S.step+1));
+document.addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select') return;
+  if(e.key==='ArrowRight') setStep(S.step+1);
+  if(e.key==='ArrowLeft') setStep(S.step-1);
+});
+
+/* ---------- Steuerung ---------- */
+$('in-lambda').addEventListener('input',e=>setLambda(+e.target.value));
+$('in-d').addEventListener('input',e=>setD(+e.target.value));
+$('in-tilt').addEventListener('input',e=>setTilt(+e.target.value));
+$('in-lens').addEventListener('change',e=>setLens(e.target.checked));
+document.querySelectorAll('[data-lam]').forEach(b=>b.addEventListener('click',()=>setLambda(+b.dataset.lam)));
+document.querySelectorAll('[data-dstep]').forEach(b=>b.addEventListener('click',()=>setD(S.d+(+b.dataset.dstep)*lamUm())));
+$('btn-motor').addEventListener('click',toggleMotor);
+$('btn-zero').addEventListener('click',zeroCounter);
+
+/* ---------- Größen, Theme, Loop ---------- */
+function resizeAll(){ sizeSetup(); sizeScreen(); sizeCanvas(wv,196); sizeCanvas(pl,196); dirty=true; }
+new ResizeObserver(resizeAll).observe(document.querySelector('.bench'));
+readTokens();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ readTokens(); dirty=true; });
+new MutationObserver(()=>{ readTokens(); dirty=true; }).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{dirty=true;});
+
+resizeAll();
+setStep(0);
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.1,(now-last)/1000); last=now;
+  if(S.motor){ setD(S.d+MOTOR_RATE*dt); if(S.d>=DMAX){ toggleMotor(); } }
+  if(dirty){ renderScreen(); drawPlot(); updateReadouts(); dirty=false; }
+  drawSetup(now);
+  drawWaves(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
