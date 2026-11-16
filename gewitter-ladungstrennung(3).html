@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wie ein Gewitter entsteht – Ladungstrennung und Blitz</title>
+<style>
+  :root{
+    --sky-deep:#080f22;
+    --sky-mid:#132349;
+    --sky-low:#22355e;
+    --cloud-1:#e9eef6;
+    --cloud-2:#aebbd0;
+    --cloud-3:#75839c;
+    --cloud-dark:#4d5a74;
+    --ground-1:#2b3325;
+    --ground-2:#434a2e;
+    --plus:#ff8460;
+    --minus:#57d1f0;
+    --bolt:#fff4c2;
+    --ink:#eaeff8;
+    --ink-dim:#94a2ba;
+    --ink-faint:#63718a;
+    --panel:#0b1120;
+    --rule:rgba(255,255,255,.13);
+    --focus:#ffd27a;
+    --ok:#86d99a;
+    --no:#ff8460;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--panel);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .app{
+    height:100%;
+    display:grid;
+    grid-template-rows:auto 1fr;
+    max-width:1400px;
+    margin:0 auto;
+  }
+
+  /* ---------- Kopf ---------- */
+  header{
+    display:flex;
+    align-items:baseline;
+    gap:.9rem;
+    flex-wrap:wrap;
+    padding:1.1rem 1.6rem .9rem;
+    border-bottom:1px solid var(--rule);
+  }
+  header h1{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(1.25rem,2.4vw,1.7rem);
+    letter-spacing:.01em;
+    margin:0;
+  }
+  header p{
+    margin:0;
+    color:var(--ink-faint);
+    font-size:.86rem;
+  }
+
+  /* ---------- Hauptbereich ---------- */
+  main{
+    display:grid;
+    grid-template-rows:minmax(240px,1fr) auto;
+    min-height:0;
+  }
+  @media (min-width:1000px){
+    main{
+      grid-template-rows:1fr;
+      grid-template-columns:minmax(0,1fr) 400px;
+    }
+  }
+
+  /* ---------- Bühne ---------- */
+  .stage{
+    position:relative;
+    min-height:0;
+    overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 50% 8%, #1b2c56 0%, #0d1730 55%, #070c1c 100%);
+  }
+  .stage > svg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    transition:opacity .55s ease, transform .7s cubic-bezier(.55,.05,.35,1);
+  }
+  #sceneMacro{transform-origin:52% 52%}
+  #sceneMacro.is-off{opacity:0;transform:scale(4.2);pointer-events:none}
+  #sceneMicro{transform-origin:38% 52%}
+  #sceneMicro.is-off{opacity:0;transform:scale(.28);pointer-events:none}
+
+  .flash{
+    position:absolute;inset:0;pointer-events:none;
+    background:#fffdf0;opacity:0;
+  }
+  .flash.fire{animation:flash 1.15s ease-out forwards}
+  @keyframes flash{
+    0%{opacity:0}
+    6%{opacity:.82}
+    12%{opacity:.05}
+    18%{opacity:.6}
+    26%{opacity:.03}
+    34%{opacity:.35}
+    100%{opacity:0}
+  }
+
+  .legend{
+    position:absolute;
+    left:1rem;bottom:.85rem;
+    display:flex;gap:1.1rem;
+    font-size:.76rem;
+    color:var(--ink-dim);
+    background:rgba(7,12,28,.55);
+    padding:.35rem .7rem;
+    border-radius:999px;
+    backdrop-filter:blur(3px);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:.35rem}
+  .legend b{font-size:1rem;line-height:1}
+  .legend .p{color:var(--plus)}
+  .legend .m{color:var(--minus)}
+
+  /* SVG-Sichtbarkeit */
+  [data-show]{transition:opacity .5s ease}
+  .off{opacity:0 !important;visibility:hidden}
+
+  /* ---------- Textspalte ---------- */
+  .panel{
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    border-top:1px solid var(--rule);
+    background:linear-gradient(180deg,#0c1424,#080e1b);
+  }
+  @media (min-width:1000px){
+    .panel{border-top:none;border-left:1px solid var(--rule)}
+  }
+
+  .track{
+    display:flex;gap:3px;
+    padding:1rem 1.6rem .25rem;
+  }
+  .track button{
+    flex:1;height:5px;border:none;padding:0;
+    background:rgba(255,255,255,.13);
+    border-radius:99px;cursor:pointer;
+    transition:background .3s, transform .2s;
+  }
+  .track button:hover{transform:scaleY(2)}
+  .track button.done{background:var(--ink-faint)}
+  .track button.now{background:var(--bolt)}
+  .track button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+  .copy{
+    padding:.9rem 1.6rem 1.4rem;
+    overflow-y:auto;
+    flex:1;
+    min-height:0;
+  }
+  .phase{
+    display:flex;align-items:baseline;gap:.6rem;
+    color:var(--ink-faint);
+    font-size:.8rem;
+    margin-bottom:.35rem;
+  }
+  .phase .num{
+    font-family:var(--serif);
+    font-size:1.5rem;
+    color:var(--bolt);
+    line-height:1;
+  }
+  .copy h2{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(1.35rem,2.6vw,1.75rem);
+    line-height:1.2;
+    margin:.1rem 0 .7rem;
+    max-width:22ch;
+  }
+  .copy p{
+    margin:0 0 .85rem;
+    max-width:62ch;
+    color:#d5dde9;
+  }
+  .copy strong{color:#fff;font-weight:600}
+  .plus{color:var(--plus);font-weight:600}
+  .minus{color:var(--minus);font-weight:600}
+
+  .aside{
+    margin-top:1.1rem;
+    padding-left:.9rem;
+    border-left:2px solid rgba(255,244,194,.4);
+    color:var(--ink-dim);
+    font-size:.87rem;
+    max-width:52ch;
+  }
+
+  /* ---------- Steuerung ---------- */
+  .controls{
+    display:flex;align-items:center;gap:.6rem;
+    padding:.85rem 1.6rem 1.2rem;
+    border-top:1px solid var(--rule);
+  }
+  .controls .count{
+    margin-right:auto;
+    color:var(--ink-faint);
+    font-size:.82rem;
+  }
+  button.nav{
+    font:inherit;font-size:.92rem;
+    padding:.55rem 1.15rem;
+    border-radius:999px;
+    border:1px solid var(--rule);
+    background:transparent;color:var(--ink);
+    cursor:pointer;
+    transition:background .2s,border-color .2s,opacity .2s;
+  }
+  button.nav:hover:not(:disabled){background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}
+  button.nav:disabled{opacity:.3;cursor:default}
+  button.nav.primary{
+    background:var(--bolt);color:#1a1405;border-color:var(--bolt);font-weight:600;
+  }
+  button.nav.primary:hover{background:#fff8d8}
+  button.nav:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+  /* ---------- Kondensator-Labor (Schritt 13) ---------- */
+  #sceneLab{
+    position:absolute;inset:0;
+    padding:1.1rem 1.5rem 1.4rem;
+    overflow-y:auto;
+    transition:opacity .5s ease;
+  }
+  #sceneLab.is-off{opacity:0;visibility:hidden;pointer-events:none}
+  body.is-lab .app{height:auto;min-height:100%}
+  body.is-lab .stage{min-height:600px}
+  body.is-lab .legend{display:none}
+
+  .lab-head{
+    font-family:var(--serif);
+    font-size:1.1rem;
+    margin:0 0 .15rem;
+    font-weight:400;
+  }
+  .lab-sub{margin:0 0 1rem;color:var(--ink-faint);font-size:.8rem}
+
+  .lab-grid{display:grid;gap:1.5rem;grid-template-columns:1fr;align-items:start}
+  @media (min-width:760px){
+    .lab-grid{grid-template-columns:minmax(230px,.92fr) minmax(250px,1fr)}
+  }
+
+  .lab-fig{
+    position:relative;
+    width:100%;height:auto;display:block;
+    max-width:400px;margin:0 auto 0 0;
+  }
+
+  .ctrl{margin-bottom:.9rem}
+  .ctrl label{
+    display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;
+    font-size:.81rem;color:var(--ink-dim);margin-bottom:.15rem;
+  }
+  .ctrl .val{color:var(--ink);font-size:.95rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ctrl .hint{display:block;font-size:.73rem;color:var(--ink-faint);margin-top:.1rem}
+  input[type=range]{
+    width:100%;height:20px;margin:0;
+    accent-color:var(--bolt);
+    background:transparent;cursor:grab;
+  }
+  input[type=range]:focus-visible{outline:2px solid var(--focus);outline-offset:4px;border-radius:6px}
+
+  .formula{
+    font-family:var(--serif);
+    font-size:.98rem;color:#cfd8e6;
+    margin:.1rem 0 .9rem;
+    line-height:1.9;
+  }
+  .formula em{font-style:italic}
+  .formula .res{color:var(--bolt)}
+
+  .out{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));margin:.2rem 0 1.1rem}
+  .tile{
+    border:1px solid var(--rule);border-radius:10px;
+    padding:.5rem .7rem .6rem;
+    background:rgba(255,255,255,.03);
+  }
+  .tile .k{font-size:.71rem;color:var(--ink-faint);display:block}
+  .tile .v{
+    font-family:var(--serif);font-size:1.28rem;color:var(--bolt);
+    font-variant-numeric:tabular-nums;line-height:1.25;
+  }
+  .tile .u{font-size:.8rem;color:var(--ink-dim);margin-left:.15rem}
+
+  .meter-wrap{margin-top:.2rem}
+  .meter-cap{display:flex;justify-content:space-between;font-size:.75rem;color:var(--ink-faint);margin-bottom:.3rem}
+  .meter{
+    position:relative;height:14px;border-radius:99px;
+    background:rgba(255,255,255,.08);overflow:hidden;
+  }
+  .meter .fill{
+    position:absolute;inset:0 auto 0 0;width:0;
+    background:linear-gradient(90deg,#57d1f0,#ffd27a,#ff8460);
+    transition:width .25s ease;
+  }
+  .meter .mark{
+    position:absolute;top:-4px;bottom:-4px;width:2px;
+    background:var(--ink);opacity:.75;
+  }
+  .verdict{margin-top:.5rem;font-size:.87rem;color:var(--ink-dim)}
+  .verdict.go{color:var(--bolt);font-weight:600}
+
+  .lab-note{
+    margin-top:1.1rem;font-size:.78rem;color:var(--ink-faint);
+    max-width:56ch;line-height:1.6;
+  }
+  .lab-reset{
+    margin-top:.9rem;font:inherit;font-size:.82rem;
+    padding:.4rem .9rem;border-radius:999px;
+    border:1px solid var(--rule);background:transparent;color:var(--ink-dim);cursor:pointer;
+  }
+  .lab-reset:hover{background:rgba(255,255,255,.07);color:var(--ink)}
+  .lab-reset:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+  /* ---------- Sortieraufgabe (Schritt 14) ---------- */
+  #sceneSort{
+    position:absolute;inset:0;
+    padding:1.1rem 1.5rem 1.6rem;
+    overflow-y:auto;
+    transition:opacity .5s ease;
+  }
+  #sceneSort.is-off{opacity:0;visibility:hidden;pointer-events:none}
+  body.is-sort .app{height:auto;min-height:100%}
+  body.is-sort .stage{min-height:620px}
+  body.is-sort .legend{display:none}
+
+  .sort-bar{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem}
+  .sort-bar .score{margin-left:auto;font-size:.85rem;color:var(--ink-dim)}
+  .sort-bar .score.good{color:var(--ok);font-weight:600}
+
+  #sortList{list-style:none;margin:0;padding:0;max-width:760px}
+  #sortList li{
+    display:flex;align-items:flex-start;gap:.7rem;
+    border:1px solid var(--rule);border-radius:10px;
+    background:rgba(255,255,255,.035);
+    padding:.55rem .6rem .55rem .75rem;
+    margin-bottom:.5rem;
+    transition:border-color .25s, background .25s, transform .18s, opacity .25s;
+  }
+  #sortList li.dragging{opacity:.45}
+  #sortList li.over{border-color:var(--focus)}
+  #sortList li.right{border-color:rgba(134,217,154,.65);background:rgba(134,217,154,.1)}
+  #sortList li.wrong{border-color:rgba(255,132,96,.6);background:rgba(255,132,96,.08)}
+  #sortList li.solved{border-color:rgba(255,244,194,.45);background:rgba(255,244,194,.07)}
+
+  #sortList .grip{
+    flex:0 0 auto;width:1.9rem;height:1.9rem;
+    display:grid;place-items:center;
+    border-radius:7px;
+    color:var(--ink-faint);font-size:1rem;
+    cursor:grab;user-select:none;
+  }
+  #sortList li:active .grip{cursor:grabbing}
+  #sortList .txt{flex:1;font-size:.92rem;line-height:1.5;padding-top:.15rem}
+  #sortList .mark{
+    flex:0 0 auto;width:1.5rem;text-align:center;
+    font-size:1rem;padding-top:.15rem;opacity:0;transition:opacity .25s;
+  }
+  #sortList li.right .mark{opacity:1;color:var(--ok)}
+  #sortList li.wrong .mark{opacity:1;color:var(--no)}
+  #sortList li.solved .mark{opacity:1;color:var(--bolt)}
+
+  .move{
+    flex:0 0 auto;display:flex;flex-direction:column;gap:2px;
+  }
+  .move button{
+    width:1.9rem;height:1.25rem;padding:0;line-height:1;
+    border:1px solid var(--rule);border-radius:5px;
+    background:transparent;color:var(--ink-dim);
+    font-size:.7rem;cursor:pointer;
+  }
+  .move button:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--ink)}
+  .move button:disabled{opacity:.25;cursor:default}
+  .move button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+  .sort-note{margin-top:1rem;font-size:.78rem;color:var(--ink-faint);max-width:62ch;line-height:1.6}
+
+  /* ---------- SVG-Feinheiten ---------- */
+  text{font-family:var(--sans)}
+  .lbl{fill:var(--ink-dim);font-size:12px}
+  .lbl-s{fill:var(--ink-faint);font-size:11px}
+  .lbl-w{fill:#fff;font-size:13px}
+  .chg-p{fill:var(--plus);font-size:19px;font-weight:700;text-anchor:middle}
+  .chg-m{fill:var(--minus);font-size:19px;font-weight:700;text-anchor:middle}
+  .rule{stroke:var(--rule);stroke-width:1}
+
+  /* Partikelbewegung */
+  @media (prefers-reduced-motion:no-preference){
+    .rise{animation:rise linear infinite}
+    @keyframes rise{
+      0%{transform:translateY(0);opacity:0}
+      12%{opacity:1}
+      88%{opacity:1}
+      100%{transform:translateY(-72px);opacity:0}
+    }
+    .fall{animation:fall linear infinite}
+    @keyframes fall{
+      0%{transform:translateY(-30px);opacity:0}
+      15%{opacity:1}
+      85%{opacity:1}
+      100%{transform:translateY(46px);opacity:0}
+    }
+    .therm{stroke-dasharray:8 10;animation:therm 1.6s linear infinite}
+    @keyframes therm{to{stroke-dashoffset:-18}}
+    .breathe{animation:breathe 3.4s ease-in-out infinite}
+    @keyframes breathe{50%{opacity:.35}}
+    .droplet{animation:dropletIn 2.6s cubic-bezier(.4,0,.9,.6) infinite}
+    @keyframes dropletIn{
+      0%{transform:translate(0,0);opacity:0}
+      10%{opacity:1}
+      72%{transform:translate(var(--dx),var(--dy));opacity:1}
+      80%{transform:translate(var(--dx),var(--dy));opacity:0}
+      100%{opacity:0}
+    }
+    .glow{animation:glow 2.6s ease-out infinite}
+    @keyframes glow{0%,60%{opacity:0;r:6}78%{opacity:.85;r:14}100%{opacity:0;r:26}}
+    .crystal{transition:transform 1s cubic-bezier(.4,0,.3,1)}
+    .leader-anim{animation:leader 1.5s steps(9) forwards}
+    @keyframes leader{to{stroke-dashoffset:0}}
+    .strike{animation:strike .9s ease-out infinite}
+    @keyframes strike{0%,72%{opacity:0}74%{opacity:1}78%{opacity:.15}82%{opacity:1}100%{opacity:0}}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important}
+    .stage > svg{transition:opacity .3s ease}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>Wie ein Gewitter entsteht</h1>
+    <p>Von der Thermik über das Hagelkorn bis zum Blitz &middot; mit Pfeiltasten oder den Schaltflächen weiterklicken</p>
+  </header>
+
+  <main>
+    <!-- ================= BÜHNE ================= -->
+    <div class="stage">
+
+      <!-- ---------- GROSSE SZENE: die Wolke ---------- -->
+      <svg id="sceneMacro" viewBox="0 0 900 560" preserveAspectRatio="xMidYMid slice" aria-label="Querschnitt durch eine Gewitterwolke">
+        <defs>
+          <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0a1330"/>
+            <stop offset="55%" stop-color="#17274e"/>
+            <stop offset="100%" stop-color="#2c3d63"/>
+          </linearGradient>
+          <linearGradient id="gGround" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#454c30"/>
+            <stop offset="100%" stop-color="#1e2419"/>
+          </linearGradient>
+          <radialGradient id="gSun" cx="50%" cy="50%">
+            <stop offset="0" stop-color="#ffe9a8"/>
+            <stop offset="60%" stop-color="#ffcf6a"/>
+            <stop offset="100%" stop-color="#ffcf6a" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="gCloud" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f2f6fb"/>
+            <stop offset="60%" stop-color="#b7c3d6"/>
+            <stop offset="100%" stop-color="#697a95"/>
+          </linearGradient>
+          <linearGradient id="gCloudBody" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#eef3fa"/>
+            <stop offset="55%" stop-color="#adbacf"/>
+            <stop offset="100%" stop-color="#5d6a84"/>
+          </linearGradient>
+          <marker id="arrH" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#ff9d6a"/>
+          </marker>
+          <marker id="arrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#8fa6c8"/>
+          </marker>
+          <filter id="soft"><feGaussianBlur stdDeviation="6"/></filter>
+          <filter id="boltGlow">
+            <feGaussianBlur stdDeviation="4" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect x="0" y="0" width="900" height="560" fill="url(#gSky)"/>
+
+        <!-- Sonne -->
+        <g id="sun" data-show="1-2">
+          <circle cx="778" cy="96" r="70" fill="url(#gSun)" opacity=".45"/>
+          <circle cx="778" cy="96" r="27" fill="#ffe6a0"/>
+        </g>
+
+        <!-- Boden -->
+        <path d="M0,515 C120,505 210,522 320,514 C450,505 560,520 700,510 C790,504 850,514 900,509 L900,560 L0,560 Z" fill="url(#gGround)"/>
+        <path d="M0,515 C120,505 210,522 320,514 C450,505 560,520 700,510 C790,504 850,514 900,509" fill="none" stroke="#6d7a4b" stroke-width="1.5" opacity=".7"/>
+
+        <!-- Baum als Einschlagsziel -->
+        <g id="tree" data-show="9-12">
+          <rect x="513" y="480" width="7" height="34" fill="#2a2a1c"/>
+          <path d="M516,452 L534,486 L498,486 Z" fill="#33452c"/>
+          <path d="M516,466 L540,498 L492,498 Z" fill="#2b3b25"/>
+        </g>
+
+        <!-- Höhen- und Temperaturskala -->
+        <g id="scale" data-show="3-9,12">
+          <line x1="62" y1="120" x2="62" y2="515" class="rule"/>
+          <g class="lbl-s" fill="#63718a">
+            <line x1="57" y1="515" x2="67" y2="515" class="rule"/><text x="72" y="519">0 km</text>
+            <line x1="57" y1="387" x2="67" y2="387" class="rule"/><text x="72" y="391">4 km</text>
+            <line x1="57" y1="259" x2="67" y2="259" class="rule"/><text x="72" y="263">8 km</text>
+            <line x1="57" y1="131" x2="67" y2="131" class="rule"/><text x="72" y="135">12 km</text>
+          </g>
+        </g>
+
+        <!-- Thermik -->
+        <g id="thermals" data-show="1-3" stroke="#ff9d6a" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".9">
+          <path class="therm" d="M330,505 C318,470 344,445 330,412" marker-end="url(#arrH)"/>
+          <path class="therm" style="animation-delay:.4s" d="M470,508 C458,468 486,442 470,402" marker-end="url(#arrH)"/>
+          <path class="therm" style="animation-delay:.8s" d="M610,505 C598,470 624,445 610,412" marker-end="url(#arrH)"/>
+          <text class="lbl" x="640" y="470" fill="#ffb489">warme, feuchte Luft</text>
+        </g>
+
+        <!-- kleine Quellwolke -->
+        <g id="cloudSmall" data-show="2">
+          <ellipse cx="420" cy="378" rx="78" ry="34" fill="#c9d4e6"/>
+          <ellipse cx="480" cy="358" rx="62" ry="42" fill="#dde5f2"/>
+          <ellipse cx="540" cy="380" rx="66" ry="30" fill="#c1cde0"/>
+          <ellipse cx="360" cy="384" rx="54" ry="26" fill="#b6c3d8"/>
+        </g>
+
+        <!-- Gewitterwolke -->
+        <g id="cloudBig" data-show="3-12">
+          <g fill="url(#gCloudBody)">
+            <ellipse cx="492" cy="132" rx="258" ry="38"/>
+            <ellipse cx="342" cy="138" rx="96" ry="26"/>
+            <ellipse cx="652" cy="134" rx="96" ry="26"/>
+            <ellipse cx="440" cy="172" rx="100" ry="56"/>
+            <ellipse cx="546" cy="178" rx="92" ry="52"/>
+            <ellipse cx="388" cy="240" rx="106" ry="60"/>
+            <ellipse cx="510" cy="236" rx="116" ry="64"/>
+            <ellipse cx="612" cy="254" rx="82" ry="50"/>
+            <ellipse cx="358" cy="314" rx="114" ry="56"/>
+            <ellipse cx="480" cy="310" rx="124" ry="60"/>
+            <ellipse cx="602" cy="322" rx="98" ry="50"/>
+            <ellipse cx="330" cy="374" rx="112" ry="40"/>
+            <ellipse cx="470" cy="380" rx="132" ry="44"/>
+            <ellipse cx="610" cy="374" rx="112" ry="40"/>
+          </g>
+          <ellipse cx="470" cy="390" rx="235" ry="26" fill="#4a5670" opacity=".85"/>
+          <text class="lbl-s" x="700" y="128" fill="#9fb0cc">Amboss</text>
+        </g>
+
+        <!-- Auf- und Abwind in der Wolke -->
+        <g id="winds" data-show="3-4,7-8" fill="none" stroke-linecap="round">
+          <path d="M470,392 C452,330 492,268 470,196" stroke="#ffb489" stroke-width="3" opacity=".85" marker-end="url(#arrH)"/>
+          <text class="lbl-s" x="404" y="292" fill="#ffb489" transform="rotate(-90 404 292)">Aufwind 10–30 m/s</text>
+          <path d="M626,214 C640,272 616,320 630,378" stroke="#8fa6c8" stroke-width="2.5" opacity=".7" marker-end="url(#arrC)"/>
+          <text class="lbl-s" x="662" y="300" fill="#8fa6c8" transform="rotate(90 662 300)">Abwind</text>
+        </g>
+
+        <!-- Temperaturgrenzen -->
+        <g id="isotherms" data-show="3-4,7-9">
+          <line x1="200" y1="387" x2="740" y2="387" stroke="#57d1f0" stroke-width="1.4" stroke-dasharray="7 6" opacity=".8"/>
+          <text class="lbl" x="746" y="391" fill="#57d1f0">0 °C</text>
+        </g>
+        <g id="zone" data-show="4,7-8">
+          <rect x="200" y="243" width="540" height="96" fill="#57d1f0" opacity=".07"/>
+          <line x1="200" y1="243" x2="740" y2="243" stroke="#9fd8ea" stroke-width="1" stroke-dasharray="4 6" opacity=".55"/>
+          <line x1="200" y1="339" x2="740" y2="339" stroke="#9fd8ea" stroke-width="1" stroke-dasharray="4 6" opacity=".55"/>
+          <text class="lbl" x="746" y="247" fill="#9fd8ea">−25 °C</text>
+          <text class="lbl" x="746" y="343" fill="#9fd8ea">−10 °C</text>
+          <text class="lbl-w" x="212" y="266" fill="#dff2f8">Ladungszone</text>
+        </g>
+
+        <!-- Partikel (per JS befüllt) -->
+        <g id="pDrops" data-show="4,7"></g>
+        <g id="pCrystals" data-show="4,7-8"></g>
+        <g id="pGraupel" data-show="4,7-8"></g>
+
+        <!-- Zoomziel -->
+        <g id="target" data-show="4">
+          <circle cx="470" cy="291" r="34" fill="none" stroke="#fff4c2" stroke-width="2" stroke-dasharray="5 7" class="breathe"/>
+          <circle cx="470" cy="291" r="7" fill="#eef3fa"/>
+          <line x1="500" y1="272" x2="560" y2="228" stroke="#fff4c2" stroke-width="1.2"/>
+          <text class="lbl-w" x="566" y="226" fill="#fff4c2">ein Graupelkorn</text>
+        </g>
+
+        <!-- Ladungsverteilung -->
+        <g id="charges" data-show="8-12">
+          <g class="chg-p">
+            <text x="400" y="150">+</text><text x="450" y="140">+</text><text x="500" y="150">+</text>
+            <text x="550" y="141">+</text><text x="600" y="152">+</text><text x="425" y="180">+</text>
+            <text x="478" y="176">+</text><text x="530" y="182">+</text><text x="575" y="172">+</text>
+          </g>
+          <g class="chg-m">
+            <text x="360" y="292">−</text><text x="405" y="276">−</text><text x="450" y="296">−</text>
+            <text x="495" y="278">−</text><text x="540" y="298">−</text><text x="585" y="282">−</text>
+            <text x="382" y="326">−</text><text x="428" y="332">−</text><text x="474" y="324">−</text>
+            <text x="520" y="334">−</text><text x="566" y="326">−</text><text x="612" y="310">−</text>
+          </g>
+          <text class="lbl-s" x="640" y="196" fill="#ff8460">oben positiv</text>
+          <text class="lbl-s" x="640" y="352" fill="#57d1f0">Hauptzentrum negativ</text>
+        </g>
+
+        <!-- Influenz am Boden -->
+        <g id="induced" data-show="9-12">
+          <g class="chg-p" opacity=".95">
+            <text x="300" y="508">+</text><text x="340" y="510">+</text><text x="380" y="507">+</text>
+            <text x="420" y="509">+</text><text x="460" y="506">+</text><text x="500" y="508">+</text>
+            <text x="540" y="510">+</text><text x="580" y="507">+</text><text x="620" y="509">+</text>
+            <text x="660" y="508">+</text>
+          </g>
+        </g>
+        <g id="field" data-show="9" fill="none" stroke="#8fa6c8" stroke-width="1.2" stroke-dasharray="5 7" opacity=".65">
+          <path d="M370,398 C356,440 350,478 356,504"/>
+          <path d="M440,398 C434,440 432,478 434,504"/>
+          <path d="M510,398 C516,440 518,478 516,504"/>
+          <path d="M580,398 C594,440 600,478 594,504"/>
+          <text class="lbl-s" x="620" y="448" fill="#8fa6c8">elektrisches Feld &gt; 10 kV/m</text>
+        </g>
+
+        <!-- Leitblitz -->
+        <g id="leaderGroup" data-show="10">
+          <path id="leaderPath" d="M472,395 L488,410 L468,422 L498,434 L484,444 L506,450"
+                fill="none" stroke="#cfd9ff" stroke-width="2.6" stroke-linecap="round" opacity=".9"/>
+          <path id="leaderBranch" d="M468,422 L440,436 M498,434 L522,430"
+                fill="none" stroke="#cfd9ff" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>
+          <path d="M516,470 L510,460 L506,450" fill="none" stroke="#ffd27a" stroke-width="2.2" stroke-linecap="round"/>
+          <text class="lbl-s" x="356" y="418" fill="#cfd9ff" text-anchor="end">Leitblitz, Schritte à 50 m</text>
+          <line x1="360" y1="414" x2="462" y2="414" class="rule"/>
+          <text class="lbl-s" x="560" y="474" fill="#ffd27a">Fangentladung</text>
+        </g>
+
+        <!-- Hauptblitz -->
+        <g id="boltGroup" data-show="11-12">
+          <path class="strike" d="M472,392 L488,410 L468,422 L498,434 L484,444 L506,450 L510,460 L516,478 L514,510"
+                fill="none" stroke="#fff4c2" stroke-width="6" stroke-linecap="round" filter="url(#boltGlow)"/>
+          <path class="strike" style="animation-delay:.03s" d="M468,422 L440,436 M498,434 L524,428"
+                fill="none" stroke="#fff4c2" stroke-width="2.6" stroke-linecap="round" filter="url(#boltGlow)"/>
+        </g>
+
+        <!-- Regen -->
+        <g id="rain" data-show="8-12" stroke="#9fb6d8" stroke-width="1.4" opacity=".45" stroke-linecap="round">
+          <g class="fall" style="animation-duration:1.1s">
+            <path d="M300,400 l-4,18"/><path d="M345,406 l-4,18"/><path d="M600,402 l-4,18"/>
+            <path d="M645,398 l-4,18"/><path d="M672,410 l-4,18"/>
+          </g>
+          <g class="fall" style="animation-duration:1.4s;animation-delay:.5s">
+            <path d="M322,432 l-4,18"/><path d="M362,440 l-4,18"/><path d="M622,436 l-4,18"/>
+            <path d="M660,444 l-4,18"/><path d="M286,452 l-4,18"/>
+          </g>
+        </g>
+      </svg>
+
+      <!-- ---------- KLEINE SZENE: im Hagelkorn ---------- -->
+      <svg id="sceneMicro" class="is-off" viewBox="0 0 900 560" preserveAspectRatio="xMidYMid meet" aria-label="Nahaufnahme eines Graupelkorns beim Zusammenstoß mit einem Eiskristall">
+        <defs>
+          <radialGradient id="gStone" cx="38%" cy="32%">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset="55%" stop-color="#dfe9f4"/>
+            <stop offset="100%" stop-color="#9fb0c8"/>
+          </radialGradient>
+          <radialGradient id="gWarm" cx="50%" cy="50%">
+            <stop offset="60%" stop-color="#ff9d6a" stop-opacity="0"/>
+            <stop offset="88%" stop-color="#ff9d6a" stop-opacity=".38"/>
+            <stop offset="100%" stop-color="#ff9d6a" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="gMicroBg" cx="40%" cy="45%">
+            <stop offset="0" stop-color="#16264c"/>
+            <stop offset="100%" stop-color="#070d1e"/>
+          </radialGradient>
+          <marker id="arrM" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#fff4c2"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="0" width="900" height="560" fill="url(#gMicroBg)"/>
+        <text class="lbl" x="34" y="44" fill="#9fb0cc">Blick in die Ladungszone &middot; etwa −15 °C</text>
+        <line x1="34" y1="56" x2="330" y2="56" class="rule"/>
+
+        <!-- Hagelkorn -->
+        <g id="stone">
+          <circle cx="300" cy="300" r="188" fill="url(#gWarm)" data-show="5-7"/>
+          <circle cx="300" cy="300" r="150" fill="url(#gStone)"/>
+          <g fill="none" stroke="#8fa6c8" opacity=".55">
+            <circle cx="300" cy="300" r="122" stroke-width="7" stroke-opacity=".35"/>
+            <circle cx="300" cy="300" r="96" stroke-width="3"/>
+            <circle cx="300" cy="300" r="70" stroke-width="8" stroke-opacity=".3"/>
+            <circle cx="300" cy="300" r="44" stroke-width="3"/>
+          </g>
+          <circle cx="300" cy="300" r="24" fill="#c3d2e4" opacity=".8"/>
+          <!-- angefrorene Tröpfchen am Rand -->
+          <g fill="#f4f8fd" opacity=".95">
+            <circle cx="420" cy="222" r="12"/><circle cx="437" cy="272" r="10"/>
+            <circle cx="432" cy="330" r="13"/><circle cx="405" cy="378" r="11"/>
+            <circle cx="360" cy="420" r="12"/><circle cx="300" cy="445" r="10"/>
+            <circle cx="242" cy="437" r="12"/><circle cx="190" cy="410" r="10"/>
+            <circle cx="158" cy="360" r="12"/><circle cx="151" cy="300" r="10"/>
+            <circle cx="166" cy="240" r="12"/><circle cx="205" cy="192" r="10"/>
+            <circle cx="258" cy="160" r="12"/><circle cx="318" cy="153" r="10"/>
+            <circle cx="378" cy="176" r="12"/>
+          </g>
+        </g>
+
+        <!-- Beschriftungen Hagelkorn -->
+        <g data-show="5-7">
+          <line x1="300" y1="300" x2="300" y2="300" stroke="none"/>
+          <text class="lbl-w" x="118" y="500" fill="#e9eef6">Graupelkorn, etwa 3 mm</text>
+          <text class="lbl-s" x="118" y="520" fill="#7d8ea8">gezeigt rund 100-fach vergrößert</text>
+        </g>
+
+        <!-- Schichten-Erklärung -->
+        <g data-show="5">
+          <line x1="330" y1="252" x2="620" y2="196" stroke="#8fa6c8" stroke-width="1"/>
+          <text class="lbl-w" x="628" y="192" fill="#e9eef6">milchige Schicht</text>
+          <text class="lbl-s" x="628" y="212" fill="#9fb0cc">schnell gefroren, Luftblasen eingeschlossen</text>
+          <line x1="346" y1="330" x2="620" y2="286" stroke="#8fa6c8" stroke-width="1"/>
+          <text class="lbl-w" x="628" y="282" fill="#e9eef6">klare Schicht</text>
+          <text class="lbl-s" x="628" y="302" fill="#9fb0cc">langsam gefroren, blasenfrei</text>
+          <text class="lbl-s" x="628" y="370" fill="#ffb489">Beim Anfrieren wird Erstarrungswärme frei:</text>
+          <text class="lbl-s" x="628" y="388" fill="#ffb489">die Oberfläche bleibt wärmer als die Luft.</text>
+        </g>
+
+        <!-- anfliegende unterkühlte Tröpfchen -->
+        <g id="drops" data-show="5-6"></g>
+
+        <!-- Eiskristall -->
+        <g id="crystal" class="crystal" data-show="6-7">
+          <g id="crystalShape">
+            <polygon points="0,-34 29,-17 29,17 0,34 -29,17 -29,-17" fill="#dff2f8" opacity=".92"/>
+            <g stroke="#ffffff" stroke-width="3" stroke-linecap="round">
+              <path d="M0,-34 L0,-52 M0,34 L0,52 M29,-17 L45,-26 M29,17 L45,26 M-29,-17 L-45,-26 M-29,17 L-45,26"/>
+            </g>
+            <g stroke="#ffffff" stroke-width="2" opacity=".8">
+              <path d="M0,-46 L-8,-54 M0,-46 L8,-54 M0,46 L-8,54 M0,46 L8,54"/>
+            </g>
+          </g>
+          <text class="lbl-s" x="0" y="86" fill="#9fd8ea" text-anchor="middle">Eiskristall, 0,05 mm</text>
+        </g>
+
+        <!-- Detailfenster: quasiflüssige Schicht -->
+        <g id="qll" data-show="6">
+          <rect x="536" y="112" width="330" height="216" rx="14" fill="#0d1730" stroke="rgba(255,255,255,.18)"/>
+          <text class="lbl-w" x="558" y="142" fill="#e9eef6">Kontaktstelle, stark vergrößert</text>
+          <line x1="558" y1="154" x2="844" y2="154" class="rule"/>
+
+          <path d="M556,300 Q700,236 844,300" fill="none" stroke="#f4f8fd" stroke-width="14" stroke-linecap="round"/>
+          <path d="M556,196 Q700,254 844,196" fill="none" stroke="#dff2f8" stroke-width="10" stroke-linecap="round"/>
+          <text class="lbl-s" x="562" y="322" fill="#c3d2e4">Graupel (wärmer)</text>
+          <text class="lbl-s" x="562" y="184" fill="#9fd8ea">Eiskristall (kälter)</text>
+
+          <rect x="612" y="242" width="176" height="22" rx="11" fill="#57d1f0" opacity=".16"/>
+          <text class="lbl-s" x="700" y="232" fill="#9fd8ea" text-anchor="middle">quasiflüssige Schicht</text>
+
+          <text class="chg-m" x="646" y="260">−</text>
+          <text class="chg-m" x="682" y="260">−</text>
+          <text class="chg-p" x="718" y="260">+</text>
+          <text class="chg-p" x="754" y="260">+</text>
+          <path d="M664,266 L664,288" stroke="#57d1f0" stroke-width="2" marker-end="url(#arrM)" opacity=".9"/>
+          <path d="M736,254 L736,214" stroke="#ff8460" stroke-width="2" marker-end="url(#arrM)" opacity=".9"/>
+          <text class="lbl-s" x="558" y="356" fill="#9fb0cc">Negative Ladung wandert zum Graupel,</text>
+          <text class="lbl-s" x="558" y="374" fill="#9fb0cc">positive bleibt beim Kristall.</text>
+        </g>
+
+        <!-- Ergebnis der Ladungstrennung -->
+        <g id="result" data-show="7">
+          <g class="chg-m" opacity=".95">
+            <text x="238" y="262">−</text><text x="300" y="248">−</text><text x="362" y="266">−</text>
+            <text x="262" y="330">−</text><text x="330" y="336">−</text><text x="392" y="316">−</text>
+            <text x="284" y="392">−</text><text x="352" y="384">−</text>
+          </g>
+          <path d="M300,470 L300,524" stroke="#57d1f0" stroke-width="3" marker-end="url(#arrM)"/>
+          <text class="lbl" x="318" y="516" fill="#57d1f0">fällt: rund 5 m/s</text>
+
+          <path d="M700,196 L700,120" stroke="#ff8460" stroke-width="3" marker-end="url(#arrM)"/>
+          <text class="lbl" x="716" y="140" fill="#ff8460">steigt mit dem Aufwind</text>
+          <text class="lbl-s" x="716" y="160" fill="#ffb489">1000-fach leichter als das Korn</text>
+        </g>
+      </svg>
+
+      <!-- ---------- LABOR: die Wolke als Plattenkondensator ---------- -->
+      <div id="sceneLab" class="is-off">
+        <h2 class="lab-head">Wolke und Erdboden als Plattenkondensator</h2>
+        <p class="lab-sub">Werte verschieben und beobachten, wann das Feld für einen Durchschlag reicht.</p>
+
+        <div class="lab-grid">
+          <div>
+            <svg class="lab-fig" viewBox="0 0 420 340" aria-label="Schema eines Plattenkondensators aus Wolkenunterseite und Erdboden">
+              <defs>
+                <marker id="fArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                  <path d="M0,2 L8,5 L0,8 z" fill="#8fa6c8"/>
+                </marker>
+                <marker id="dArr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                  <path d="M9,2 L2,5 L9,8 z" fill="#94a2ba"/>
+                </marker>
+              </defs>
+
+              <g id="labLines" stroke="#8fa6c8" stroke-width="1.1" opacity=".7"></g>
+              <path id="labBolt" fill="none" stroke="#fff4c2" stroke-width="4" stroke-linecap="round" opacity="0"/>
+
+              <text id="labTopLbl" class="lbl-s" x="210" y="40" fill="#57d1f0" text-anchor="middle">Wolkenunterseite, negativ</text>
+              <rect id="labTop" x="45" y="64" width="330" height="9" rx="4" fill="#57d1f0" opacity=".85"/>
+              <g id="labNeg" fill="#57d1f0" font-size="14" font-weight="700" text-anchor="middle"></g>
+
+              <rect id="labBot" x="45" y="236" width="330" height="9" rx="4" fill="#ff8460" opacity=".85"/>
+              <g id="labPos" fill="#ff8460" font-size="14" font-weight="700" text-anchor="middle"></g>
+              <text id="labBotLbl" class="lbl-s" x="210" y="284" fill="#ff8460" text-anchor="middle">Erdboden, positiv</text>
+
+              <line id="labDLine" x1="24" y1="73" x2="24" y2="236" stroke="#94a2ba" stroke-width="1" marker-start="url(#dArr)" marker-end="url(#dArr)"/>
+              <text id="labDText" class="lbl-s" x="14" y="155" fill="#94a2ba" text-anchor="middle" transform="rotate(-90 14 155)">d</text>
+
+              <line id="labALine" x1="45" y1="306" x2="375" y2="306" stroke="#94a2ba" stroke-width="1" marker-start="url(#dArr)" marker-end="url(#dArr)"/>
+              <text id="labAText" class="lbl-s" x="210" y="326" fill="#94a2ba" text-anchor="middle">Kantenlänge</text>
+            </svg>
+
+            <div class="meter-wrap">
+              <div class="meter-cap"><span>1 kV/m</span><span>100 MV/m</span></div>
+              <div class="meter">
+                <div class="fill" id="mFill"></div>
+                <div class="mark" id="mMark"></div>
+              </div>
+              <p class="verdict" id="verdict"></p>
+              <p class="lab-note" style="margin-top:.35rem">Der senkrechte Strich markiert die Durchschlagfeldstärke trockener Luft von 3 MV/m. Die Skala ist logarithmisch.</p>
+            </div>
+          </div>
+
+          <div>
+            <div class="ctrl">
+              <label for="sA"><span>Fläche der Wolkenunterseite <em>A</em></span><span class="val" id="vA"></span></label>
+              <input type="range" id="sA" min="5" max="400" step="5" value="100">
+              <span class="hint" id="hA"></span>
+            </div>
+
+            <div class="ctrl">
+              <label for="sD"><span>Plattenabstand <em>d</em> (Wolkenbasis über Grund)</span><span class="val" id="vD"></span></label>
+              <input type="range" id="sD" min="500" max="5000" step="100" value="2000">
+            </div>
+
+            <div class="ctrl">
+              <label for="sQ"><span>Getrennte Ladung <em>Q</em></span><span class="val" id="vQ"></span></label>
+              <input type="range" id="sQ" min="1" max="150" step="1" value="25">
+            </div>
+
+            <div class="ctrl">
+              <label for="sF"><span>Feldüberhöhung an Tropfen und Eisteilchen</span><span class="val" id="vF"></span></label>
+              <input type="range" id="sF" min="1" max="100" step="1" value="20">
+              <span class="hint">Scharfe, nasse Teilchen bündeln die Feldlinien örtlich.</span>
+            </div>
+
+            <div class="out">
+              <div class="tile"><span class="k">Kapazität C</span><span class="v" id="oC"></span></div>
+              <div class="tile"><span class="k">Spannung U</span><span class="v" id="oU"></span></div>
+              <div class="tile"><span class="k">Feldstärke E</span><span class="v" id="oE"></span></div>
+              <div class="tile"><span class="k">Flächenladung σ</span><span class="v" id="oS"></span></div>
+              <div class="tile"><span class="k">Energie W</span><span class="v" id="oW"></span></div>
+              <div class="tile"><span class="k">örtliches Feld</span><span class="v" id="oEl"></span></div>
+            </div>
+
+            <button class="lab-reset" id="labReset">Auf typische Werte zurücksetzen</button>
+
+            <p class="lab-note" id="labNote"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- SORTIERAUFGABE ---------- -->
+      <div id="sceneSort" class="is-off">
+        <h2 class="lab-head">Bring die Schritte in die richtige Reihenfolge</h2>
+        <p class="lab-sub">Mit den Pfeilen verschieben oder die Karten mit der Maus ziehen. Dann prüfen.</p>
+
+        <div class="sort-bar">
+          <button class="lab-reset" id="sortCheck" style="margin-top:0">Prüfen</button>
+          <button class="lab-reset" id="sortShuffle" style="margin-top:0">Neu mischen</button>
+          <button class="lab-reset" id="sortSolve" style="margin-top:0">Lösung zeigen</button>
+          <span class="score" id="sortScore"></span>
+        </div>
+
+        <ul id="sortList"></ul>
+
+        <p class="sort-note">Tipp: Überlege zuerst, was die Wolke überhaupt entstehen lässt, dann was im Inneren mit dem Eis passiert, und erst zuletzt, wie daraus eine Spannung wird.</p>
+      </div>
+
+      <div class="flash" id="flash"></div>
+
+      <div class="legend">
+        <span class="p"><b>+</b> positive Ladung</span>
+        <span class="m"><b>−</b> negative Ladung</span>
+      </div>
+    </div>
+
+    <!-- ================= TEXT ================= -->
+    <div class="panel">
+      <div class="track" id="track" role="tablist" aria-label="Schritte"></div>
+
+      <div class="copy" id="copy">
+        <div class="phase"><span class="num" id="num">1</span><span id="kicker"></span></div>
+        <h2 id="title"></h2>
+        <div id="body"></div>
+        <div class="aside" id="aside"></div>
+      </div>
+
+      <div class="controls">
+        <span class="count" id="count"></span>
+        <button class="nav" id="prev">Zurück</button>
+        <button class="nav primary" id="next">Weiter</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const STEPS = [
+    {
+      kicker:"Auslöser",
+      title:"Warme Luft steigt auf",
+      body:[
+        "Die Sonne heizt den Boden auf, der Boden heizt die Luft darüber. Warme, feuchte Luft ist leichter als ihre Umgebung und steigt deshalb auf.",
+        "Damit daraus ein Gewitter wird, braucht es drei Dinge gleichzeitig: viel Feuchtigkeit, eine labil geschichtete Atmosphäre und einen Anstoß, der die Luft anhebt — etwa einen Berghang oder eine Kaltfront."
+      ],
+      aside:"Der Aufwind beginnt harmlos mit 1 bis 5 m/s."
+    },
+    {
+      kicker:"Kondensation",
+      title:"Die Wolke entsteht",
+      body:[
+        "Beim Aufsteigen sinkt der Luftdruck. Die Luft dehnt sich aus und kühlt dabei um rund 1 °C je 100 Meter ab.",
+        "Am Kondensationsniveau ist der Taupunkt erreicht: Der Wasserdampf schlägt sich an winzigen Staubteilchen nieder, Wolkentröpfchen entstehen. Jedes Tröpfchen gibt dabei <strong>Kondensationswärme</strong> ab. Diese Wärme hält die Luft wärmer als ihre Umgebung — der Aufwind verstärkt sich also selbst."
+      ],
+      aside:"Wolkentröpfchen sind 0,01 bis 0,05 mm groß. Etwa eine Million von ihnen ergeben einen Regentropfen."
+    },
+    {
+      kicker:"Wachstum",
+      title:"Die Wolke türmt sich auf",
+      body:[
+        "Der Aufwind erreicht 10 bis 30 m/s und schiebt die Wolke bis an die Tropopause. Weiter hinauf kommt sie nicht, also breitet sie sich seitlich aus: der Amboss, die typische Form der Gewitterwolke.",
+        "Oberhalb der 0-°C-Grenze bleiben viele Tröpfchen flüssig, obwohl es dort kälter als null Grad ist. Dieses <strong>unterkühlte Wasser</strong> gefriert ohne Kristallisationskeim erst bei etwa −38 °C von allein."
+      ],
+      aside:"Höhe der Wolke: 8 bis 13 km. Am Amboss herrschen −50 bis −60 °C."
+    },
+    {
+      kicker:"Eisphase",
+      title:"Eis, Wasser und Graupel treffen sich",
+      body:[
+        "Zwischen −10 °C und −25 °C liegt die entscheidende Schicht. Hier gibt es gleichzeitig drei Teilchenarten: unterkühlte Tröpfchen, winzige Eiskristalle und Graupelkörner.",
+        "Berührt ein unterkühltes Tröpfchen ein Eisteilchen, gefriert es sofort daran fest. So wird aus einem Kristall ein Graupelkorn und daraus ein Hagelkorn. Sehen wir uns eines dieser Körner aus der Nähe an."
+      ],
+      aside:"Der nächste Schritt zoomt in die Ladungszone hinein."
+    },
+    {
+      kicker:"Im Hagelkorn",
+      title:"Das Korn wächst Schicht für Schicht",
+      body:[
+        "Das Korn fällt durch die Wolke und sammelt dabei unterkühlte Tröpfchen ein. Jedes Tröpfchen erstarrt an der Oberfläche und gibt dabei <strong>Erstarrungswärme</strong> frei: 334 kJ pro Kilogramm.",
+        "Deshalb ist die Oberfläche des Korns stets ein wenig wärmer als die Luft ringsum — und wärmer als ein kleiner Eiskristall, der nur langsam aus Wasserdampf wächst. Genau dieser Temperaturunterschied wird gleich wichtig."
+      ],
+      aside:"Gefriert das Wasser schnell, schließt es Luftblasen ein und die Schicht wird milchig. Gefriert es langsam, bleibt sie klar. Jeder Ring steht für einen Weg durch Auf- und Abwind."
+    },
+    {
+      kicker:"Ladungsaustausch",
+      title:"Der Stoß: Ladung wechselt die Seite",
+      body:[
+        "Ein Eiskristall prallt gegen das Graupelkorn. Beide tragen an ihrer Oberfläche eine hauchdünne, <strong>quasiflüssige Schicht</strong> mit beweglichen Ionen: positiven H⁺- und negativen OH⁻-Teilchen.",
+        "Beim Kontakt — er dauert Millionstel Sekunden — wandert von der wärmeren, schneller wachsenden Oberfläche mehr Material auf die andere und nimmt Ladung mit. Unterhalb der sogenannten Umkehrtemperatur von etwa −10 bis −15 °C nimmt das Graupelkorn dabei <span class=\"minus\">negative Ladung</span> auf, der Eiskristall bleibt <span class=\"plus\">positiv</span> zurück."
+      ],
+      aside:"Ein einzelner Stoß überträgt nur etwa 10⁻¹⁴ Coulomb. In einem Kubikkilometer Wolke passieren aber Milliarden solcher Stöße pro Sekunde."
+    },
+    {
+      kicker:"Trennung",
+      title:"Schwer fällt, leicht steigt",
+      body:[
+        "Der eigentliche Trick ist nicht der Stoß, sondern was danach geschieht. Das Graupelkorn wiegt tausendfach mehr als der Eiskristall: Es sinkt trotz Aufwind ab oder bleibt in der Wolkenmitte hängen. Der leichte Kristall wird vom Aufwind nach oben getragen.",
+        "Schwerkraft und Aufwind ziehen die beiden Ladungen kilometerweit auseinander. Erst diese räumliche Trennung lädt die Wolke auf."
+      ],
+      aside:"Ohne kräftigen Aufwind bliebe alles beieinander und die Ladungen würden sich sofort wieder ausgleichen. Deshalb gewittert es nicht in jeder Wolke."
+    },
+    {
+      kicker:"Ladungsbild",
+      title:"Die Wolke wird zum Kondensator",
+      body:[
+        "Milliardenfach wiederholt ergibt sich ein klares Muster. Oben im Amboss sammelt sich <span class=\"plus\">positive Ladung</span>, in der Mitte zwischen −10 und −25 °C entsteht das große <span class=\"minus\">negative Zentrum</span>.",
+        "Ganz unten bleibt die Wolke damit negativ geladen — und genau darauf reagiert im nächsten Schritt der Erdboden."
+      ],
+      aside:"Das negative Zentrum trägt einige zehn Coulomb. Zwischen Wolke und Boden liegen dann 10⁸ bis 10⁹ Volt. In Wirklichkeit gibt es in der Regenregion noch einen kleinen positiven Bereich; er ist hier der Übersicht halber weggelassen."
+    },
+    {
+      kicker:"Influenz",
+      title:"Der Boden lädt sich auf",
+      body:[
+        "Die negative Wolkenunterseite stößt die frei beweglichen Elektronen im Erdboden weg. Zurück bleibt eine positiv geladene Fläche, die wie ein Schatten mit der Wolke mitwandert — das ist <strong>Influenz</strong>.",
+        "Zwischen Wolke und Boden baut sich ein starkes elektrisches Feld auf. Bei schönem Wetter beträgt es rund 0,1 kV/m, unter einer Gewitterwolke über 10 kV/m."
+      ],
+      aside:"Man merkt das mitunter: Haare stellen sich auf, an Spitzen knistert es (Elmsfeuer). Das ist ein Warnzeichen, keine Kuriosität."
+    },
+    {
+      kicker:"Durchbruch",
+      title:"Der Leitblitz tastet sich nach unten",
+      body:[
+        "Trockene Luft hält etwa 3 MV/m aus. In der Wolke genügen schon 0,1 bis 0,4 MV/m, weil Regentropfen und Eisteilchen das Feld örtlich stark verzerren. Dort startet eine Elektronenlawine: Freie Elektronen werden beschleunigt und schlagen weitere aus den Luftmolekülen heraus.",
+        "Ein schwach leuchtender <strong>Leitblitz</strong> tastet sich in Schritten von etwa 50 Metern nach unten und verzweigt sich dabei. Von Bäumen, Masten und Kanten wachsen ihm <strong>Fangentladungen</strong> entgegen."
+      ],
+      aside:"Alle 50 Millionstel Sekunden ein Schritt. Für 3 km braucht der Leitblitz rund 20 Millisekunden."
+    },
+    {
+      kicker:"Entladung",
+      title:"Der Hauptblitz",
+      body:[
+        "Sobald Leitblitz und Fangentladung sich berühren, ist der Kanal durchgehend leitfähig. Die Entladung läuft nun von unten nach oben mit etwa einem Drittel der Lichtgeschwindigkeit — deshalb leuchtet ein Blitz von unten nach oben auf, auch wenn das Auge das nicht auflöst.",
+        "Im Kanal fließen bis zu 30 000 Ampere, er heizt sich auf rund 30 000 °C auf. Die Luft dehnt sich schlagartig aus und fällt wieder zusammen: Das hören wir als <strong>Donner</strong>."
+      ],
+      aside:"Schall braucht etwa 3 Sekunden pro Kilometer. Sekunden zwischen Blitz und Donner zählen, durch drei teilen — das ist die Entfernung in Kilometern."
+    },
+    {
+      kicker:"Überblick",
+      title:"Die Kette von der Thermik zum Blitz",
+      body:[
+        "Aufwind → Kondensation → Eisphase → Stöße zwischen Graupel und Eiskristall → Ladungsaustausch an der quasiflüssigen Schicht → Trennung durch Schwerkraft und Aufwind → elektrisches Feld → Durchbruch → Blitz.",
+        "Fällt ein Glied weg, gibt es kein Gewitter. Ohne Eisphase kein Ladungsaustausch, ohne kräftigen Aufwind keine Trennung der Ladungen."
+      ],
+      aside:"Weltweit blitzt es 40- bis 50-mal pro Sekunde. In Deutschland werden pro Jahr rund eine halbe Million Erdblitze registriert."
+    },
+    {
+      kicker:"Übung",
+      title:"Zehn Schritte, eine Reihenfolge",
+      body:[
+        "Die zehn Karten links fassen den ganzen Weg zusammen — vom erwärmten Boden bis zum Hauptblitz. Sie stehen aber durcheinander.",
+        "Sortiere sie so, dass jede Karte die Ursache der nächsten beschreibt. <strong>Prüfen</strong> markiert nur, welche Karten schon an der richtigen Stelle stehen, und verrät nicht, wohin die übrigen gehören. So lässt sich die Aufgabe mehrfach versuchen."
+      ],
+      aside:"Wer nicht weiterkommt, blättert mit der Fortschrittsleiste oben zurück zu den Schritten 1 bis 11 — dort steht die Kette der Reihe nach."
+    },
+    {
+      kicker:"Rechenmodell",
+      title:"Die Wolke als Plattenkondensator",
+      body:[
+        "Wolkenunterseite und Erdboden sind zwei große, entgegengesetzt geladene Flächen im Abstand <em>d</em>. Genau das ist ein Plattenkondensator — nur mit Platten von einigen Quadratkilometern und einem Abstand von Kilometern.",
+        "Im Fenster links lässt sich das durchrechnen. Achte auf einen Punkt: <strong>Die Feldstärke hängt nicht vom Plattenabstand ab.</strong> Aus <em>E</em> = <em>U</em>/<em>d</em> und <em>U</em> = <em>Q</em>·<em>d</em>/(ε₀·<em>A</em>) folgt <em>E</em> = <em>Q</em>/(ε₀·<em>A</em>) — nur die Ladung pro Fläche zählt. Eine höhere Wolkenbasis vergrößert die Spannung, nicht das Feld."
+      ],
+      aside:"Das Modell ist bewusst grob. Die Wolkenunterseite ist keine ebene Metallplatte, die Ladung sitzt verteilt in einem Volumen, und die Luft ist nicht überall gleich dicht. Für Größenordnungen taugt es trotzdem."
+    }
+  ];
+
+  const N = STEPS.length;
+  let cur = 1;
+
+  /* ---- Sichtbarkeitsregeln aus data-show ---- */
+  const shown = [];
+  document.querySelectorAll("[data-show]").forEach(el=>{
+    const set = new Set();
+    el.getAttribute("data-show").split(",").forEach(part=>{
+      const m = part.trim().split("-").map(Number);
+      if(m.length===2){ for(let i=m[0];i<=m[1];i++) set.add(i); }
+      else set.add(m[0]);
+    });
+    shown.push({el,set});
+  });
+
+  /* ---- Partikel in der Wolke erzeugen ---- */
+  const svgNS = "http://www.w3.org/2000/svg";
+  function rnd(a,b){return a+Math.random()*(b-a)}
+
+  function crystal(x,y,s){
+    const g = document.createElementNS(svgNS,"g");
+    g.setAttribute("transform",`translate(${x} ${y}) scale(${s})`);
+    const p = document.createElementNS(svgNS,"path");
+    p.setAttribute("d","M0,-7 L0,7 M-6,-3.5 L6,3.5 M-6,3.5 L6,-3.5");
+    p.setAttribute("stroke","#e6f4fa");
+    p.setAttribute("stroke-width","2");
+    p.setAttribute("stroke-linecap","round");
+    g.appendChild(p);
+    return g;
+  }
+  function blob(x,y,r,fill,op){
+    const c = document.createElementNS(svgNS,"circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",r);
+    c.setAttribute("fill",fill); c.setAttribute("opacity",op);
+    return c;
+  }
+
+  const gDrops = document.getElementById("pDrops");
+  const gCry   = document.getElementById("pCrystals");
+  const gGra   = document.getElementById("pGraupel");
+
+  for(let i=0;i<22;i++){
+    const w = document.createElementNS(svgNS,"g");
+    w.setAttribute("class","fall");
+    w.style.animationDuration = rnd(2.4,4.2)+"s";
+    w.style.animationDelay = rnd(0,3)+"s";
+    w.appendChild(blob(rnd(250,690),rnd(300,382),rnd(2.5,4),"#8ec7ff",".85"));
+    gDrops.appendChild(w);
+  }
+  for(let i=0;i<26;i++){
+    const w = document.createElementNS(svgNS,"g");
+    w.setAttribute("class","rise");
+    w.style.animationDuration = rnd(3.2,5.6)+"s";
+    w.style.animationDelay = rnd(0,4)+"s";
+    w.appendChild(crystal(rnd(280,660),rnd(180,300),rnd(.7,1.2)));
+    gCry.appendChild(w);
+  }
+  for(let i=0;i<14;i++){
+    const w = document.createElementNS(svgNS,"g");
+    w.setAttribute("class","fall");
+    w.style.animationDuration = rnd(2.8,4.4)+"s";
+    w.style.animationDelay = rnd(0,3)+"s";
+    const x = rnd(270,670), y = rnd(248,340), r = rnd(5,8);
+    w.appendChild(blob(x,y,r,"#eef3fa",".95"));
+    w.appendChild(blob(x-r*0.4,y-r*0.4,r*0.45,"#ffffff",".9"));
+    gGra.appendChild(w);
+  }
+
+  /* ---- anfliegende Tröpfchen im Mikroskop-Bild ---- */
+  const gMicroDrops = document.getElementById("drops");
+  const angles = [-40,-15,8,30,52,-62];
+  angles.forEach((a,i)=>{
+    const rad = a*Math.PI/180;
+    const start = 380, end = 158;
+    const sx = 300+Math.cos(rad)*start, sy = 300+Math.sin(rad)*start;
+    const ex = 300+Math.cos(rad)*end,   ey = 300+Math.sin(rad)*end;
+    const c = blob(sx,sy,9,"#8ec7ff",".95");
+    c.setAttribute("class","droplet");
+    c.style.setProperty("--dx",(ex-sx)+"px");
+    c.style.setProperty("--dy",(ey-sy)+"px");
+    c.style.animationDelay = (i*0.42)+"s";
+    gMicroDrops.appendChild(c);
+    const gl = blob(ex,ey,6,"#ffb489",".0");
+    gl.setAttribute("class","glow");
+    gl.style.animationDelay = (i*0.42)+"s";
+    gMicroDrops.appendChild(gl);
+  });
+
+  /* ---- Elemente ---- */
+  const macro = document.getElementById("sceneMacro");
+  const micro = document.getElementById("sceneMicro");
+  const crystalEl = document.getElementById("crystal");
+  const leader = document.getElementById("leaderPath");
+  const branch = document.getElementById("leaderBranch");
+  const flash = document.getElementById("flash");
+
+  const elNum=document.getElementById("num"), elKick=document.getElementById("kicker"),
+        elTitle=document.getElementById("title"), elBody=document.getElementById("body"),
+        elAside=document.getElementById("aside"), elCount=document.getElementById("count"),
+        btnPrev=document.getElementById("prev"), btnNext=document.getElementById("next"),
+        track=document.getElementById("track"), copy=document.getElementById("copy");
+
+  /* ---- Fortschrittsleiste ---- */
+  for(let i=1;i<=N;i++){
+    const b=document.createElement("button");
+    b.type="button";
+    b.title = i+". "+STEPS[i-1].title;
+    b.setAttribute("aria-label","Schritt "+i+": "+STEPS[i-1].title);
+    b.addEventListener("click",()=>go(i));
+    track.appendChild(b);
+  }
+
+  /* ---- Leitblitz-Animation ---- */
+  function runLeader(){
+    [leader,branch].forEach(p=>{
+      const L = p.getTotalLength();
+      p.style.strokeDasharray = L;
+      p.style.strokeDashoffset = L;
+      p.classList.remove("leader-anim");
+      void p.offsetWidth;
+      p.classList.add("leader-anim");
+    });
+  }
+  function runFlash(){
+    flash.classList.remove("fire");
+    void flash.offsetWidth;
+    flash.classList.add("fire");
+  }
+
+  /* ---- Kondensator-Labor ---- */
+  const lab = document.getElementById("sceneLab");
+  const EPS0 = 8.8541878e-12;
+  const E_BREAK = 3e6;          // Durchschlagfeldstärke trockener Luft, V/m
+  const DEFAULTS = {A:100, D:2000, Q:25, F:20};
+
+  const sA=document.getElementById("sA"), sD=document.getElementById("sD"),
+        sQ=document.getElementById("sQ"), sF=document.getElementById("sF");
+  const vA=document.getElementById("vA"), vD=document.getElementById("vD"),
+        vQ=document.getElementById("vQ"), vF=document.getElementById("vF"),
+        hA=document.getElementById("hA");
+  const oC=document.getElementById("oC"), oU=document.getElementById("oU"),
+        oE=document.getElementById("oE"), oS=document.getElementById("oS"),
+        oW=document.getElementById("oW"), oEl=document.getElementById("oEl");
+  const verdictEl=document.getElementById("verdict"),
+        noteEl=document.getElementById("labNote"),
+        mFill=document.getElementById("mFill"), mMark=document.getElementById("mMark");
+  const labTop=document.getElementById("labTop"), labBot=document.getElementById("labBot"),
+        labLines=document.getElementById("labLines"), labNeg=document.getElementById("labNeg"),
+        labPos=document.getElementById("labPos"), labDLine=document.getElementById("labDLine"),
+        labDText=document.getElementById("labDText"), labALine=document.getElementById("labALine"),
+        labAText=document.getElementById("labAText"), labBolt=document.getElementById("labBolt"),
+        labTopLbl=document.getElementById("labTopLbl");
+
+  const PREFIX=[[1e9,"G"],[1e6,"M"],[1e3,"k"],[1,""],[1e-3,"m"],[1e-6,"µ"],[1e-9,"n"],[1e-12,"p"]];
+  function eng(x,unit){
+    const a=Math.abs(x);
+    let f=1e-12,s="p";
+    for(const [ff,ss] of PREFIX){ if(a>=ff){ f=ff; s=ss; break; } }
+    const v=x/f;
+    const d = v<10 ? 2 : (v<100 ? 1 : 0);
+    return v.toFixed(d).replace(".",",")+" <span class=\"u\">"+s+unit+"</span>";
+  }
+  function num(x,d){return x.toFixed(d).replace(".",",")}
+
+  let wasIgniting = false;
+
+  function updateLab(animate){
+    const Akm = +sA.value;            // km²
+    const A   = Akm*1e6;              // m²
+    const d   = +sD.value;            // m
+    const Q   = +sQ.value;            // C
+    const k   = +sF.value;            // Feldüberhöhung
+
+    const C  = EPS0*A/d;              // F
+    const U  = Q/C;                   // V
+    const E  = Q/(EPS0*A);            // V/m  (= U/d)
+    const sg = Q/A;                   // C/m²
+    const W  = 0.5*Q*U;               // J
+    const El = E*k;                   // V/m örtlich
+
+    const side = Math.sqrt(Akm);      // km
+
+    vA.innerHTML = num(Akm,0)+" km²";
+    hA.textContent = "entspricht etwa "+num(side,1)+" km × "+num(side,1)+" km";
+    vD.innerHTML = num(d/1000,1)+" km";
+    vQ.innerHTML = num(Q,0)+" C";
+    vF.innerHTML = "×"+num(k,0);
+
+    oC.innerHTML  = eng(C,"F");
+    oU.innerHTML  = eng(U,"V");
+    oE.innerHTML  = eng(E,"V/m");
+    oS.innerHTML  = eng(sg,"C/m²");
+    oW.innerHTML  = eng(W,"J");
+    oEl.innerHTML = eng(El,"V/m");
+
+    // Balken, logarithmisch von 1 kV/m bis 100 MV/m
+    const lo=3, hi=8;
+    const pos = x => Math.max(0,Math.min(100,(Math.log10(Math.max(x,1))-lo)/(hi-lo)*100));
+    mFill.style.width = pos(El)+"%";
+    mMark.style.left  = pos(E_BREAK)+"%";
+
+    const igniting = El >= E_BREAK;
+    verdictEl.classList.toggle("go", igniting);
+    verdictEl.textContent = igniting
+      ? "Durchschlag: das örtliche Feld reicht, der Blitz zündet."
+      : "Noch kein Durchschlag — es fehlt der Faktor "+num(E_BREAK/El,1)+".";
+
+    const kWh = W/3.6e6;
+    noteEl.innerHTML =
+      "Die gespeicherte Energie von "+eng(W,"J")+" entspricht rund "+num(kWh,0).replace(/\B(?=(\d{3})+(?!\d))/g," ")+
+      " kWh, also etwa dem Strombedarf eines Haushalts für "+num(kWh/8,0)+" Tage. "+
+      "Ein einzelner Blitz setzt davon nur einen kleinen Teil frei. "+
+      "ε₀ = 8,854 · 10⁻¹² F/m; für Luft ist ε_r ≈ 1,0006 und wird hier weggelassen.";
+
+    /* --- Schemazeichnung --- */
+    const gw = 60 + Math.min(1,(side-2.2)/(20-2.2))*270;   // Plattenbreite in px
+    const gap = 26 + (d-500)/(5000-500)*142;               // Abstand in px
+    const x0 = 210-gw/2, yBot = 236, yTop = yBot-gap-9;
+
+    labTop.setAttribute("x",x0); labTop.setAttribute("width",gw); labTop.setAttribute("y",yTop);
+    labBot.setAttribute("x",x0); labBot.setAttribute("width",gw);
+    labTopLbl.setAttribute("y",yTop-24);
+    labDLine.setAttribute("y1",yTop+9); labDLine.setAttribute("y2",yBot);
+    const yMid=(yTop+9+yBot)/2;
+    labDText.setAttribute("y",yMid);
+    labDText.setAttribute("transform","rotate(-90 14 "+yMid.toFixed(1)+")");
+    labDText.textContent = "d = "+num(d/1000,1)+" km";
+    labALine.setAttribute("x1",x0); labALine.setAttribute("x2",x0+gw);
+    labAText.textContent = "√A = "+num(side,1)+" km";
+
+    const nMax = Math.max(3,Math.floor(gw/26));
+    const n = Math.max(3,Math.min(nMax,Math.round(3+6*(Math.log10(Math.max(E,10))-3))));
+    let lines="",neg="",pos2="";
+    for(let i=0;i<n;i++){
+      const x = x0 + gw*(i+0.5)/n;
+      lines += '<line x1="'+x.toFixed(1)+'" y1="'+(yTop+11)+'" x2="'+x.toFixed(1)+'" y2="'+(yBot-3)+'" marker-end="url(#fArr)"/>';
+      neg   += '<text x="'+x.toFixed(1)+'" y="'+(yTop-4)+'">−</text>';
+      pos2  += '<text x="'+x.toFixed(1)+'" y="'+(yBot+22)+'">+</text>';
+    }
+    labLines.innerHTML=lines; labNeg.innerHTML=neg; labPos.innerHTML=pos2;
+    labLines.setAttribute("opacity", igniting ? ".3" : ".7");
+
+    if(igniting){
+      const xb=210, h=(yBot-yTop-9)/4;
+      labBolt.setAttribute("d",
+        "M"+xb+","+(yTop+9)+" L"+(xb+12)+","+(yTop+9+h)+" L"+(xb-8)+","+(yTop+9+2*h)+
+        " L"+(xb+14)+","+(yTop+9+3*h)+" L"+(xb-2)+","+yBot);
+      labBolt.setAttribute("opacity","1");
+    } else {
+      labBolt.setAttribute("opacity","0");
+    }
+    if(igniting && !wasIgniting && animate!==false) runFlash();
+    wasIgniting = igniting;
+  }
+
+  [sA,sD,sQ,sF].forEach(el=>el.addEventListener("input",()=>updateLab(true)));
+  document.getElementById("labReset").addEventListener("click",()=>{
+    sA.value=DEFAULTS.A; sD.value=DEFAULTS.D; sQ.value=DEFAULTS.Q; sF.value=DEFAULTS.F;
+    wasIgniting=true; updateLab(false);
+  });
+  updateLab(false);
+
+  /* ---- Sortieraufgabe ---- */
+  const sortScene = document.getElementById("sceneSort");
+  const sortList  = document.getElementById("sortList");
+  const sortScore = document.getElementById("sortScore");
+
+  const CARDS = [
+    "Die Sonne erwärmt den Boden. Warme, feuchte Luft ist leichter als ihre Umgebung und steigt auf.",
+    "Die aufsteigende Luft dehnt sich aus und kühlt ab. Am Taupunkt kondensiert der Wasserdampf zu Wolkentröpfchen.",
+    "Die dabei frei werdende Kondensationswärme verstärkt den Aufwind. Die Wolke türmt sich bis zur Tropopause auf.",
+    "Oberhalb der 0-°C-Grenze entstehen Eiskristalle, daneben bleiben Tröpfchen als unterkühltes Wasser flüssig.",
+    "Unterkühlte Tröpfchen frieren beim Kontakt an Eisteilchen an. So wachsen Graupelkörner heran, ihre Oberfläche bleibt dabei etwas wärmer.",
+    "Ein Eiskristall stößt gegen ein Graupelkorn. An der quasiflüssigen Schicht wechselt Ladung die Seite.",
+    "Das schwere Graupelkorn ist nun negativ geladen und sinkt ab, der leichte positive Kristall wird vom Aufwind nach oben getragen.",
+    "Milliardenfach wiederholt sammelt sich dadurch oben positive und in der Wolkenmitte negative Ladung.",
+    "Die negative Wolkenunterseite influenziert positive Ladung im Erdboden. Zwischen Wolke und Boden wächst das elektrische Feld.",
+    "Das Feld wird örtlich so stark, dass ein Leitblitz nach unten wächst. Er trifft auf die Fangentladung — der Hauptblitz zündet."
+  ];
+
+  let order = [];     // enthält Indizes aus CARDS
+  let checked = false;
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function newRound(){
+    do{ order = shuffle(CARDS.map((_,i)=>i)); }
+    while(order.every((v,i)=>v===i));   // nie zufällig schon gelöst starten
+    checked = false;
+    sortScore.textContent = "";
+    sortScore.classList.remove("good");
+    renderSort();
+  }
+
+  function renderSort(){
+    sortList.innerHTML = "";
+    order.forEach((cardIdx,pos)=>{
+      const li = document.createElement("li");
+      li.draggable = true;
+      li.dataset.pos = pos;
+
+      const grip = document.createElement("span");
+      grip.className = "grip";
+      grip.textContent = "⠿";
+      grip.setAttribute("aria-hidden","true");
+
+      const mv = document.createElement("span");
+      mv.className = "move";
+      const up = document.createElement("button");
+      up.type="button"; up.textContent="▲";
+      up.setAttribute("aria-label","Karte nach oben");
+      up.disabled = (pos===0);
+      up.addEventListener("click",()=>swap(pos,pos-1));
+      const dn = document.createElement("button");
+      dn.type="button"; dn.textContent="▼";
+      dn.setAttribute("aria-label","Karte nach unten");
+      dn.disabled = (pos===order.length-1);
+      dn.addEventListener("click",()=>swap(pos,pos+1));
+      mv.appendChild(up); mv.appendChild(dn);
+
+      const txt = document.createElement("span");
+      txt.className = "txt";
+      txt.textContent = CARDS[cardIdx];
+
+      const mark = document.createElement("span");
+      mark.className = "mark";
+
+      li.appendChild(grip); li.appendChild(mv);
+      li.appendChild(txt); li.appendChild(mark);
+      sortList.appendChild(li);
+    });
+    if(checked) paint();
+  }
+
+  function swap(a,b){
+    if(b<0||b>=order.length) return;
+    [order[a],order[b]]=[order[b],order[a]];
+    checked = false;
+    sortScore.textContent = "";
+    sortScore.classList.remove("good");
+    renderSort();
+    const el = sortList.children[b];
+    if(el){
+      el.style.transform="scale(1.015)";
+      setTimeout(()=>{el.style.transform="";},180);
+      const btn = el.querySelectorAll(".move button")[b<a?0:1];
+      if(btn && !btn.disabled) btn.focus();
+    }
+  }
+
+  function paint(){
+    [...sortList.children].forEach((li,pos)=>{
+      li.classList.remove("right","wrong","solved");
+      const ok = (order[pos]===pos);
+      li.classList.add(ok?"right":"wrong");
+      li.querySelector(".mark").textContent = ok ? "✓" : "·";
+    });
+  }
+
+  document.getElementById("sortCheck").addEventListener("click",()=>{
+    checked = true;
+    paint();
+    const n = order.filter((v,i)=>v===i).length;
+    const all = (n===order.length);
+    sortScore.textContent = all
+      ? "Alles richtig — das ist die vollständige Kette."
+      : n+" von "+order.length+" Karten stehen richtig.";
+    sortScore.classList.toggle("good",all);
+    if(all) runFlash();
+  });
+
+  document.getElementById("sortShuffle").addEventListener("click",newRound);
+
+  document.getElementById("sortSolve").addEventListener("click",()=>{
+    order = CARDS.map((_,i)=>i);
+    checked = false;
+    renderSort();
+    [...sortList.children].forEach(li=>{
+      li.classList.add("solved");
+      li.querySelector(".mark").textContent = "→";
+    });
+    sortScore.textContent = "Das ist die Lösung. Mit »Neu mischen« noch einmal versuchen.";
+    sortScore.classList.remove("good");
+  });
+
+  /* Ziehen mit der Maus (ergänzend zu den Pfeiltasten) */
+  let dragFrom = null;
+  sortList.addEventListener("dragstart",e=>{
+    const li = e.target.closest("li"); if(!li) return;
+    dragFrom = +li.dataset.pos;
+    li.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    try{ e.dataTransfer.setData("text/plain",String(dragFrom)); }catch(_){}
+  });
+  sortList.addEventListener("dragover",e=>{
+    e.preventDefault();
+    const li = e.target.closest("li"); if(!li) return;
+    [...sortList.children].forEach(x=>x.classList.remove("over"));
+    li.classList.add("over");
+  });
+  sortList.addEventListener("dragleave",e=>{
+    const li = e.target.closest("li"); if(li) li.classList.remove("over");
+  });
+  sortList.addEventListener("drop",e=>{
+    e.preventDefault();
+    const li = e.target.closest("li");
+    if(li && dragFrom!==null){
+      const to = +li.dataset.pos;
+      const [moved] = order.splice(dragFrom,1);
+      order.splice(to,0,moved);
+      checked = false;
+      sortScore.textContent = "";
+      sortScore.classList.remove("good");
+      renderSort();
+    }
+    dragFrom = null;
+  });
+  sortList.addEventListener("dragend",()=>{
+    dragFrom = null;
+    [...sortList.children].forEach(x=>x.classList.remove("dragging","over"));
+  });
+
+  newRound();
+
+  /* ---- Schritt anzeigen ---- */
+  function go(n){
+    n = Math.max(1,Math.min(N,n));
+    const first = (n!==cur);
+    cur = n;
+    const s = STEPS[n-1];
+
+    shown.forEach(({el,set})=> el.classList.toggle("off", !set.has(n)));
+
+    const isMicro = (n>=5 && n<=7);
+    const isSort  = (n===13);
+    const isLab   = (n===14);
+    macro.classList.toggle("is-off", isMicro || isLab || isSort);
+    micro.classList.toggle("is-off", !isMicro);
+    lab.classList.toggle("is-off", !isLab);
+    sortScene.classList.toggle("is-off", !isSort);
+    document.body.classList.toggle("is-lab", isLab);
+    document.body.classList.toggle("is-sort", isSort);
+    if(isLab) updateLab(false);
+
+    // Eiskristall im Mikroskop-Bild positionieren
+    if(n<=5)      crystalEl.setAttribute("transform","translate(760 210)");
+    else if(n===6) crystalEl.setAttribute("transform","translate(470 262)");
+    else if(n===7) crystalEl.setAttribute("transform","translate(700 196)");
+
+    elNum.textContent = n;
+    elKick.textContent = s.kicker;
+    elTitle.textContent = s.title;
+    elBody.innerHTML = s.body.map(t=>"<p>"+t+"</p>").join("");
+    elAside.innerHTML = s.aside || "";
+    elAside.style.display = s.aside ? "" : "none";
+    elCount.textContent = "Schritt "+n+" von "+N;
+    copy.scrollTop = 0;
+
+    [...track.children].forEach((b,i)=>{
+      b.classList.toggle("now", i+1===n);
+      b.classList.toggle("done", i+1<n);
+    });
+
+    btnPrev.disabled = (n===1);
+    btnNext.textContent = (n===N) ? "Von vorn" : "Weiter";
+
+    if(first && n===10) runLeader();
+    if(first && n===11) runFlash();
+  }
+
+  btnPrev.addEventListener("click",()=>go(cur-1));
+  btnNext.addEventListener("click",()=>go(cur===N?1:cur+1));
+  document.addEventListener("keydown",e=>{
+    const t=e.target.tagName;
+    if(t==="INPUT"||t==="BUTTON"||t==="TEXTAREA"||t==="SELECT") return;
+    if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){e.preventDefault();go(cur===N?1:cur+1);}
+    if(e.key==="ArrowLeft"||e.key==="PageUp"){e.preventDefault();go(cur-1);}
+    if(e.key==="Home"){go(1);}
+    if(e.key==="End"){go(N);}
+  });
+
+  go(1);
+})();
+</script>
+</body>
+</html>
