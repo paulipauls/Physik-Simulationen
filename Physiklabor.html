@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Physiklabor 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: Werkbank-Editor – Geräteregal links, 3D-Labortisch in der Mitte, Messplatz rechts */
+  --ink:#15212e;
+  --muted:#5a6775;
+  --paper:#eceff3;
+  --panel:#ffffff;
+  --line:#d4dae1;
+  --brass:#b06f16;
+  --brass-soft:#f7ead6;
+  --pos:#cf3a2e;
+  --neg:#2560c4;
+  --ok:#2c8549;
+  --warn:#c2491b;
+  --font-display:"IBM Plex Sans Condensed","Arial Narrow",sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font:14px/1.45 var(--font-body);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+h1,h2,h3{text-wrap:balance}
+
+.app{display:grid;grid-template-rows:auto 1fr;height:100%}
+header{display:flex;align-items:center;gap:14px 18px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;z-index:3}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{flex:none}
+.brand h1{font:700 20px/1 var(--font-display);margin:0;letter-spacing:.01em}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.sep{width:1px;height:24px;background:var(--line);margin:0 4px}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--panel);cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:#b9c2cc;background:#f6f8fa}
+.btn[aria-pressed="true"]{background:var(--brass-soft);border-color:var(--brass);color:#6b420b}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#26364a}
+.btn.danger{color:var(--warn)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;height:30px;padding:0 10px;cursor:pointer;font-size:13px;font-weight:500;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:#fff}
+
+main{display:grid;grid-template-columns:248px minmax(0,1fr) 312px;min-height:0}
+aside{overflow:auto;background:var(--panel);min-height:0}
+#library{border-right:1px solid var(--line);padding:14px 12px;display:flex;flex-direction:column;gap:14px}
+#inspector{border-left:1px solid var(--line)}
+.search{position:relative}
+.search input{width:100%;height:34px;border:1px solid var(--line);border-radius:7px;padding:0 10px 0 30px;background:#f7f9fa}
+.search svg{position:absolute;left:9px;top:9px;color:var(--muted)}
+.cat h2{font:600 11px/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px 2px}
+.cards{display:flex;flex-direction:column;gap:6px}
+.card{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--panel);cursor:grab;user-select:none}
+.card:hover{border-color:var(--brass);background:#fffdf9}
+.card .ico{width:40px;height:40px;border-radius:7px;background:#f1f4f7;display:grid;place-items:center;color:var(--ink)}
+.card strong{display:block;font-size:13px;font-weight:600;line-height:1.25;overflow-wrap:break-word;hyphens:manual}
+.card span{display:block;font-size:11.5px;color:var(--muted);line-height:1.3;margin-top:2px}
+.card .add{width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center}
+.card .add:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.card.planned{cursor:default;opacity:.6}
+.card.planned:hover{border-color:var(--line);background:var(--panel)}
+.tag{font:500 10px/1 var(--font-mono);padding:4px 6px;border-radius:5px;background:#eef1f4;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.libnote{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin-top:auto}
+
+#viewport{position:relative;min-height:0;overflow:hidden;background:#dde3e9}
+#viewport canvas{display:block;touch-action:none}
+#viewport.dragging canvas{cursor:grabbing!important}
+.labels{position:absolute;inset:0;pointer-events:none}
+.tlabel{font:600 13px/1 var(--font-mono);color:#fff;padding:3px 7px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tlabel.p{background:var(--pos)} .tlabel.n{background:var(--neg)}
+.dim{font:500 12px/1 var(--font-mono);background:rgba(255,255,255,.92);border:1px solid var(--line);padding:4px 7px;border-radius:5px;color:var(--ink);white-space:nowrap}
+
+.overlay{position:absolute;background:rgba(255,255,255,.93);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 18px rgba(21,33,46,.08);backdrop-filter:blur(6px)}
+.hint{right:14px;top:14px;padding:7px 10px;font-size:11.5px;color:var(--muted);max-width:270px;line-height:1.4}
+.hint b{color:var(--ink);font-weight:600}
+.toasts{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;z-index:4}
+.toast{background:var(--ink);color:#fff;font-size:13px;padding:7px 12px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.2);animation:tin .18s ease-out}
+.toast.warn{background:var(--warn)}
+@keyframes tin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+.mbar{left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:16px;padding:10px 14px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100% - 28px)}
+.crank{display:flex;align-items:center;gap:10px;height:46px;padding:0 16px 0 10px;border-radius:9px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;user-select:none;touch-action:none}
+.crank:hover{background:#26364a}
+.crank.on{background:var(--brass);border-color:var(--brass)}
+.crank svg{flex:none}
+.crank b{display:block;font-weight:600;font-size:13.5px;line-height:1.2;text-align:left}
+.crank small{display:block;font-size:11px;opacity:.75;line-height:1.2;text-align:left}
+.ctl{display:flex;flex-direction:column;gap:3px;min-width:150px}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.ctl output{font:500 12px var(--font-mono);color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:var(--brass);width:100%;margin:0}
+.switch{display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.switch input{accent-color:var(--brass);width:16px;height:16px;margin:0}
+
+.pane{padding:14px 16px;border-bottom:1px solid var(--line)}
+.pane h2{font:600 15px/1.2 var(--font-display);margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.hero .lbl{font-size:12px;color:var(--muted)}
+.big{font:600 40px/1.05 var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.big .unit{font-size:18px;font-weight:500;color:var(--muted);letter-spacing:0}
+.chip{font:600 11px/1 var(--font-body);padding:5px 8px;border-radius:999px;background:#eef1f4;color:var(--muted);white-space:nowrap;margin-bottom:6px}
+.chip.ok{background:#e3f2e8;color:var(--ok)}
+.chip.acc{background:var(--brass-soft);color:#7a4a0d}
+.chip.warn{background:#fbe5dc;color:var(--warn)}
+#chart{width:100%;height:84px;display:block;margin:10px 0 4px}
+dl.vals{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:8px 0 0}
+dl.vals div{border-top:1px solid var(--line);padding-top:6px}
+dl.vals dt{font-size:11.5px;color:var(--muted)}
+dl.vals dd{margin:0;font:500 15px/1.3 var(--font-mono);font-variant-numeric:tabular-nums}
+.meter{height:6px;border-radius:3px;background:#e6eaee;overflow:hidden;margin-top:10px}
+.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .1s linear}
+.meternote{font-size:11.5px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between;gap:8px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.field output{font:500 12.5px var(--font-mono);color:var(--ink)}
+.fieldnote{font-size:11.5px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row .switch{margin-right:6px}
+.empty{font-size:12.5px;color:var(--muted);background:#f4f6f8;border-radius:7px;padding:9px 10px;margin:0 0 10px}
+.ideas{margin:0;padding-left:18px;font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+.ideas b{font-weight:600}
+#selBody p{margin:0 0 8px;font-size:12.5px}
+#selBody .muted{color:var(--muted)}
+.disabled{opacity:.45;pointer-events:none}
+.foot{padding:12px 16px;font-size:11.5px;color:var(--muted)}
+
+.selwrap{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.selwrap select{height:32px;border:1px solid var(--line);border-radius:7px;background:var(--panel);padding:0 8px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer}
+.grp{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.grp + .grp{border-left:1px solid var(--line);padding-left:14px}
+.grp .gname{font:600 12px/1.2 var(--font-display);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+table.log{width:100%;border-collapse:collapse;font:11.5px/1.3 var(--font-mono);font-variant-numeric:tabular-nums;margin-top:4px}
+table.log th{font:600 11px/1.2 var(--font-body);color:var(--muted);text-align:right;padding:4px 3px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.log td{text-align:right;padding:5px 3px;border-bottom:1px solid #eef1f4;white-space:nowrap}
+table.log th:nth-child(-n+2),table.log td:nth-child(-n+2){text-align:left}
+.tr{font-size:11px;margin-left:1px;display:inline-block;width:9px;text-align:center}
+.tr.ch{color:var(--brass);font-weight:600}
+.tr.eq{color:var(--muted)}
+.srcchip{font:600 10px/1 var(--font-body);padding:3px 5px;border-radius:4px;background:#eef1f4;color:var(--muted)}
+.srcchip.on{background:var(--brass-soft);color:#7a4a0d}
+.lognote{font-size:11.5px;color:var(--muted);margin:6px 0 10px}
+.task{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.task + .task{margin-top:8px}
+.task b{font-weight:600;font-size:13px}
+.task ol{margin:6px 0 0;padding-left:18px;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
+@media (max-width:1100px){
+  main{grid-template-columns:210px minmax(0,1fr) 280px}
+  .hint{display:none}
+}
+@media (max-width:900px){
+  html,body{height:auto}
+  .app{height:auto}
+  main{grid-template-columns:1fr}
+  #viewport{height:68vh;min-height:420px;order:-1}
+  #library,#inspector{border:0;border-top:1px solid var(--line)}
+  .mbar{gap:10px;padding:8px 10px}
+  .ctl{min-width:120px}
+  .toolbar{margin-left:0}
+}
+@media (prefers-reduced-motion: reduce){
+  .toast{animation:none}
+  .meter i{transition:none}
+}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="8" fill="#15212e"/><path d="M13 8v18M21 8v18" stroke="#f0b65a" stroke-width="3" stroke-linecap="round"/><path d="M5 17h8M21 17h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    <div><h1>Physiklabor 3D</h1><p>Elektrostatik · Plattenkondensator</p></div>
+  </div>
+  <div class="toolbar">
+    <label class="selwrap" for="tplSel">Aufbau
+      <select id="tplSel"><option value="machine">Influenzmaschine</option><option value="supply">Netzgerät</option><option value="vdg">Bandgenerator + Elektroskop</option></select></label>
+    <button class="btn primary" id="tplBtn" type="button">Neu aufbauen</button>
+    <button class="btn" id="clearBtn" type="button">Leeren</button>
+    <span class="sep"></span>
+    <button class="btn" id="cableBtn" type="button" aria-pressed="false">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3v3a4 4 0 0 0 4 4h2a4 4 0 0 1 4 4v0" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="3" cy="3" r="2" fill="currentColor"/><circle cx="13" cy="14" r="2" fill="currentColor"/></svg>
+      Kabel verbinden</button>
+    <button class="btn danger" id="delBtn" type="button" disabled>Entfernen</button>
+    <span class="sep"></span>
+    <div class="seg" role="group" aria-label="Kameraansicht">
+      <button type="button" data-view="persp" class="on">3D</button>
+      <button type="button" data-view="front">Vorne</button>
+      <button type="button" data-view="top">Oben</button>
+      <button type="button" data-view="cap">Kondensator</button>
+      <button type="button" data-view="source">Quelle</button>
+    </div>
+    <button class="btn" id="soundBtn" type="button" aria-pressed="true">Ton an</button>
+  </div>
+</header>
+<main>
+  <aside id="library" aria-label="Geräte">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m11 11 3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <input id="search" type="search" placeholder="Geräte suchen" aria-label="Geräte suchen">
+    </div>
+    <div class="cat">
+      <h2>Elektrostatik</h2>
+      <div class="cards" id="cardsMain">
+        <div class="card" draggable="true" data-type="machine" data-q="influenzmaschine wimshurst generator hochspannung">
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="15" cy="16" r="8"/><circle cx="15" cy="16" r="2.2"/><path d="M15 8v3M15 21v3M7 16h3M20 16h3"/><path d="M5 26h20"/><path d="M7 16V5M23 16V5M7 5h4M23 5h-4"/><circle cx="12.3" cy="5" r="1.4" fill="currentColor"/><circle cx="17.7" cy="5" r="1.4" fill="currentColor"/></svg></div>
+          <div><strong>Influenz&shy;maschine</strong><span>Wimshurst-Maschine mit Leidener Flaschen</span></div>
+          <button class="add" type="button" aria-label="Influenzmaschine hinzufügen">+</button>
+        </div>
+        <div class="card" draggable="true" data-type="supply" data-q="hochspannungsnetzgerät netzgerät gleichspannungsquelle spannungsquelle">
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="24" height="15" rx="2"/><rect x="6" y="11" width="9" height="5" rx="1"/><circle cx="21" cy="13.5" r="2.5"/><circle cx="17" cy="20" r="1.2" fill="currentColor"/><circle cx="22" cy="20" r="1.2" fill="currentColor"/></svg></div>
+          <div><strong>Hoch&shy;spannungs&shy;netzgerät</strong><span>Gleichspannung 0–25 kV, einstellbar</span></div>
+          <button class="add" type="button" aria-label="Hochspannungsnetzgerät hinzufügen">+</button>
+        </div>
+        <div class="card" draggable="true" data-type="vdg" data-q="bandgenerator van de graaff generator hochspannung">
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="15" cy="8" r="5.5"/><path d="M13 13.5V22M17 13.5V22"/><rect x="8" y="22" width="14" height="4" rx="1"/></svg></div>
+          <div><strong>Band&shy;generator</strong><span>Van-de-Graaff mit Entladekugel</span></div>
+          <button class="add" type="button" aria-label="Bandgenerator hinzufügen">+</button>
+        </div>
+        <div class="card" draggable="true" data-type="scope" data-q="elektroskop zeigerelektroskop elektrometer ladungsnachweis">
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="15" cy="3.5" r="1.8"/><path d="M15 5.3V8"/><circle cx="15" cy="15" r="7"/><path d="M15 9.5v6.5M15 15l3.5-4.5"/><path d="M15 22v3M10 26h10"/></svg></div>
+          <div><strong>Elektro&shy;skop</strong><span>Zeigerelektroskop, Gehäuse geerdet</span></div>
+          <button class="add" type="button" aria-label="Elektroskop hinzufügen">+</button>
+        </div>
+        <div class="card" draggable="true" data-type="capset" data-q="plattenkondensator kondensator platten set">
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12.5 5v16M17.5 5v16" stroke-width="2.6"/><path d="M8 13h4.5M17.5 13H22M8 13v12M22 13v12M5 26h6M19 26h6"/></svg></div>
+          <div><strong>Platten&shy;kondensator</strong><span>2 Metallplatten auf Isolierstützen, d = 3 cm</span></div>
+          <button class="add" type="button" aria-label="Plattenkondensator hinzufügen">+</button>
+        </div>
+        <div class="card" draggable="true" data-type="plate" data-q="kondensatorplatte platte metallplatte isolierstütze einzeln">
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 5v16" stroke-width="2.6"/><path d="M11 13h6M11 13v12M7 26h8"/></svg></div>
+          <div><strong>Einzelne Platte</strong><span>Metallplatte Ø 20 cm auf Isolierstütze</span></div>
+          <button class="add" type="button" aria-label="Einzelne Kondensatorplatte hinzufügen">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="cat">
+      <h2>Geplant</h2>
+      <div class="cards" id="cardsPlanned">
+        <div class="card planned" data-q="glimmlampe">
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="10" y="6" width="10" height="16" rx="5"/><path d="M13 11v6M17 11v6M15 22v4"/></svg></div>
+          <div><strong>Glimmlampe</strong><span>Polaritätsprüfer</span></div><span class="tag">bald</span>
+        </div>
+      </div>
+    </div>
+    <p class="libnote">Gerät auf den Tisch ziehen oder mit <b>+</b> hinzufügen. Auf dem Tisch lässt es sich mit der Maus verschieben.</p>
+  </aside>
+
+  <section id="viewport" aria-label="3D-Labortisch">
+    <div class="overlay hint"><b>Ziehen</b> dreht die Ansicht · <b>Rad</b> zoomt · <b>Rechte Taste</b> verschiebt · <b>Gerät ziehen</b> stellt um · <b>Buchse anklicken</b> legt ein Kabel</div>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+    <div class="overlay mbar" id="mbar">
+      <div class="grp" id="nGrp">
+        <span class="gname">Netzgerät</span>
+        <label class="switch"><input type="checkbox" id="supplyOn" checked> eingeschaltet</label>
+        <div class="ctl"><label for="u0">Spannung U₀ <output id="u0Out">5,0 kV</output></label><input type="range" id="u0" min="0" max="25" step="0.5" value="5"></div>
+      </div>
+      <div class="grp" id="vGrp">
+        <span class="gname">Bandgenerator</span>
+        <label class="switch"><input type="checkbox" id="vdgOn"> Motor ein</label>
+        <div class="ctl"><label for="vdgSpeed">Bandgeschwindigkeit <output id="vdgSpeedOut">100 %</output></label><input type="range" id="vdgSpeed" min="10" max="100" step="5" value="100"></div>
+        <div class="ctl"><label for="vdgGap">Entladekugel <output id="vdgGapOut">4,0 cm</output></label><input type="range" id="vdgGap" min="1" max="12" step="0.5" value="4"></div>
+      </div>
+      <div class="grp" id="mGrp">
+      <button class="crank" id="crankBtn" type="button" aria-label="Kurbel drehen, gedrückt halten">
+        <svg id="crankIco" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 14 L14 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="14" cy="5" r="2.6" fill="currentColor"/><circle cx="14" cy="14" r="2" fill="currentColor"/></svg>
+        <span><b>Kurbel drehen</b><small>gedrückt halten · Leertaste</small></span>
+      </button>
+      <label class="switch"><input type="checkbox" id="autoCrank"> Dauerbetrieb</label>
+      <div class="ctl"><label for="speed">Kurbeldrehzahl <output id="speedOut">1,5 U/s</output></label><input type="range" id="speed" min="0.5" max="3" step="0.1" value="1.5"></div>
+      <div class="ctl"><label for="gap">Funkenstrecke <output id="gapOut">2,5 cm</output></label><input type="range" id="gap" min="0.5" max="6" step="0.1" value="2.5"></div>
+      <label class="switch"><input type="checkbox" id="jars" checked> Leidener Flaschen</label>
+      </div>
+    </div>
+  </section>
+
+  <aside id="inspector" aria-label="Messwerte und Einstellungen">
+    <section class="pane">
+      <h2>Messwerte <span class="chip" id="status">ungeladen</span></h2>
+      <div class="hero">
+        <div>
+          <div class="lbl" id="uLabel">Spannung am Kondensator</div>
+          <div class="big"><span id="vU">0,0</span> <span class="unit">kV</span></div>
+        </div>
+      </div>
+      <canvas id="chart" aria-label="Spannungsverlauf der letzten 30 Sekunden"></canvas>
+      <dl class="vals">
+        <div><dt>Kapazität C</dt><dd id="vC">–</dd></div>
+        <div><dt>Ladung Q</dt><dd id="vQ">–</dd></div>
+        <div><dt>Feldstärke E</dt><dd id="vE">–</dd></div>
+        <div><dt>Feldenergie W</dt><dd id="vW">–</dd></div>
+        <div><dt>Plattenabstand d</dt><dd id="vD">–</dd></div>
+        <div><dt>Überdeckte Fläche A</dt><dd id="vA">–</dd></div>
+      </dl>
+      <div class="meter" aria-hidden="true"><i id="eBar"></i></div>
+      <div class="meternote"><span>Feldstärke bis zum Durchschlag</span><span id="eNote">Luft ≈ 30 kV/cm</span></div>
+    </section>
+
+    <section class="pane" id="capPane">
+      <h2>Plattenkondensator</h2>
+      <p class="empty" id="capEmpty" hidden>Stelle zwei Platten so auf, dass ihre Flächen einander gegenüberstehen. Dann erscheinen hier die Einstellungen.</p>
+      <div id="capCtl">
+        <div class="field"><label for="dSl">Plattenabstand d <output id="dOut">3,0 cm</output></label><input type="range" id="dSl" min="0.3" max="15" step="0.1" value="3"></div>
+        <div class="field"><label for="rSl">Plattenradius r <output id="rOut">10,0 cm</output></label><input type="range" id="rSl" min="5" max="15" step="0.5" value="10"></div>
+        <div class="field"><label>Zwischen den Platten</label>
+          <div class="seg" role="group" aria-label="Dielektrikum" id="medSeg">
+            <button type="button" data-med="air" class="on">Luft</button>
+            <button type="button" data-med="plexi">Plexiglas</button>
+            <button type="button" data-med="glass">Glas</button>
+          </div>
+        </div>
+        <div class="field"><label>Selbstentladung durch die Luft</label>
+          <div class="seg" role="group" aria-label="Selbstentladung" id="leakSeg">
+            <button type="button" data-leak="real">Realistisch</button>
+            <button type="button" data-leak="ideal" class="on">Ideal (keine)</button>
+          </div>
+          <span class="fieldnote" id="leakNote">Keine Selbstentladung: Die Spannung bleibt, bis du entlädst oder es überschlägt.</span>
+        </div>
+        <div class="row">
+          <label class="switch"><input type="checkbox" id="showField" checked> Feldlinien</label>
+          <label class="switch"><input type="checkbox" id="showCharges" checked> Ladungen</label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="dischargeBtn" type="button">Entladen</button>
+          <button class="btn" id="detachBtn" type="button">Kabel abziehen</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane" id="logPane">
+      <h2>Messreihe <button class="btn" id="logAdd" type="button">Messwert aufnehmen</button></h2>
+      <table class="log" aria-label="Messreihe">
+        <thead><tr><th>Nr.</th><th>Quelle</th><th>d / cm</th><th>U / kV</th><th>Q / nC</th><th>C / pF</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+      <p class="lognote" id="logNote">Noch keine Messwerte. Die Pfeile zeigen später die Änderung gegenüber der vorigen Zeile: ↑ größer, ↓ kleiner, = gleich.</p>
+      <div class="row"><button class="btn" id="logCopy" type="button">Tabelle kopieren</button><button class="btn" id="logClear" type="button">Tabelle leeren</button></div>
+    </section>
+
+    <section class="pane">
+      <h2>Aufgabe: Plattenabstand vergrößern</h2>
+      <div class="task">
+        <b>2.1 Kondensator von der Quelle getrennt</b>
+        <ol>
+          <li>„Aufbau mit Netzgerät laden“: U₀ = 5 kV, d = 2 cm.</li>
+          <li>„Messwert aufnehmen“.</li>
+          <li>„Kabel abziehen“ (Bereich Plattenkondensator).</li>
+          <li>Plattenabstand d vergrößern, z. B. auf 6 cm.</li>
+          <li>„Messwert aufnehmen“ und U, Q und C vergleichen.</li>
+        </ol>
+      </div>
+      <div class="task">
+        <b>2.2 Kondensator mit der Quelle verbunden</b>
+        <ol>
+          <li>„Aufbau mit Netzgerät laden“.</li>
+          <li>„Messwert aufnehmen“.</li>
+          <li>Kabel stecken lassen und d vergrößern, z. B. auf 6 cm.</li>
+          <li>„Messwert aufnehmen“ und U, Q und C vergleichen.</li>
+        </ol>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="taskLoad" type="button">Aufbau mit Netzgerät laden</button></div>
+    </section>
+
+    <section class="pane">
+      <h2>Auswahl</h2>
+      <div id="selBody"></div>
+    </section>
+
+    <section class="pane">
+      <h2>Versuchsideen</h2>
+      <ul class="ideas">
+        <li><b>Funkenstrecke:</b> Verkleinere die Funkenstrecke an der Influenzmaschine. Wie ändern sich Häufigkeit und Stärke der Funken?</li>
+        <li><b>Dielektrikum:</b> Lade den Kondensator, trenne ihn und schiebe Plexiglas oder Glas ein. Was passiert mit U, Q und C?</li>
+        <li><b>Plattenfläche:</b> Ändere den Plattenradius. Wie hängt C von der Fläche ab?</li>
+        <li><b>Leidener Flaschen:</b> Schalte sie aus. Was ändert sich beim Laden?</li>
+      </ul>
+    </section>
+    <p class="foot">Vereinfachtes Modell: Die Influenzmaschine wirkt als Stromquelle (I ∝ Drehzahl, Leerlauf bis ≈ 110 kV). Der Bandgenerator lädt seine Kugel (≈ 12 pF) mit etwa 1 µA bis höchstens ≈ 200 kV. Das Elektroskop (≈ 5 pF) zeigt die Spannung zwischen Kugel und geerdetem Gehäuse. Das Netzgerät ist eine ideale Gleichspannungsquelle; alle Messwerte werden von idealen Messgeräten angezeigt. Durchschlag, wenn E die Durchschlagfeldstärke übersteigt (Luft ≈ 30 kV/cm). Randfeld wird vernachlässigt; jeder isolierte Leiter hat eine Kapazität gegen Erde (Konduktoren der Influenzmaschine und Pole des Netzgeräts je ≈ 10 pF, Platten ≈ 4 pF). Angezeigt werden U zwischen den Platten, Q auf Platte A und C = Q/U. Selbstentladung durch die Luft: realistisch mit Zeitkonstante ≈ 4 min (auch über die Maschine, wenn verbunden) oder ideal ohne Spannungsabfall, umschaltbar beim Kondensator. Funken und „Entladen“ setzen die Ladung sofort auf null, ohne Entladestab und ohne Restladung.</p>
+  </aside>
+</main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $ = s => document.querySelector(s);
+const v = (x, y, z) => new THREE.Vector3(x, y, z);
+const EPS0 = 8.854e-12;
+const nf = (x, d = 1) => x.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// ------------------------------------------------------------ Szene
+const vp = $('#viewport');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+vp.prepend(renderer.domElement);
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.className = 'labels';
+vp.insertBefore(labelRenderer.domElement, renderer.domElement.nextSibling);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xdde3e9);
+scene.fog = new THREE.Fog(0xdde3e9, 520, 1200);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(38, 1, 1, 3000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.minDistance = 18;
+controls.maxDistance = 560;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8792a0, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 2.0);
+sun.position.set(90, 200, 130);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -150, right: 150, top: 120, bottom: -120, near: 40, far: 600 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.05;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xdfe8ff, 0.5);
+fill.position.set(-120, 80, 60);
+scene.add(fill);
+
+// ------------------------------------------------------------ Texturen & Materialien
+function woodTexture() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#7b4b27'; g.fillRect(0, 0, 512, 256);
+  for (let i = 0; i < 150; i++) {
+    const y = Math.random() * 256;
+    g.strokeStyle = `rgba(${35 + Math.random() * 30},${18 + Math.random() * 14},8,${0.07 + Math.random() * 0.2})`;
+    g.lineWidth = 0.5 + Math.random() * 2.4;
+    g.beginPath(); g.moveTo(0, y);
+    for (let x = 0; x <= 512; x += 32) g.lineTo(x, y + Math.sin(x * 0.012 + i) * 3 + (Math.random() - 0.5) * 1.4);
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
+  return t;
+}
+function signTexture(sign) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = sign > 0 ? '#d23b2f' : '#2762c6';
+  g.beginPath(); g.arc(32, 32, 27, 0, Math.PI * 2); g.fill();
+  g.lineWidth = 4; g.strokeStyle = 'rgba(255,255,255,.9)'; g.stroke();
+  g.fillStyle = '#fff';
+  g.fillRect(18, 28.5, 28, 7);
+  if (sign > 0) g.fillRect(28.5, 18, 7, 28);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function glowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(200,210,255,.75)');
+  gr.addColorStop(0.6, 'rgba(140,150,255,.22)'); gr.addColorStop(1, 'rgba(120,130,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+const M = {
+  wood: new THREE.MeshStandardMaterial({ map: woodTexture(), roughness: 0.55 }),
+  brass: new THREE.MeshStandardMaterial({ color: 0xcaa04a, metalness: 1, roughness: 0.28 }),
+  alu: new THREE.MeshStandardMaterial({ color: 0xd6dade, metalness: 1, roughness: 0.3 }),
+  steel: new THREE.MeshStandardMaterial({ color: 0xb9bec4, metalness: 1, roughness: 0.22 }),
+  ebonite: new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.42 }),
+  disk: new THREE.MeshPhysicalMaterial({ color: 0x1e2226, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.08 }),
+  acrylic: new THREE.MeshPhysicalMaterial({ color: 0xd4eef3, roughness: 0.05, transparent: true, opacity: 0.5, clearcoat: 1 }),
+  insul: new THREE.MeshPhysicalMaterial({ color: 0xa93421, roughness: 0.14, transparent: true, opacity: 0.9, clearcoat: 1 }),
+  castIron: new THREE.MeshStandardMaterial({ color: 0x3a4149, metalness: 0.55, roughness: 0.5 }),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0xe6f3f5, roughness: 0.04, transparent: true, opacity: 0.3, clearcoat: 1, depthWrite: false }),
+  belt: new THREE.MeshStandardMaterial({ color: 0x5b3a22, roughness: 0.85 }),
+  bench: new THREE.MeshStandardMaterial({ color: 0xcdd3d9, roughness: 0.62 }),
+  benchEdge: new THREE.MeshStandardMaterial({ color: 0x2b323a, roughness: 0.6 }),
+  red: new THREE.MeshStandardMaterial({ color: 0xcf3a2e, roughness: 0.4 }),
+  blue: new THREE.MeshStandardMaterial({ color: 0x2560c4, roughness: 0.4 }),
+  hole: new THREE.MeshBasicMaterial({ color: 0x050505 }),
+  pick: new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+  housing: new THREE.MeshStandardMaterial({ color: 0xd2d7dc, roughness: 0.5 }),
+  housingDark: new THREE.MeshStandardMaterial({ color: 0x59636e, roughness: 0.55 }),
+  vdgBase: new THREE.MeshStandardMaterial({ color: 0x334152, roughness: 0.5 }),
+  acrylicDS: new THREE.MeshPhysicalMaterial({ color: 0xd4eef3, roughness: 0.05, transparent: true, opacity: 0.32, clearcoat: 1, side: THREE.DoubleSide, depthWrite: false }),
+  ring: new THREE.MeshStandardMaterial({ color: 0x3a4149, metalness: 0.6, roughness: 0.45, side: THREE.DoubleSide }),
+  sphere: new THREE.MeshStandardMaterial({ color: 0xdfe3e7, metalness: 1, roughness: 0.14 }),
+};
+const plusMat = new THREE.SpriteMaterial({ map: signTexture(1) });
+const minusMat = new THREE.SpriteMaterial({ map: signTexture(-1) });
+const glowMat = new THREE.SpriteMaterial({ map: glowTexture(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: 0xb8c4ff });
+
+// ------------------------------------------------------------ Hilfsfunktionen Geometrie
+function mesh(geo, mat) { const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true; return m; }
+const cyl = (rt, rb, h, mat, seg = 24) => mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+const box = (w, h, d, mat) => mesh(new THREE.BoxGeometry(w, h, d), mat);
+const sph = (r, mat) => mesh(new THREE.SphereGeometry(r, 28, 18), mat);
+function put(parent, m, x, y, z) { m.position.set(x, y, z); parent.add(m); return m; }
+function rod(a, b, r, mat, seg = 14) {
+  const dir = b.clone().sub(a); const len = dir.length();
+  const m = cyl(r, r, len, mat, seg);
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(v(0, 1, 0), dir.normalize());
+  return m;
+}
+
+// ------------------------------------------------------------ Raum & Labortisch
+const TABLE = { hx: 116, hz: 56 };
+{
+  const floor = mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0xb3bbc4, roughness: 0.95 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -84; scene.add(floor);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(3000, 900), new THREE.MeshStandardMaterial({ color: 0xe3e8ed, roughness: 1 }));
+  wall.position.set(0, 300, -300); scene.add(wall);
+  put(scene, box(TABLE.hx * 2, 3, TABLE.hz * 2, M.bench), 0, -1.5, 0);
+  put(scene, box(TABLE.hx * 2 + 2, 3, TABLE.hz * 2 + 2, M.benchEdge), 0, -4.4, 0);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) put(scene, box(6, 78, 6, M.benchEdge), sx * (TABLE.hx - 8), -45, sz * (TABLE.hz - 8));
+  put(scene, box(TABLE.hx * 2 - 20, 10, 2, M.benchEdge), 0, -11, TABLE.hz - 8);
+  // 10-cm-Raster
+  const pts = [];
+  for (let x = -110; x <= 110; x += 10) pts.push(x, 0.03, -50, x, 0.03, 50);
+  for (let z = -50; z <= 50; z += 10) pts.push(-110, 0.03, z, 110, 0.03, z);
+  const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  scene.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ color: 0x8794a2, transparent: true, opacity: 0.22 })));
+}
+
+// ------------------------------------------------------------ Geräte
+let uid = 1;
+const objects = [];
+const cables = [];
+
+function makeTerminal(owner, parent, pos, dir, pol, node, label) {
+  const tg = new THREE.Group();
+  tg.position.copy(pos);
+  tg.quaternion.setFromUnitVectors(v(0, 1, 0), dir.clone().normalize());
+  put(tg, cyl(0.75, 0.75, 1.6, M.ebonite, 20), 0, 0, 0);
+  const ringMat = (pol === '+' ? M.red : pol === '-' ? M.blue : M.brass).clone();
+  const ring = put(tg, cyl(0.84, 0.84, 0.45, ringMat, 20), 0, 0.55, 0);
+  put(tg, cyl(0.3, 0.3, 0.1, M.hole, 12), 0, 0.82, 0);
+  const pk = put(tg, new THREE.Mesh(new THREE.SphereGeometry(2.3, 10, 8), M.pick), 0, 0.6, 0);
+  pk.castShadow = false;
+  const t = { owner, group: tg, ring, ringMat, pol, node, label };
+  tg.traverse(o => { o.userData.terminal = t; });
+  parent.add(tg);
+  owner.terminals.push(t);
+  return t;
+}
+const tmpQ = new THREE.Quaternion();
+function termEnd(t) { return t.group.localToWorld(v(0, 0.9, 0)); }
+function termDir(t) { return v(0, 1, 0).applyQuaternion(t.group.getWorldQuaternion(tmpQ)); }
+
+class Wimshurst {
+  constructor() {
+    this.type = 'machine'; this.id = uid++; this.name = 'Influenzmaschine';
+    this.group = new THREE.Group(); this.terminals = [];
+    this.half = { x: 27, z: 14 };
+    const g = this.group, H = 31, R = 17; this.H = H;
+    put(g, box(50, 3, 26, M.wood), 0, 1.5, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) put(g, cyl(1.2, 1.2, 0.6, M.ebonite, 12), sx * 22, -0.0, sz * 11);
+    put(g, box(4, 30, 3, M.wood), 0, 18, -6.5);
+    const axle = cyl(0.55, 0.55, 11.6, M.steel); axle.rotation.x = Math.PI / 2; put(g, axle, 0, H, -2.5);
+    put(g, sph(0.75, M.brass), 0, H, 3.3);
+
+    // Scheiben mit Stanniol-Sektoren
+    this.diskF = new THREE.Group(); this.diskB = new THREE.Group();
+    for (const [dg, z, side] of [[this.diskF, 1.0, 1], [this.diskB, -1.0, -1]]) {
+      dg.position.set(0, H, z); g.add(dg);
+      const disk = cyl(R, R, 0.35, M.disk, 96); disk.rotation.x = Math.PI / 2; dg.add(disk);
+      const hub = cyl(2.2, 2.2, 1.2, M.ebonite, 32); hub.rotation.x = Math.PI / 2; dg.add(hub);
+      const hp = cyl(1.8, 1.8, 0.8, M.brass, 32); hp.rotation.x = Math.PI / 2; hp.position.z = side * 1.6; dg.add(hp);
+      for (let i = 0; i < 24; i++) {
+        const a = i / 24 * Math.PI * 2;
+        const s = box(1.7, 7, 0.07, M.alu);
+        s.position.set(Math.cos(a) * 12.5, Math.sin(a) * 12.5, side * 0.22);
+        s.rotation.z = a - Math.PI / 2; s.castShadow = false;
+        dg.add(s);
+      }
+    }
+    // Ausgleichsbügel (Neutralisatoren)
+    for (const [z, a] of [[1.75, Math.PI / 4], [-1.75, -Math.PI / 4]]) {
+      const nb = new THREE.Group(); nb.position.set(0, H, z); nb.rotation.z = a; g.add(nb);
+      const r = cyl(0.26, 0.26, 30, M.brass); r.rotation.z = Math.PI / 2; nb.add(r);
+      for (const sx of [-15, 15]) {
+        put(nb, sph(0.45, M.brass), sx, 0, 0);
+        const br = cyl(0.42, 0.12, 0.55, M.belt, 10); br.rotation.x = Math.PI / 2 * (z > 0 ? 1 : -1);
+        put(nb, br, sx * 0.93, 0, -Math.sign(z) * 0.3);
+      }
+    }
+    // Antrieb: Kurbel, Riemenscheiben, ein gekreuzter Riemen
+    const shaft = cyl(0.45, 0.45, 15, M.steel); shaft.rotation.x = Math.PI / 2; put(g, shaft, 0, 9, -1);
+    put(g, box(2.4, 7, 2, M.wood), 0, 6.5, 4.4);
+    this.drive = new THREE.Group(); this.drive.position.set(0, 9, 0); g.add(this.drive);
+    for (const z of [2.6, -2.6]) {
+      const p = cyl(5, 5, 0.9, M.wood, 40); p.rotation.x = Math.PI / 2; put(this.drive, p, 0, 0, z);
+      const rim = mesh(new THREE.TorusGeometry(5, 0.25, 8, 40), M.ebonite); put(this.drive, rim, 0, 0, z);
+      for (let k = 0; k < 4; k++) { const sp = box(0.5, 8, 0.2, M.ebonite); sp.rotation.z = k * Math.PI / 4; put(this.drive, sp, 0, 0, z + Math.sign(z) * 0.5); }
+    }
+    put(this.drive, box(1.2, 4.6, 0.6, M.steel), 0, -2.3, 5.7);
+    const grip = cyl(0.6, 0.6, 4, M.wood, 14); grip.rotation.x = Math.PI / 2; put(this.drive, grip, 0, -4.4, 7.9);
+    for (const [z, crossed] of [[2.6, false], [-2.6, true]]) {
+      const a1 = v(5, 9, z), a2 = v(-5, 9, z);
+      const b1 = v(crossed ? -1.8 : 1.8, H, z), b2 = v(crossed ? 1.8 : -1.8, H, z);
+      g.add(rod(a1, b1, 0.22, M.belt, 8)); g.add(rod(a2, b2, 0.22, M.belt, 8));
+    }
+
+    // Konduktoren, Kämme, Elektroden
+    this.balls = {};
+    this.glows = {};
+    for (const sx of [-1, 1]) {
+      const x = sx * 23;
+      put(g, cyl(1.7, 1.9, 0.9, M.ebonite, 20), x, 3.45, 0);
+      put(g, cyl(1.3, 1.3, H - 5.5, M.acrylic, 24), x, 3.9 + (H - 5.5) / 2, 0);
+      put(g, sph(2, M.brass), x, H, 0);
+      g.add(rod(v(x, H, 0), v(sx * 19.5, H, 0), 0.38, M.brass));
+      g.add(rod(v(sx * 19.5, H, -2.7), v(sx * 19.5, H, 2.7), 0.34, M.brass));
+      for (const pz of [-2.7, 2.7]) {
+        g.add(rod(v(sx * 19.5, H, pz), v(sx * 12.5, H, pz), 0.3, M.brass));
+        for (let k = 0; k < 6; k++) {
+          const t = mesh(new THREE.ConeGeometry(0.17, 0.9, 8), M.brass);
+          t.rotation.x = pz > 0 ? -Math.PI / 2 : Math.PI / 2;
+          put(g, t, sx * (13.2 + k * 1.1), H, pz - Math.sign(pz) * 0.55);
+        }
+      }
+      g.add(rod(v(x, H + 1.8, 0), v(x, 53, 0), 0.4, M.brass));
+      put(g, sph(1.3, M.brass), x, 53, 0);
+      put(g, cyl(0.8, 0.8, 5, M.ebonite, 16), x, 56.6, 0);
+      put(g, sph(1.1, M.ebonite), x, 59.4, 0);
+      const slide = cyl(0.36, 0.36, 1, M.brass, 14); slide.rotation.z = Math.PI / 2; g.add(slide);
+      const ball = sph(1.6, M.brass); g.add(ball);
+      this.balls[sx] = { slide, ball };
+      const gl = new THREE.Sprite(glowMat.clone()); gl.raycast = () => {}; gl.visible = false; g.add(gl);
+      this.glows[sx] = gl;
+      // Leidener Flasche
+      const jx = sx * 13, jz = 9;
+      put(g, cyl(3.2, 3.2, 15, M.glass, 40), jx, 10.5, jz);
+      put(g, cyl(3.27, 3.27, 8, M.alu, 40), jx, 7, jz);
+      put(g, cyl(3.35, 3.35, 0.7, M.ebonite, 40), jx, 18.35, jz);
+      g.add(rod(v(jx, 18.7, jz), v(jx, 25, jz), 0.25, M.brass));
+      put(g, sph(0.9, M.brass), jx, 25.3, jz);
+      g.add(rod(v(jx, 25.3, jz), v(x, H, 0), 0.26, M.brass));
+      // Buchse
+      const term = makeTerminal(this, g, v(sx * 25.6, H, 0), v(sx, 0, 0), sx > 0 ? '+' : '-', sx > 0 ? 'M+' : 'M-',
+        sx > 0 ? 'Pluspol (+) der Influenzmaschine' : 'Minuspol (−) der Influenzmaschine');
+      const el = document.createElement('div'); el.className = 'tlabel ' + (sx > 0 ? 'p' : 'n'); el.textContent = sx > 0 ? '+' : '−';
+      const lbl = new CSS2DObject(el); lbl.position.set(sx * 26.5, H + 4.5, 0); g.add(lbl);
+      term.labelObj = lbl;
+    }
+    // Verbindungsbügel der Außenbeläge (Flaschen zu-/abschalten)
+    this.jarBar = put(g, box(19.6, 0.35, 1.3, M.alu), 0, 3.2, 9);
+    this.jarKnob = put(g, cyl(0.8, 0.8, 1.6, M.ebonite, 16), 0, 4.1, 9);
+  }
+  setGap(gap) {
+    for (const sx of [-1, 1]) {
+      const xb = sx * (gap / 2 + 1.6);
+      const { slide, ball } = this.balls[sx];
+      slide.position.set((sx * 23 + xb) / 2, 53, 0); slide.scale.y = Math.abs(sx * 23 - xb);
+      ball.position.set(xb, 53, 0);
+      this.glows[sx].position.set(sx * gap / 2, 53, 0);
+    }
+  }
+  setJars(on) { this.jarBar.visible = on; this.jarKnob.position.y = on ? 4.1 : 5.6; }
+  ringCenter() { return v(this.group.position.x, 0, this.group.position.z); }
+}
+
+function drawSupplyPanel(c, on, U0) {
+  const g = c.getContext('2d'), W = c.width, H = c.height;
+  const px = x => (x + 17) / 34 * W, py = y => (14 - y) / 13 * H;
+  g.fillStyle = '#cdd2d7'; g.fillRect(0, 0, W, H);
+  g.strokeStyle = '#98a1aa'; g.lineWidth = 4; g.strokeRect(2, 2, W - 4, H - 4);
+  g.textAlign = 'left'; g.fillStyle = '#26303b';
+  g.font = '600 17px "IBM Plex Sans Condensed","Arial Narrow",sans-serif'; g.fillText('HOCHSPANNUNGS-NETZGERÄT', 16, 27);
+  g.font = '500 13px "IBM Plex Mono",monospace'; g.fillStyle = '#56616c'; g.fillText('0 … 25 kV  ⎓', 16, 46);
+  const dx = px(-11.5), dy = py(11.3), dw = px(3.5) - dx, dh = py(6.6) - dy;
+  g.fillStyle = '#121619'; g.fillRect(dx, dy, dw, dh);
+  g.textAlign = 'right'; g.font = '600 46px "IBM Plex Mono",monospace';
+  g.fillStyle = on ? '#ff6b3d' : '#3b2b26';
+  g.fillText(on ? nf(U0 / 1000, 1).padStart(4, '0') : '--,-', dx + dw - 46, dy + dh - 14);
+  g.font = '600 17px "IBM Plex Mono",monospace'; g.fillText('kV', dx + dw - 12, dy + dh - 16);
+  const kx = px(10), ky = py(9.5), kr = px(3.6) - px(0);
+  g.strokeStyle = '#3b4652'; g.lineWidth = 2; g.fillStyle = '#3b4652'; g.textAlign = 'center';
+  g.font = '500 12px "IBM Plex Mono",monospace';
+  for (let i = 0; i <= 10; i++) {
+    const th = (-135 + 27 * i) * Math.PI / 180, sx = Math.sin(th), sy = -Math.cos(th);
+    const r0 = kr - (i % 5 === 0 ? 7 : 4);
+    g.beginPath(); g.moveTo(kx + sx * r0, ky + sy * r0); g.lineTo(kx + sx * kr, ky + sy * kr); g.stroke();
+    if (i % 5 === 0) g.fillText(String(i * 2.5).replace('.', ','), kx + sx * (kr + 13), ky + sy * (kr + 13) + 4);
+  }
+  g.font = '600 11px "IBM Plex Sans",sans-serif'; g.fillStyle = '#56616c';
+  g.fillText('AUSGANG', px(8.5), py(5.4));
+  g.fillText('NETZ', px(-13), py(7.6));
+  g.font = '700 22px "IBM Plex Sans",sans-serif';
+  g.fillStyle = '#2560c4'; g.fillText('−', px(3.1), py(2.6));
+  g.fillStyle = '#cf3a2e'; g.fillText('+', px(14), py(2.6));
+}
+class Supply {
+  constructor() {
+    this.type = 'supply'; this.id = uid++; this.name = 'Hochspannungsnetzgerät';
+    this.group = new THREE.Group(); this.terminals = []; this.half = { x: 18, z: 13 };
+    const g = this.group;
+    put(g, box(34, 13, 24, M.housing), 0, 7.5, 0);
+    put(g, box(34.4, 0.8, 24.4, M.housingDark), 0, 14.2, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) put(g, cyl(1.3, 1.3, 1, M.ebonite, 12), sx * 14, 0.5, sz * 9);
+    for (const sx of [-1, 1]) g.add(rod(v(sx * 17.6, 11, -6), v(sx * 17.6, 11, 6), 0.45, M.housingDark));
+    this.canvas = document.createElement('canvas'); this.canvas.width = 512; this.canvas.height = 196;
+    this.tex = new THREE.CanvasTexture(this.canvas); this.tex.colorSpace = THREE.SRGBColorSpace; this.tex.anisotropy = 8;
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(34, 13), new THREE.MeshStandardMaterial({ map: this.tex, roughness: 0.55 }));
+    panel.position.set(0, 7.5, 12.03); g.add(panel);
+    this.knob = new THREE.Group(); this.knob.position.set(10, 9.5, 12.05); g.add(this.knob);
+    const kb = cyl(2.3, 2.5, 1.6, M.ebonite, 32); kb.rotation.x = Math.PI / 2; kb.position.z = 0.8; this.knob.add(kb);
+    const ptr = box(0.45, 1.9, 0.2, M.alu); ptr.position.set(0, 1.2, 1.65); this.knob.add(ptr);
+    this.swMat = new THREE.MeshStandardMaterial({ color: 0x2f9a52, roughness: 0.4 });
+    this.sw = put(g, box(2.6, 1.8, 1.2, this.swMat), -13, 4, 12.4);
+    this.ledMat = new THREE.MeshStandardMaterial({ color: 0x1d3a26, emissive: 0x39ff6a, emissiveIntensity: 0 });
+    put(g, sph(0.45, this.ledMat), -13, 6.0, 12.1);
+    makeTerminal(this, g, v(5, 3.4, 12.05), v(0, 0, 1), '-', 'N-', 'Minuspol (−) des Netzgeräts');
+    makeTerminal(this, g, v(12, 3.4, 12.05), v(0, 0, 1), '+', 'N+', 'Pluspol (+) des Netzgeräts');
+    this.drawn = '';
+  }
+  update(on, U0) {
+    const key = on + '|' + U0; if (key === this.drawn) return; this.drawn = key;
+    drawSupplyPanel(this.canvas, on, U0); this.tex.needsUpdate = true;
+    this.knob.rotation.z = THREE.MathUtils.degToRad(135 - U0 / 25000 * 270);
+    this.ledMat.emissiveIntensity = on ? 2.2 : 0;
+    this.sw.rotation.x = on ? -0.25 : 0.25;
+  }
+  ringCenter() { return v(this.group.position.x, 0, this.group.position.z); }
+}
+
+function labelTexture(text, w = 256, h = 48) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); g.fillStyle = '#26303b'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#e6ebf0'; g.font = '600 24px "IBM Plex Sans Condensed","Arial Narrow",sans-serif'; g.textAlign = 'center'; g.fillText(text, w / 2, h / 2 + 8);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function beltTexture() {
+  const c = document.createElement('canvas'); c.width = 32; c.height = 64;
+  const g = c.getContext('2d'); g.fillStyle = '#3a2f28'; g.fillRect(0, 0, 32, 64);
+  g.fillStyle = '#7d6a5a'; g.fillRect(0, 0, 32, 6); g.fillStyle = '#5a4b40'; g.fillRect(0, 30, 32, 3);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 7); return t;
+}
+class VdG {
+  constructor() {
+    this.type = 'vdg'; this.id = uid++; this.name = 'Bandgenerator';
+    this.group = new THREE.Group(); this.terminals = []; this.half = { x: 13, z: 10 };
+    const g = this.group;
+    put(g, box(24, 7, 18, M.vdgBase), 0, 3.5, 0);
+    put(g, box(24.4, 0.6, 18.4, M.housingDark), 0, 7.2, 0);
+    const lbl = new THREE.Mesh(new THREE.PlaneGeometry(10, 1.9), new THREE.MeshStandardMaterial({ map: labelTexture('BANDGENERATOR'), roughness: 0.6 }));
+    lbl.position.set(0, 5, 9.02); g.add(lbl);
+    this.swMat = new THREE.MeshStandardMaterial({ color: 0x8b2c22, roughness: 0.4 });
+    this.sw = put(g, box(2.6, 1.8, 1.2, this.swMat), -8, 3.2, 9.4);
+    this.ledMat = new THREE.MeshStandardMaterial({ color: 0x1d3a26, emissive: 0x39ff6a, emissiveIntensity: 0 });
+    put(g, sph(0.45, this.ledMat), -8, 5.4, 9.1);
+    put(g, cyl(4, 4, 1.4, M.housingDark, 32), 0, 8.2, 0);
+    const tube = mesh(new THREE.CylinderGeometry(3.2, 3.2, 44, 40, 1, true), M.acrylicDS); tube.castShadow = false; put(g, tube, 0, 29.6, 0);
+    for (const y of [10.2, 49.6]) { const r = cyl(1.25, 1.25, 3, M.steel, 20); r.rotation.z = Math.PI / 2; put(g, r, 0, y, 0); }
+    this.beltF = beltTexture(); this.beltB = beltTexture();
+    const bf = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 39.4), new THREE.MeshStandardMaterial({ map: this.beltF, roughness: 0.9, side: THREE.DoubleSide }));
+    bf.position.set(0, 29.9, 1.27); g.add(bf);
+    const bb = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 39.4), new THREE.MeshStandardMaterial({ map: this.beltB, roughness: 0.9, side: THREE.DoubleSide }));
+    bb.position.set(0, 29.9, -1.27); g.add(bb);
+    put(g, box(3, 0.35, 0.35, M.brass), 0, 12, 2.6);
+    for (let k = 0; k < 5; k++) { const t = mesh(new THREE.ConeGeometry(0.13, 0.6, 6), M.brass); t.rotation.x = -Math.PI / 2; put(g, t, -1.2 + k * 0.6, 12, 2.15); }
+    g.add(rod(v(0, 12, 2.6), v(0, 7.5, 7), 0.15, M.brass, 6));
+    put(g, mesh(new THREE.SphereGeometry(11, 56, 36), M.sphere), 0, 60, 0);
+    makeTerminal(this, g, v(11.1, 60, 0), v(1, 0, 0), '+', 'G+', 'Konduktorkugel des Bandgenerators');
+    makeTerminal(this, g, v(8, 3.6, 9.05), v(0, 0, 1), null, 'GND', 'Erdbuchse des Bandgenerators');
+    this.arm = new THREE.Group(); g.add(this.arm);
+    this.glow = new THREE.Sprite(glowMat.clone()); this.glow.raycast = () => {}; this.glow.visible = false; g.add(this.glow);
+    this.sphereSprites = []; const N = 48;
+    for (let i = 0; i < N; i++) {
+      const y = 1 - 2 * (i + 0.5) / N, rr = Math.sqrt(1 - y * y), th = i * 2.39996;
+      const sp = new THREE.Sprite(plusMat); sp.raycast = () => {}; sp.visible = false; sp.scale.set(1.3, 1.3, 1);
+      sp.position.set(Math.cos(th) * rr * 11.5, 60 + y * 11.5, Math.sin(th) * rr * 11.5); g.add(sp); this.sphereSprites.push(sp);
+    }
+    this.beltSprites = [];
+    for (let i = 0; i < 7; i++) { const sp = new THREE.Sprite(plusMat); sp.raycast = () => {}; sp.scale.set(0.9, 0.9, 1); sp.visible = false; g.add(sp); this.beltSprites.push(sp); }
+    this.phase = 0;
+    this.setGap(4);
+  }
+  setGap(s) {
+    this.arm.children.forEach(c => c.geometry && c.geometry.dispose()); this.arm.clear();
+    const xb = 11 + s + 2.5;
+    this.arm.add(rod(v(-11.6, 7.5, -4), v(-11.6, 40, -4), 0.45, M.steel));
+    this.arm.add(rod(v(-11.6, 40, -4), v(-xb, 40, -4), 0.45, M.steel));
+    this.arm.add(rod(v(-xb, 40, -4), v(-xb, 57, 0), 0.45, M.steel));
+    put(this.arm, sph(2.5, M.steel), -xb, 60, 0);
+    put(this.arm, cyl(1.3, 1.3, 1, M.housingDark, 16), -11.6, 7.8, -4);
+    this.arm.traverse(c => { c.userData.obj = this; });
+    this.glow.position.set(-11 - s / 2, 60, 0);
+    this.gap = s;
+  }
+  ringCenter() { return v(this.group.position.x - 4, 0, this.group.position.z); }
+}
+
+function scopeFace() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#f2eee3'; g.beginPath(); g.arc(128, 128, 128, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#2b333c'; g.fillStyle = '#2b333c'; g.lineWidth = 2; g.textAlign = 'center';
+  g.font = '600 16px "IBM Plex Mono",monospace';
+  for (let i = 0; i <= 20; i++) {
+    const th = i * 4.5 * Math.PI / 180, sx = Math.sin(th), sy = -Math.cos(th);
+    const r0 = i % 4 === 0 ? 96 : 104;
+    g.lineWidth = i % 4 === 0 ? 2.5 : 1.5;
+    g.beginPath(); g.moveTo(128 + sx * r0, 128 + sy * r0); g.lineTo(128 + sx * 114, 128 + sy * 114); g.stroke();
+    if (i % 4 === 0) g.fillText(String(i / 4), 128 + sx * 82, 128 + sy * 82 + 6);
+  }
+  g.beginPath(); g.arc(128, 128, 114, -Math.PI / 2, 0); g.lineWidth = 1.5; g.stroke();
+  g.font = '600 13px "IBM Plex Sans",sans-serif'; g.fillStyle = '#5a6672'; g.fillText('ELEKTROSKOP', 128, 214);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+class Scope {
+  constructor() {
+    this.type = 'scope'; this.id = uid++; this.name = 'Elektroskop';
+    this.group = new THREE.Group(); this.terminals = []; this.angle = 0; this.vel = 0;
+    const g = this.group, H = 22;
+    put(g, cyl(5.2, 5.6, 2, M.castIron, 40), 0, 1, 0);
+    put(g, cyl(0.8, 0.8, 11.5, M.steel, 16), 0, 7.6, 0);
+    const ring = mesh(new THREE.CylinderGeometry(9, 9, 5.2, 64, 1, true), M.ring); ring.rotation.x = Math.PI / 2; put(g, ring, 0, H, 0);
+    for (const z of [2.6, -2.6]) put(g, mesh(new THREE.TorusGeometry(9, 0.35, 10, 64), M.ring), 0, H, z);
+    const face = new THREE.Mesh(new THREE.CircleGeometry(8.8, 64), new THREE.MeshStandardMaterial({ map: scopeFace(), roughness: 0.8 }));
+    put(g, face, 0, H, -2.3);
+    const back = new THREE.Mesh(new THREE.CircleGeometry(9, 48), M.ring); back.rotation.y = Math.PI; put(g, back, 0, H, -2.6);
+    const glass = new THREE.Mesh(new THREE.CircleGeometry(8.9, 64), M.glass); put(g, glass, 0, H, 2.55);
+    put(g, cyl(1.3, 1.3, 3.4, M.insul, 20), 0, H + 9.4, 0);
+    g.add(rod(v(0, H - 1.2, 0), v(0, 37, 0), 0.32, M.brass));
+    put(g, sph(1.7, M.brass), 0, 37.6, 0);
+    this.needle = new THREE.Group(); this.needle.position.set(0, H, 0.7); g.add(this.needle);
+    put(this.needle, box(0.32, 15, 0.12, M.alu), 0, 0.6, 0);
+    put(this.needle, sph(0.5, M.brass), 0, 0, 0.1);
+    this.H = H;
+    const top = makeTerminal(this, g, v(0, 39.2, 0), v(0, 1, 0), null, 'E', 'Kugel des Elektroskops');
+    top.back = () => v(0, 0, -1);
+    const gnd = makeTerminal(this, g, v(0, 2.1, 4.1), v(0, 1, 0), null, 'GND', 'Gehäuse des Elektroskops (geerdet)');
+    gnd.back = () => v(0, 0, 1);
+    this.sprites = [];
+    for (let i = 0; i < 3; i++) { const sp = new THREE.Sprite(plusMat); sp.raycast = () => {}; sp.scale.set(0.8, 0.8, 1); sp.visible = false; sp.position.set(-0.9, H + 2 + i * 2.6, 0.4); g.add(sp); this.sprites.push(sp); }
+    for (let i = 0; i < 3; i++) { const sp = new THREE.Sprite(plusMat); sp.raycast = () => {}; sp.scale.set(0.8, 0.8, 1); sp.visible = false; sp.position.set(0.75, 2 + i * 2.2, 0.3); this.needle.add(sp); this.sprites.push(sp); }
+  }
+  ringCenter() { return v(this.group.position.x, 0, this.group.position.z); }
+}
+
+let plateCount = 0;
+class Plate {
+  constructor(facing = 1) {
+    this.type = 'plate'; this.id = uid++; this.name = 'Platte ' + (++plateCount);
+    this.group = new THREE.Group(); this.terminals = []; this.r = 10;
+    this.rot = new THREE.Group(); this.group.add(this.rot);
+    const g = this.rot;
+    put(g, cyl(5.4, 5.8, 2, M.castIron, 40), -6, 1, 0);
+    put(g, cyl(1.6, 1.8, 1.2, M.castIron, 20), -6, 2.6, 0);
+    put(g, cyl(1.1, 1.1, 19, M.insul, 24), -6, 12.5, 0);
+    put(g, box(2.8, 4, 2.8, M.alu), -6, 24, 0);
+    g.add(rod(v(-6, 25, 0), v(-0.3, 25, 0), 0.5, M.steel));
+    put(g, sph(0.6, M.steel), -6, 24, 1.6);
+    this.plateMat = M.alu.clone();
+    makeTerminal(this, g, v(-6, 26.1, 0), v(0, 1, 0), null, 'P' + this.id, 'Buchse an ' + this.name);
+    this.chargeGroup = new THREE.Group(); g.add(this.chargeGroup);
+    this.sprites = [];
+    for (let i = 0; i < 72; i++) { const s = new THREE.Sprite(plusMat); s.raycast = () => {}; s.visible = false; this.chargeGroup.add(s); this.sprites.push(s); }
+    this.setRadius(10);
+    this.setFacing(facing);
+  }
+  setRadius(r) {
+    this.r = r;
+    if (this.plate) { this.rot.remove(this.plate, this.rim); this.plate.geometry.dispose(); this.rim.geometry.dispose(); }
+    this.plate = mesh(new THREE.CylinderGeometry(r, r, 0.3, 96), this.plateMat); this.plate.rotation.z = Math.PI / 2; this.plate.position.set(-0.15, 25, 0);
+    this.rim = mesh(new THREE.TorusGeometry(r, 0.22, 10, 96), this.plateMat); this.rim.rotation.y = Math.PI / 2; this.rim.position.set(-0.15, 25, 0);
+    this.plate.userData.obj = this.rim.userData.obj = this;
+    this.rot.add(this.plate, this.rim);
+    const N = this.sprites.length;
+    this.sprites.forEach((s, i) => {
+      const rr = r * 0.86 * Math.sqrt((i + 0.5) / N), th = i * 2.39996;
+      s.position.set(0, 25 + rr * Math.sin(th), rr * Math.cos(th));
+      const sc = clamp(r * 0.12, 0.7, 1.4); s.scale.set(sc, sc, 1);
+    });
+  }
+  setFacing(f) { this.facing = f; this.rot.rotation.y = f > 0 ? 0 : Math.PI; }
+  get x() { return this.group.position.x; }
+  get z() { return this.group.position.z; }
+  ringCenter() { return v(this.x - 3 * this.facing, 0, this.z); }
+}
+
+class PolyCurve extends THREE.Curve {
+  constructor(pts) { super(); this.pts = pts; }
+  getPoint(t, target = new THREE.Vector3()) {
+    const n = this.pts.length - 1, f = clamp(t, 0, 1) * n, i = Math.min(n - 1, Math.floor(f));
+    return target.copy(this.pts[i]).lerp(this.pts[i + 1], f - i);
+  }
+}
+class Cable {
+  constructor(a, b) {
+    this.id = uid++; this.a = a; this.b = b; this.type = 'cable';
+    const pol = a.pol || b.pol;
+    this.color = pol === '+' ? 0xcf3a2e : pol === '-' ? 0x2560c4 : 0x30353c;
+    this.mat = new THREE.MeshStandardMaterial({ color: this.color, roughness: 0.45 });
+    this.plugMat = new THREE.MeshStandardMaterial({ color: this.color, roughness: 0.35 });
+    this.group = new THREE.Group(); scene.add(this.group);
+    this.rebuild();
+  }
+  rebuild() {
+    this.group.children.forEach(c => c.geometry && c.geometry.dispose());
+    this.group.clear();
+    const GY = 0.75;
+    const ends = [this.a, this.b].map(t => {
+      const p0 = termEnd(t), d = termDir(t);
+      if (d.y > 0.5) {
+        // Buchse oben am Stativ: erst hoch, dann hinter dem Stativ (von der Platte weg) zum Tisch
+        const back = t.back ? t.back() : t.owner.type === 'plate' ? v(-t.owner.facing, 0, 0) : v(0, 0, 0);
+        const a1 = p0.clone().add(v(0, 4.5, 0));
+        const a2 = v(p0.x + back.x * 6, Math.max(GY + 0.5, p0.y * 0.55), p0.z + back.z * 6);
+        const g = v(p0.x + back.x * 8.5, GY, p0.z + back.z * 8.5);
+        return { p0, d, pts: [a1, a2], g };
+      }
+      // Buchse an der Gerätefront oder -seite: ein Stück heraus, dann zum Tisch
+      const a1 = p0.clone().addScaledVector(d, 5);
+      const a2 = p0.clone().addScaledVector(d, 7); a2.y = Math.max(GY + 1, a1.y * 0.45);
+      const g = p0.clone().addScaledVector(d, 8.5); g.y = GY;
+      return { p0, d, pts: [a1, a2], g };
+    });
+    const [A, B] = ends;
+    const ground = this.routeOnTable(A.g, B.g).map(q => v(q.x, GY, q.z));
+    const pts = [A.p0, ...A.pts, ...ground, ...B.pts.slice().reverse(), B.p0];
+    const raw = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+    const sampled = raw.getSpacedPoints(Math.max(120, pts.length * 30));
+    const hard = this.obstacles(0.9);
+    const pushOut = () => {
+      for (const q of sampled) {
+        if (q.y < GY) q.y = GY;
+        if (q.y > 4 || q.distanceTo(A.p0) < 3 || q.distanceTo(B.p0) < 3) continue;
+        for (const ob of hard) {
+          if (ob.r) {
+            const dx = q.x - ob.c.x, dz = q.z - ob.c.z, d = Math.hypot(dx, dz);
+            if (d < ob.r) { if (d > 1e-3) { q.x = ob.c.x + dx * ob.r / d; q.z = ob.c.z + dz * ob.r / d; } else q.x = ob.c.x + ob.r; }
+          } else {
+            const dx = ob.hx - Math.abs(q.x - ob.c.x), dz = ob.hz - Math.abs(q.z - ob.c.z);
+            if (dx > 0 && dz > 0) { if (dz < dx) q.z = ob.c.z + (Math.sign(q.z - ob.c.z) || 1) * ob.hz; else q.x = ob.c.x + (Math.sign(q.x - ob.c.x) || 1) * ob.hx; }
+          }
+        }
+      }
+    };
+    pushOut();
+    for (let it = 0; it < 3; it++) {
+      const prev = sampled.map(q => q.clone());
+      for (let k = 1; k < sampled.length - 1; k++) sampled[k].copy(prev[k - 1]).add(prev[k + 1]).multiplyScalar(0.25).addScaledVector(prev[k], 0.5);
+      pushOut();
+    }
+    const curve = new PolyCurve(sampled);
+    const tube = mesh(new THREE.TubeGeometry(curve, sampled.length, 0.33, 8), this.mat);
+    tube.userData.cable = this; this.group.add(tube);
+    for (const e of ends) {
+      const plug = cyl(0.62, 0.62, 2.6, this.plugMat, 14);
+      plug.position.copy(e.p0).addScaledVector(e.d, 1.2);
+      plug.quaternion.setFromUnitVectors(v(0, 1, 0), e.d);
+      plug.userData.cable = this; this.group.add(plug);
+    }
+  }
+  // Weg auf der Tischplatte um Stativfüße und Gerätegehäuse herum
+  obstacles(m = 0) {
+    const obst = [];
+    for (const o of objects) {
+      if (o.type === 'plate') obst.push({ c: v(o.x - o.facing * 6, 0, o.z), r: 6.2 + m });
+      else if (o.type === 'scope') obst.push({ c: v(o.group.position.x, 0, o.group.position.z), r: 5.8 + m });
+      else if (o.half) obst.push({ c: v(o.group.position.x, 0, o.group.position.z), hx: o.half.x + m, hz: o.half.z + m });
+    }
+    return obst;
+  }
+  routeOnTable(g1, g2) {
+    const obst = this.obstacles(1.6);
+    const path = [v(g1.x, 0, g1.z), v(g2.x, 0, g2.z)];
+    const closest = (a, b, c) => {
+      const ab = b.clone().sub(a), t = clamp(c.clone().sub(a).dot(ab) / Math.max(ab.lengthSq(), 1e-6), 0, 1);
+      return a.clone().addScaledVector(ab, t);
+    };
+    for (let pass = 0; pass < 40; pass++) {
+      let changed = false;
+      for (let i = 0; i < path.length - 1 && path.length < 30; i++) {
+        const a = path[i], b = path[i + 1];
+        for (const ob of obst) {
+          if (ob.r) {
+            const q = closest(a, b, ob.c), dist = q.distanceTo(ob.c);
+            if (dist >= ob.r - 0.01) continue;
+            let n = q.clone().sub(ob.c);
+            if (n.lengthSq() < 1e-4) n = v(-(b.z - a.z), 0, b.x - a.x);
+            n.y = 0; n.normalize();
+            path.splice(i + 1, 0, ob.c.clone().addScaledVector(n, ob.r + 1.2));
+            changed = true; break;
+          } else {
+            let best = null, depth = Infinity;
+            for (let k = 1; k < 24; k++) {
+              const q = a.clone().lerp(b, k / 24), dx = ob.hx - Math.abs(q.x - ob.c.x), dz = ob.hz - Math.abs(q.z - ob.c.z);
+              if (dx > 0 && dz > 0) { const dd = Math.abs(q.x - ob.c.x) / ob.hx + Math.abs(q.z - ob.c.z) / ob.hz; if (dd < depth) { depth = dd; best = { q, dx, dz }; } }
+            }
+            if (!best) continue;
+            const q = best.q.clone();
+            const sz = Math.sign(q.z - ob.c.z) || Math.sign((a.z + b.z) / 2 - ob.c.z) || 1;
+            const sx = Math.sign(q.x - ob.c.x) || 1;
+            if (best.dz <= best.dx) q.z = ob.c.z + sz * (ob.hz + 1); else q.x = ob.c.x + sx * (ob.hx + 1);
+            path.splice(i + 1, 0, q);
+            changed = true; break;
+          }
+        }
+        if (changed) break;
+      }
+      if (!changed) break;
+    }
+    for (const q of path) { q.x = clamp(q.x, -TABLE.hx + 2, TABLE.hx - 2); q.z = clamp(q.z, -TABLE.hz + 2, TABLE.hz - 2); }
+    return path;
+  }
+  setHighlight(on) { this.mat.emissive.setHex(on ? 0x6b4a10 : 0x000000); }
+  dispose() { this.group.children.forEach(c => c.geometry.dispose()); scene.remove(this.group); }
+}
+
+const getMachine = () => objects.find(o => o.type === 'machine') || null;
+const getSupply = () => objects.find(o => o.type === 'supply') || null;
+const getVdg = () => objects.find(o => o.type === 'vdg') || null;
+const getScope = () => objects.find(o => o.type === 'scope') || null;
+const plates = () => objects.filter(o => o.type === 'plate');
+
+// ------------------------------------------------------------ Kondensator-Erkennung
+const MEDIA = {
+  air: { name: 'Luft', er: 1.0, Eb: 3.0e6 },
+  plexi: { name: 'Plexiglas', er: 3.3, Eb: 2.0e7 },
+  glass: { name: 'Glas', er: 6.0, Eb: 1.0e7 },
+};
+function overlapArea(r1, r2, d) {
+  if (d >= r1 + r2) return 0;
+  if (d <= Math.abs(r1 - r2)) return Math.PI * Math.min(r1, r2) ** 2;
+  const a = r1 * r1 * Math.acos((d * d + r1 * r1 - r2 * r2) / (2 * d * r1));
+  const b = r2 * r2 * Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2));
+  const c = 0.5 * Math.sqrt((-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2));
+  return a + b - c;
+}
+function findCapacitor() {
+  let best = null;
+  const ps = plates();
+  for (const A of ps) if (A.facing > 0) for (const B of ps) if (B.facing < 0) {
+    const d = B.x - A.x; if (d < 0.1 || d > 25) continue;
+    const dz = Math.abs(A.z - B.z); if (dz >= A.r + B.r - 0.5) continue;
+    if (!best || d < best.d) best = { A, B, d, dz };
+  }
+  if (!best) return null;
+  best.area = overlapArea(best.A.r, best.B.r, best.dz);
+  best.er = MEDIA[sim.medium].er;
+  best.C = EPS0 * best.er * (best.area * 1e-4) / (best.d * 1e-2);
+  best.xm = (best.A.x + best.B.x) / 2; best.zm = (best.A.z + best.B.z) / 2;
+  best.r = Math.min(best.A.r, best.B.r);
+  best.key = best.A.id + '-' + best.B.id;
+  return best;
+}
+function analyze(m, ps, cap, vg, es) {
+  const parent = {};
+  const find = x => { while (parent[x] && parent[x] !== x) x = parent[x]; return x; };
+  const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; };
+  for (const c of cables) union(c.a.node, c.b.node);
+  const res = { machineShort: false, supplyShort: false, vdgShort: false, capShort: false, source: null, connected: false, sA: 0, sB: 0, partial: false, samePole: false, scopeSource: null };
+  if (m) res.machineShort = find('M+') === find('M-');
+  if (ps) res.supplyShort = find('N+') === find('N-');
+  if (vg) res.vdgShort = find('G+') === find('GND');
+  const sg = (n, P, N) => n === find(P) ? 1 : n === find(N) ? -1 : 0;
+  const srcs = [[ps && !res.supplyShort, 'N+', 'N-', 'supply'], [m && !res.machineShort, 'M+', 'M-', 'machine'], [vg && !res.vdgShort, 'G+', 'GND', 'vdg']];
+  if (cap) {
+    const nA = find('P' + cap.A.id), nB = find('P' + cap.B.id);
+    res.capShort = nA === nB;
+    for (const [ok, P, N, name] of srcs) {
+      if (!ok || res.source) continue;
+      const a = sg(nA, P, N), b = sg(nB, P, N);
+      if (a !== 0 && a === -b) { res.source = name; res.sA = a; res.sB = b; }
+      else { if (a !== 0 && a === b) res.samePole = true; if ((a !== 0) !== (b !== 0)) res.partial = true; }
+    }
+    res.connected = !!res.source;
+    if (res.connected) { res.samePole = false; res.partial = false; }
+  }
+  if (es) {
+    const nE = find('E'), nG = find('GND');
+    for (const [ok, P, N, name] of srcs) {
+      if (!ok || res.scopeSource) continue;
+      const a = sg(nE, P, N), b = sg(nG, P, N);
+      if (a !== 0 && a !== b) { res.scopeSource = name; res.scopeFull = a === -b; }
+    }
+    if (!res.scopeSource && cap && (nE === find('P' + cap.A.id) && nG === find('P' + cap.B.id) || nE === find('P' + cap.B.id) && nG === find('P' + cap.A.id))) res.scopeSource = 'cap';
+  }
+  return res;
+}
+
+// ------------------------------------------------------------ Simulation
+const K_SRC = 0.7e-6, U_MAX = 110e3, TAU_M = 90, TAU_P = 240, U_COR = 200e3, C_MACH = 15e-12, C_JARS = 150e-12, RATIO = 2.78;
+const C_GM = 10e-12, C_GN = 10e-12, plateCg = p => 4e-11 * p.r / 100;
+const C_SUP = 2e-9, TAU_SUP = 0.08, C_VDG = 12e-12, K_VDG = 1.2e-6, U_VMAX = 200e3, TAU_V = 60, C_ES = 5e-12, TAU_ES = 300;
+const sim = {
+  Qm: 0, Qp: 0, capKey: null, crankRate: 0, crankSpeed: 1.5, hold: false, auto: false, gap: 2.5, jars: true,
+  medium: 'air', ideal: true, supplyOn: true, U0: 5000, vdgOn: false, vdgSpeed: 1, vdgGap: 4, req: [],
+  showField: true, showCharges: true, sound: true, t: 0, hist: new Array(300).fill(0),
+  lastEvent: -9, lastEventText: '', corona: false, lastToast: -9,
+};
+const machineC = m => m ? C_MACH + (sim.jars ? C_JARS : 0) : 0;
+// Ladung jedes Bauteils (Kondensator zwischen zwei Knoten): + auf Knoten a, − auf Knoten b
+const Q = { mach: 0, sup: 0, vdg: 0, scope: 0, cap: 0 };
+function buildElements(ctx) {
+  const L = [];
+  if (ctx.m) L.push({ key: 'mach', a: 'M+', b: 'M-', C: machineC(ctx.m), tau: TAU_M });
+  if (ctx.ps) L.push({ key: 'sup', a: 'N+', b: 'N-', C: C_SUP, tau: Infinity });
+  if (ctx.vg) L.push({ key: 'vdg', a: 'G+', b: 'GND', C: C_VDG, tau: TAU_V });
+  if (ctx.es) L.push({ key: 'scope', a: 'E', b: 'GND', C: C_ES, tau: TAU_ES });
+  if (ctx.cap) L.push({ key: 'cap', a: 'P' + ctx.cap.A.id, b: 'P' + ctx.cap.B.id, C: ctx.cap.C, tau: TAU_P });
+  // Kapazität jedes isolierten Leiters gegen Erde (Streukapazität)
+  if (ctx.m) for (const n of ['M+', 'M-']) L.push({ key: 'g' + n, a: n, b: 'GND', C: C_GM, tau: TAU_M });
+  if (ctx.ps) for (const n of ['N+', 'N-']) L.push({ key: 'g' + n, a: n, b: 'GND', C: C_GN, tau: TAU_P });
+  for (const p of plates()) L.push({ key: 'gP' + p.id, a: 'P' + p.id, b: 'GND', C: plateCg(p), tau: TAU_P });
+  for (const e of L) if (Q[e.key] === undefined) Q[e.key] = 0;
+  return L;
+}
+// Messgrößen am Plattenkondensator: U zwischen den Platten, Q = Ladung auf Platte A, C = Q / U
+function capMeasure(cap) {
+  const U = Q.cap / cap.C, qA = Q.cap + (Q['gP' + cap.A.id] || 0);
+  const cgA = plateCg(cap.A), cgB = plateCg(cap.B);
+  const C = Math.abs(U) > 100 ? Math.abs(qA / U) : cap.C + cgA * cgB / (cgA + cgB);
+  return { U, Q: qA, C };
+}
+function gauss(A, b) {
+  const n = b.length;
+  for (let c = 0; c < n; c++) {
+    let piv = c; for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+    [A[c], A[piv]] = [A[piv], A[c]]; [b[c], b[piv]] = [b[piv], b[c]];
+    const d = A[c][c]; if (Math.abs(d) < 1e-12) continue;
+    for (let r = 0; r < n; r++) if (r !== c) { const f = A[r][c] / d; if (f) { for (let k = c; k < n; k++) A[r][k] -= f * A[c][k]; b[r] -= f * b[c]; } }
+  }
+  return b.map((x, i) => Math.abs(A[i][i]) < 1e-12 ? 0 : x / A[i][i]);
+}
+// Verteilt die Ladungen über alle leitend verbundenen Knoten neu (Ladungserhaltung je Netz)
+function solveNet(L, extra) {
+  const parent = {};
+  const find = x => { while (parent[x] !== undefined && parent[x] !== x) x = parent[x]; return x; };
+  const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; };
+  for (const c of cables) union(c.a.node, c.b.node);
+  for (const [a, b] of extra || []) union(a, b);
+  const ids = new Map(); const id = n => { const r = find(n); if (!ids.has(r)) ids.set(r, ids.size); return ids.get(r); };
+  for (const e of L) { e.ia = id(e.a); e.ib = id(e.b); }
+  const N = ids.size; if (!N) return;
+  const K = Array.from({ length: N }, () => new Array(N).fill(0)), q = new Array(N).fill(0);
+  for (const e of L) {
+    const c = e.C * 1e12, qq = Q[e.key] * 1e12;
+    q[e.ia] += qq; q[e.ib] -= qq;
+    if (e.ia !== e.ib) { K[e.ia][e.ia] += c; K[e.ib][e.ib] += c; K[e.ia][e.ib] -= c; K[e.ib][e.ia] -= c; }
+  }
+  const comp = new Array(N).fill(-1); let nc = 0;
+  for (let s0 = 0; s0 < N; s0++) if (comp[s0] < 0) {
+    const st = [s0]; comp[s0] = nc;
+    while (st.length) { const u = st.pop(); for (let w = 0; w < N; w++) if (comp[w] < 0 && K[u][w] !== 0) { comp[w] = nc; st.push(w); } }
+    nc++;
+  }
+  const fixed = new Set();
+  for (let i = 0; i < N; i++) if (!fixed.has(comp[i])) { fixed.add(comp[i]); K[i] = new Array(N).fill(0); K[i][i] = 1; q[i] = 0; }
+  const V = gauss(K, q);
+  for (const e of L) Q[e.key] = e.C * (V[e.ia] - V[e.ib]);
+}
+const fieldEnergy = L => L.reduce((s0, e) => s0 + Q[e.key] ** 2 / (2 * e.C), 0);
+
+function physics(dt, ctx) {
+  const { m, ps, vg, cap, L } = ctx;
+  if (!sim.ideal) for (const e of L) if (isFinite(e.tau)) Q[e.key] -= Q[e.key] * dt / e.tau;
+  if (m) { const U = Q.mach / machineC(m); Q.mach += K_SRC * sim.crankRate * RATIO * Math.max(0, 1 - U / U_MAX) * dt; }
+  if (ps) { const U = Q.sup / C_SUP, U0 = sim.supplyOn ? sim.U0 : 0; Q.sup += (U0 - U) * C_SUP * Math.min(1, dt / TAU_SUP); }
+  if (vg && sim.vdgOn) { const U = Q.vdg / C_VDG; Q.vdg += K_VDG * sim.vdgSpeed * Math.max(0, 1 - U / U_VMAX) * dt; }
+  solveNet(L, sim.req.splice(0));
+  sim.corona = false;
+  if (m) {
+    const U = Q.mach / machineC(m), Ub = 3e3 + 30e3 * sim.gap;
+    if (Math.abs(U) > Ub) { const W0 = fieldEnergy(L); solveNet(L, [['M+', 'M-']]); sparkAtGap(m, W0 - fieldEnergy(L)); event('Funke an der Funkenstrecke bei ' + nf(Math.abs(U) / 1e3, 0) + ' kV'); }
+  }
+  if (vg) {
+    const U = Q.vdg / C_VDG, Ub = 3e3 + 30e3 * sim.vdgGap;
+    if (Math.abs(U) > Ub) { const W0 = fieldEnergy(L); solveNet(L, [['G+', 'GND']]); sparkAtBall(vg, W0 - fieldEnergy(L)); event('Funke zur Entladekugel bei ' + nf(Math.abs(U) / 1e3, 0) + ' kV'); }
+  }
+  if (cap) {
+    const Uc = Q.cap / cap.C, E = Math.abs(Uc) / (cap.d / 100), med = MEDIA[sim.medium];
+    if (E > med.Eb) {
+      const W0 = fieldEnergy(L); solveNet(L, [['P' + cap.A.id, 'P' + cap.B.id]]);
+      sparkInCap(cap, W0 - fieldEnergy(L));
+      event('Überschlag zwischen den Platten bei ' + nf(Math.abs(Uc) / 1e3, 0) + ' kV');
+    } else if (!sim.ideal && Math.abs(Uc) > U_COR) { Q.cap *= 1 - Math.min(1, dt / 0.3); sim.corona = true; }
+  }
+  sim.Qm = Q.mach; sim.Qp = Q.cap;
+}
+function event(text) {
+  sim.lastEvent = sim.t; sim.lastEventText = text;
+  if (sim.t - sim.lastToast > 1.6) { toast(text); sim.lastToast = sim.t; }
+}
+
+// ------------------------------------------------------------ Funken
+const sparks = [];
+const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+const haloMat = new THREE.MeshBasicMaterial({ color: 0x9fb4ff, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false });
+function jag(a, b, disp) {
+  let pts = [a.clone(), b.clone()];
+  const dir = b.clone().sub(a).normalize();
+  for (let it = 0; it < 5; it++) {
+    const n = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      n.push(pts[i]);
+      const m = pts[i].clone().lerp(pts[i + 1], 0.5);
+      const off = v(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
+      off.addScaledVector(dir, -off.dot(dir)).multiplyScalar(disp * 2);
+      n.push(m.add(off));
+    }
+    n.push(pts[pts.length - 1]); pts = n; disp *= 0.55;
+  }
+  return pts;
+}
+function sparkGeometry(sp) {
+  sp.group.children.forEach(c => c.geometry && c.geometry.dispose()); sp.group.clear();
+  const len = sp.a.distanceTo(sp.b);
+  const paths = [jag(sp.a, sp.b, len * 0.14 + 0.15)];
+  if (sp.strength > 0.9 && len > 2) for (let k = 0; k < 2; k++) {
+    const main = paths[0], i = Math.floor(main.length * (0.2 + Math.random() * 0.6));
+    const end = main[i].clone().add(v((Math.random() - 0.5) * len * 0.5, (Math.random() - 0.3) * len * 0.5, (Math.random() - 0.5) * len * 0.5));
+    paths.push(jag(main[i], end, len * 0.08));
+  }
+  paths.forEach((p, k) => {
+    const curve = new THREE.CatmullRomCurve3(p);
+    const w = k === 0 ? 1 : 0.5;
+    sp.group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, p.length * 2, (0.07 + 0.05 * sp.strength) * w, 5), sp.core));
+    sp.group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, p.length, (0.3 + 0.25 * sp.strength) * w, 6), sp.halo));
+  });
+}
+function spawnSpark(a, b, strength) {
+  const sp = { a, b, strength, age: 0, life: 0.2 + 0.1 * strength, group: new THREE.Group(), core: coreMat.clone(), halo: haloMat.clone() };
+  sp.light = new THREE.PointLight(0xc4d0ff, 0, 0, 2);
+  sp.light.position.copy(a).lerp(b, 0.5);
+  sp.group.add(sp.light);
+  sparkGeometry(sp);
+  scene.add(sp.group); sparks.push(sp);
+  sparkSound(strength);
+}
+const energyToStrength = W => clamp(0.35 + Math.sqrt(W) * 1.5, 0.35, 2);
+function sparkAtGap(m, W) {
+  const a = m.group.localToWorld(v(-sim.gap / 2, 53, 0)), b = m.group.localToWorld(v(sim.gap / 2, 53, 0));
+  spawnSpark(a, b, energyToStrength(W));
+}
+function sparkAtBall(vg, W) {
+  const a = vg.group.localToWorld(v(-11, 60, 0)), b = vg.group.localToWorld(v(-(11 + vg.gap), 60, 0));
+  spawnSpark(a, b, energyToStrength(W));
+}
+function sparkInCap(cap, W) {
+  const r = cap.r * 0.7, y = 25 + (Math.random() - 0.5) * r * 1.4, z = cap.zm + (Math.random() - 0.5) * r * 1.0;
+  spawnSpark(v(cap.A.x + 0.05, y, z), v(cap.B.x - 0.05, y, z), energyToStrength(W));
+}
+function updateSparks(dt) {
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const sp = sparks[i]; sp.age += dt;
+    const k = 1 - sp.age / sp.life;
+    if (k <= 0) { sp.group.children.forEach(c => c.geometry && c.geometry.dispose()); scene.remove(sp.group); sparks.splice(i, 1); continue; }
+    if (Math.random() < 0.3) { sparkGeometry(sp); sp.group.add(sp.light); }
+    sp.core.opacity = k; sp.halo.opacity = 0.4 * k;
+    sp.light.intensity = 9000 * sp.strength * k * k;
+  }
+}
+
+// ------------------------------------------------------------ Feldlinien, Dielektrikum, Maß
+const fieldGroup = new THREE.Group(); scene.add(fieldGroup);
+const fieldMat = new THREE.MeshBasicMaterial({ color: 0xe39a1c, transparent: true, opacity: 0.8, depthWrite: false });
+const slabMats = {
+  plexi: new THREE.MeshPhysicalMaterial({ color: 0xdff3f6, roughness: 0.05, transparent: true, opacity: 0.38, clearcoat: 1, depthWrite: false }),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0x9fd8c8, roughness: 0.03, transparent: true, opacity: 0.42, clearcoat: 1, depthWrite: false }),
+};
+let slab = null;
+const dimEl = document.createElement('div'); dimEl.className = 'dim';
+const dimLabel = new CSS2DObject(dimEl); scene.add(dimLabel);
+let fieldKey = '';
+function rebuildField(cap) {
+  fieldGroup.children.forEach(c => c.geometry.dispose()); fieldGroup.clear();
+  if (slab) { scene.remove(slab); slab.geometry.dispose(); slab = null; }
+  if (!cap) return;
+  const { A, B, d, xm, zm, r } = cap;
+  fieldGroup.position.set(xm, 25, zm);
+  const pts = [[0, 0]];
+  for (const [ring, n] of [[0.42, 6], [0.78, 12]]) for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + ring; pts.push([Math.sin(a) * r * ring, Math.cos(a) * r * ring]); }
+  const lineGeo = new THREE.CylinderGeometry(0.07, 0.07, d, 6); lineGeo.rotateZ(Math.PI / 2);
+  const coneGeo = new THREE.ConeGeometry(0.32, 0.8, 10); coneGeo.rotateZ(-Math.PI / 2);
+  for (const [y, z] of pts) {
+    const wz = z + zm;
+    if (y * y + (wz - A.z) ** 2 > (A.r * 0.93) ** 2 || y * y + (wz - B.z) ** 2 > (B.r * 0.93) ** 2) continue;
+    put(fieldGroup, new THREE.Mesh(lineGeo, fieldMat), 0, y, z);
+    if (d > 1.4) put(fieldGroup, new THREE.Mesh(coneGeo, fieldMat), 0, y, z);
+  }
+  if (cap.dz < 0.5) {
+    const bulge = Math.min(d, r) * 0.55 + 0.4;
+    for (let i = 0; i < 14; i++) {
+      const a = i / 14 * Math.PI * 2, cy = Math.sin(a), cz = Math.cos(a);
+      const c = new THREE.QuadraticBezierCurve3(v(-d / 2, cy * r * 0.97, cz * r * 0.97), v(0, cy * (r + bulge), cz * (r + bulge)), v(d / 2, cy * r * 0.97, cz * r * 0.97));
+      fieldGroup.add(new THREE.Mesh(new THREE.TubeGeometry(c, 14, 0.05, 5), fieldMat));
+    }
+  }
+  if (sim.medium !== 'air') {
+    slab = mesh(new THREE.BoxGeometry(Math.max(0.05, d - 0.08), r * 2.3, r * 2.3), slabMats[sim.medium]);
+    slab.castShadow = false; slab.position.set(xm, 25, zm); scene.add(slab);
+  }
+}
+
+// ------------------------------------------------------------ Auswahlring & Kabelvorschau
+const selRing = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 96), new THREE.MeshBasicMaterial({ color: 0xc27a14, transparent: true, opacity: 0.9, depthWrite: false }));
+selRing.rotation.x = -Math.PI / 2; selRing.visible = false; scene.add(selRing);
+const bandGeo = new THREE.BufferGeometry().setFromPoints([v(0, 0, 0), v(0, 0, 0)]);
+const band = new THREE.Line(bandGeo, new THREE.LineDashedMaterial({ color: 0xb06f16, dashSize: 1.2, gapSize: 0.8 }));
+band.visible = false; band.frustumCulled = false; scene.add(band);
+
+// ------------------------------------------------------------ Objektverwaltung
+function finishObject(o) {
+  o.group.traverse(c => { if (!c.userData.terminal) c.userData.obj = o; });
+  o.group.userData.obj = o;
+}
+function freeSpot(x, z, minDist) {
+  for (let i = 0; i < 10; i++) {
+    if (!objects.some(o => Math.hypot(o.group.position.x - x, o.group.position.z - z) < minDist)) return [x, z];
+    x += minDist; if (x > TABLE.hx - 20) { x = -TABLE.hx + 30; z += 25; }
+  }
+  return [x, z];
+}
+function addMachine(x = -35, z = -4, quiet) {
+  if (getMachine()) { if (!quiet) toast('Es steht schon eine Influenzmaschine auf dem Tisch.', 'warn'); select(getMachine()); return null; }
+  const m = new Wimshurst(); finishObject(m);
+  m.group.position.set(clamp(x, -TABLE.hx + 28, TABLE.hx - 28), 0, clamp(z, -TABLE.hz + 15, TABLE.hz - 15));
+  m.setGap(sim.gap); m.setJars(sim.jars);
+  scene.add(m.group); objects.push(m); geometryChanged(m);
+  return m;
+}
+function addSupply(x = -30, z = 22, quiet) {
+  if (getSupply()) { if (!quiet) toast('Es steht schon ein Netzgerät auf dem Tisch.', 'warn'); select(getSupply()); return null; }
+  const ps = new Supply(); finishObject(ps);
+  ps.group.position.set(clamp(x, -TABLE.hx + 19, TABLE.hx - 19), 0, clamp(z, -TABLE.hz + 14, TABLE.hz - 14));
+  ps.update(sim.supplyOn, sim.U0);
+  scene.add(ps.group); objects.push(ps); geometryChanged(ps);
+  return ps;
+}
+function sourceSpot() {
+  for (const [x, z] of [[-35, -4], [0, 24], [-60, 30], [60, -25]]) if (!objects.some(o => Math.hypot(o.group.position.x - x, o.group.position.z - z) < 30)) return [x, z];
+  return freeSpot(0, 24, 30);
+}
+function addVdg(x = -35, z = -4, quiet) {
+  if (getVdg()) { if (!quiet) toast('Es steht schon ein Bandgenerator auf dem Tisch.', 'warn'); select(getVdg()); return null; }
+  const vg = new VdG(); finishObject(vg);
+  vg.group.position.set(clamp(x, -TABLE.hx + 30, TABLE.hx - 14), 0, clamp(z, -TABLE.hz + 11, TABLE.hz - 11));
+  vg.setGap(sim.vdgGap);
+  scene.add(vg.group); objects.push(vg); geometryChanged(vg);
+  return vg;
+}
+function addScope(x = 12, z = 8, quiet) {
+  if (getScope()) { if (!quiet) toast('Es steht schon ein Elektroskop auf dem Tisch.', 'warn'); select(getScope()); return null; }
+  const es = new Scope(); finishObject(es);
+  es.group.position.set(clamp(x, -TABLE.hx + 10, TABLE.hx - 10), 0, clamp(z, -TABLE.hz + 10, TABLE.hz - 10));
+  scene.add(es.group); objects.push(es); geometryChanged(es);
+  return es;
+}
+function addPlate(x = 20, z = 10, facing) {
+  if (facing === undefined) {
+    const others = plates();
+    if (others.length) { const n = others.reduce((a, b) => Math.abs(b.x - x) + Math.abs(b.z - z) < Math.abs(a.x - x) + Math.abs(a.z - z) ? b : a); facing = n.x > x ? 1 : -1; }
+    else facing = 1;
+  }
+  const p = new Plate(facing); finishObject(p);
+  p.group.position.set(clamp(x, -TABLE.hx + 12, TABLE.hx - 12), 0, clamp(z, -TABLE.hz + 16, TABLE.hz - 16));
+  scene.add(p.group); objects.push(p); geometryChanged(p);
+  return p;
+}
+function addCapSet(x = 35, z = 4) {
+  const A = addPlate(x - 1.5, z, 1), B = addPlate(x + 1.5, z, -1);
+  return [A, B];
+}
+function addByType(type, x, z) {
+  let made = null;
+  if (type === 'machine') made = addMachine(x ?? -35, z ?? -4);
+  else if (type === 'supply') { const [fx, fz] = x === undefined ? sourceSpot() : [x, z]; made = addSupply(fx, fz); }
+  else if (type === 'vdg') { const [fx, fz] = x === undefined ? sourceSpot() : [x, z]; made = addVdg(fx, fz); }
+  else if (type === 'scope') { const [fx, fz] = x === undefined ? freeSpot(12, 8, 18) : [x, z]; made = addScope(fx, fz); }
+  else if (type === 'plate') { const [fx, fz] = x === undefined ? freeSpot(10, 20, 16) : [x, z]; made = addPlate(fx, fz); }
+  else if (type === 'capset') { const [fx, fz] = x === undefined ? freeSpot(35, 4, 22) : [x, z]; made = addCapSet(fx, fz)[1]; }
+  if (made) select(made);
+}
+function addCable(a, b, quiet) {
+  if (cables.some(c => (c.a === a && c.b === b) || (c.a === b && c.b === a))) { if (!quiet) toast('Diese Buchsen sind schon verbunden.', 'warn'); return null; }
+  const c = new Cable(a, b); cables.push(c);
+  if (!quiet) {
+    if (a.owner === b.owner && a.pol && b.pol && a.pol !== b.pol) toast('Achtung: Kurzschluss zwischen Plus- und Minuspol.', 'warn');
+    else toast('Kabel gesteckt: ' + shortName(a) + ' ↔ ' + shortName(b));
+  }
+  return c;
+}
+const shortName = t => t.pol ? (t.owner.type === 'supply' ? 'Netzgerät ' : 'Maschine ') + (t.pol === '+' ? '+' : '−') : t.owner.name;
+function removeCable(c) { const i = cables.indexOf(c); if (i >= 0) { cables.splice(i, 1); c.dispose(); } if (selected === c) select(null); }
+function removeObject(o) {
+  for (const c of cables.filter(c => c.a.owner === o || c.b.owner === o)) removeCable(c);
+  o.group.traverse(c => { if (c.isCSS2DObject && c.element.parentNode) c.element.parentNode.removeChild(c.element); });
+  scene.remove(o.group);
+  o.group.traverse(c => { if (c.geometry) c.geometry.dispose(); });
+  objects.splice(objects.indexOf(o), 1);
+  if (selected === o) select(null);
+  if (pending && pending.owner === o) cancelPending();
+}
+function clearAll() { [...objects].forEach(removeObject); cables.slice().forEach(removeCable); for (const k in Q) Q[k] = 0; sim.Qm = sim.Qp = 0; plateCount = 0; sim.hist.fill(0); }
+function geometryChanged(o) { for (const c of cables) c.rebuild(); fieldKey = ''; }
+
+function moveObject(o, x, z) {
+  if (o.type === 'vdg') { x = clamp(x, -TABLE.hx + 30, TABLE.hx - 14); z = clamp(z, -TABLE.hz + 11, TABLE.hz - 11); }
+  else if (o.half) { x = clamp(x, -TABLE.hx + o.half.x + 1, TABLE.hx - o.half.x - 1); z = clamp(z, -TABLE.hz + o.half.z + 1, TABLE.hz - o.half.z - 1); }
+  else if (o.type === 'scope') { x = clamp(x, -TABLE.hx + 10, TABLE.hx - 10); z = clamp(z, -TABLE.hz + 10, TABLE.hz - 10); }
+  else {
+    x = clamp(x, -TABLE.hx + 12, TABLE.hx - 12); z = clamp(z, -TABLE.hz + o.r + 1, TABLE.hz - o.r - 1);
+    for (const q of plates()) {
+      if (q === o || q.facing !== -o.facing || Math.abs(z - q.z) >= o.r + q.r) continue;
+      if (o.facing > 0 && q.x > o.x) x = Math.min(x, q.x - 0.3);
+      if (o.facing < 0 && q.x < o.x) x = Math.max(x, q.x + 0.3);
+    }
+  }
+  o.group.position.x = x; o.group.position.z = z;
+  geometryChanged(o);
+}
+
+// ------------------------------------------------------------ Auswahl
+let selected = null;
+function select(s) {
+  if (selected && selected.type === 'cable') selected.setHighlight(false);
+  selected = s;
+  if (s && s.type === 'cable') s.setHighlight(true);
+  $('#delBtn').disabled = !s;
+  renderSelection();
+}
+function renderSelection() {
+  const el = $('#selBody'); const s = selected;
+  if (!s) { el.innerHTML = '<p class="muted">Nichts ausgewählt. Klicke ein Gerät oder Kabel auf dem Tisch an.</p>'; return; }
+  if (s.type === 'machine') {
+    el.innerHTML = `<p><b>Influenzmaschine (Wimshurst)</b></p><p class="muted">Zwei gegenläufige Scheiben mit Stanniol-Sektoren. Die Kämme sammeln die influenzierten Ladungen: rechts Pluspol, links Minuspol. Die Leidener Flaschen speichern Ladung und machen die Funken kräftiger.</p><div class="row"><button class="btn danger" type="button" data-act="del">Entfernen</button></div>`;
+  } else if (s.type === 'vdg') {
+    el.innerHTML = `<p><b>Bandgenerator (Van-de-Graaff)</b></p><p class="muted">Ein Motor treibt ein Gummiband an. Unten bekommt das Band durch Reibung und den Kamm positive Ladung, oben gibt es sie an die Konduktorkugel ab. Die Erdbuchse und die Entladekugel liegen auf Erdpotenzial. Motor und Abstand der Entladekugel stellst du in der Leiste unten ein.</p><div class="row"><button class="btn danger" type="button" data-act="del">Entfernen</button></div>`;
+  } else if (s.type === 'scope') {
+    el.innerHTML = `<p><b>Zeigerelektroskop</b></p><p class="muted">Liegt zwischen Kugel und Gehäuse eine Spannung, stoßen sich Stab und Zeiger mit gleichnamiger Ladung ab und der Zeiger schlägt aus. Das Gehäuse ist geerdet; eine eigene Erdbuchse sitzt vorn am Fuß.</p><div class="row"><button class="btn" type="button" data-act="scopeDis">Elektroskop entladen</button><button class="btn danger" type="button" data-act="del">Entfernen</button></div>`;
+  } else if (s.type === 'supply') {
+    el.innerHTML = `<p><b>Hochspannungsnetzgerät</b> · 0–25 kV Gleichspannung</p><p class="muted">Hält die eingestellte Spannung U₀ zwischen Plus- und Minuspol konstant, solange es eingeschaltet ist. Ausgeschaltet entlädt es einen angeschlossenen Kondensator. Einstellen in der Leiste unten.</p><div class="row"><button class="btn danger" type="button" data-act="del">Entfernen</button></div>`;
+  } else if (s.type === 'plate') {
+    const cap = findCapacitor(); const inCap = cap && (cap.A === s || cap.B === s);
+    el.innerHTML = `<p><b>${s.name}</b> · Metallplatte r = ${nf(s.r)} cm</p><p class="muted">Steht auf einer Isolierstütze aus Acrylglas. Die Plattenfläche zeigt nach ${s.facing > 0 ? 'rechts' : 'links'}. ${inCap ? 'Bildet mit der Gegenplatte einen Plattenkondensator.' : 'Stelle eine zweite Platte gegenüber, damit ein Kondensator entsteht.'}</p><div class="row"><button class="btn" type="button" data-act="flip">Umdrehen</button><button class="btn danger" type="button" data-act="del">Entfernen</button></div>`;
+  } else if (s.type === 'cable') {
+    el.innerHTML = `<p><b>Experimentierkabel</b></p><p class="muted">${s.a.label} ↔ ${s.b.label}</p><div class="row"><button class="btn danger" type="button" data-act="del">Kabel entfernen</button></div>`;
+  }
+}
+$('#selBody').addEventListener('click', e => {
+  const act = e.target.closest('[data-act]')?.dataset.act; if (!act || !selected) return;
+  if (act === 'del') deleteSelected();
+  if (act === 'scopeDis') { sim.req.push(['E', 'GND']); toast('Elektroskop über die Hand zur Erde entladen.'); }
+  if (act === 'flip') { const p = selected; p.setFacing(-p.facing); geometryChanged(p); renderSelection(); }
+});
+function deleteSelected() {
+  if (!selected) return;
+  if (selected.type === 'cable') removeCable(selected); else removeObject(selected);
+}
+
+// ------------------------------------------------------------ Kabel stecken
+let pending = null, cableMode = false;
+function handleTerminal(t) {
+  if (!pending) { pending = t; band.visible = true; setCableMode(true); toast('Jetzt die zweite Buchse anklicken. Esc bricht ab.'); return; }
+  if (pending === t) { cancelPending(); return; }
+  addCable(pending, t); cancelPending();
+}
+function cancelPending() { pending = null; band.visible = false; setCableMode(false); }
+function setCableMode(on) { cableMode = on; $('#cableBtn').setAttribute('aria-pressed', on ? 'true' : 'false'); }
+$('#cableBtn').addEventListener('click', () => {
+  if (cableMode) { cancelPending(); return; }
+  setCableMode(true); toast('Klicke nacheinander zwei Buchsen an. Sie leuchten jetzt.');
+});
+
+// ------------------------------------------------------------ Zeiger
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), tablePlane = new THREE.Plane(v(0, 1, 0), 0);
+function setRay(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+}
+function pick() {
+  const targets = objects.map(o => o.group).concat(cables.map(c => c.group));
+  for (const h of ray.intersectObjects(targets, true)) {
+    let o = h.object;
+    while (o) {
+      if (o.userData.terminal) return { terminal: o.userData.terminal };
+      if (o.userData.cable) return { cable: o.userData.cable };
+      if (o.userData.obj) return { obj: o.userData.obj };
+      o = o.parent;
+    }
+  }
+  return null;
+}
+let drag = null, down = null, hoverTerm = null;
+vp.addEventListener('pointerdown', e => {
+  ensureAudio();
+  if (e.target !== renderer.domElement || e.button !== 0) return;
+  setRay(e); const h = pick();
+  down = { x: e.clientX, y: e.clientY, hit: h };
+  if (h?.terminal) { controls.enabled = false; handleTerminal(h.terminal); return; }
+  if (h?.obj) {
+    controls.enabled = false; select(h.obj);
+    const p = new THREE.Vector3();
+    if (ray.ray.intersectPlane(tablePlane, p)) { drag = { obj: h.obj, ox: h.obj.group.position.x - p.x, oz: h.obj.group.position.z - p.z }; vp.classList.add('dragging'); }
+    return;
+  }
+  if (h?.cable) select(h.cable);
+}, true);
+window.addEventListener('pointermove', e => {
+  if (drag) {
+    setRay(e); const p = new THREE.Vector3();
+    if (ray.ray.intersectPlane(tablePlane, p)) moveObject(drag.obj, p.x + drag.ox, p.z + drag.oz);
+    return;
+  }
+  if (e.target !== renderer.domElement) { hoverTerm = null; return; }
+  setRay(e); const h = pick();
+  hoverTerm = h?.terminal || null;
+  renderer.domElement.style.cursor = h?.terminal || h?.cable ? 'pointer' : h?.obj ? 'grab' : '';
+  if (pending) {
+    const a = termEnd(pending), b = new THREE.Vector3();
+    if (hoverTerm) b.copy(termEnd(hoverTerm)); else if (ray.ray.intersectPlane(tablePlane, b)) b.y = 1; else b.copy(a);
+    bandGeo.setFromPoints([a, b]); band.computeLineDistances();
+  }
+});
+window.addEventListener('pointerup', e => {
+  if (drag) { drag = null; vp.classList.remove('dragging'); renderSelection(); }
+  controls.enabled = true;
+  if (down && !down.hit && e.target === renderer.domElement && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) { if (pending) cancelPending(); else select(null); }
+  down = null;
+});
+
+// Ziehen aus dem Geräteregal
+document.querySelectorAll('.card[data-type]').forEach(card => {
+  card.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', card.dataset.type); e.dataTransfer.effectAllowed = 'copy'; });
+  card.querySelector('.add').addEventListener('click', e => { e.stopPropagation(); ensureAudio(); addByType(card.dataset.type); });
+});
+vp.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+vp.addEventListener('drop', e => {
+  e.preventDefault();
+  const type = e.dataTransfer.getData('text/plain'); if (!type) return;
+  setRay(e); const p = new THREE.Vector3();
+  if (ray.ray.intersectPlane(tablePlane, p)) addByType(type, p.x, p.z); else addByType(type);
+});
+$('#search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.card').forEach(c => { c.hidden = q && !c.dataset.q.includes(q) && !c.textContent.toLowerCase().includes(q); });
+});
+
+// ------------------------------------------------------------ Tastatur
+window.addEventListener('keydown', e => {
+  const inField = /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.type !== 'checkbox' && document.activeElement.type !== 'range';
+  if (e.key === 'Escape') { cancelPending(); select(null); return; }
+  if (inField) return;
+  if (e.code === 'Space') { e.preventDefault(); ensureAudio(); sim.hold = true; }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selected) { e.preventDefault(); deleteSelected(); }
+});
+window.addEventListener('keyup', e => { if (e.code === 'Space') sim.hold = false; });
+
+// ------------------------------------------------------------ Steuerung
+const crankBtn = $('#crankBtn');
+crankBtn.addEventListener('pointerdown', e => { ensureAudio(); sim.hold = true; crankBtn.setPointerCapture(e.pointerId); });
+for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) crankBtn.addEventListener(ev, () => { sim.hold = false; });
+$('#autoCrank').addEventListener('change', e => { sim.auto = e.target.checked; ensureAudio(); });
+$('#speed').addEventListener('input', e => { sim.crankSpeed = +e.target.value; $('#speedOut').textContent = nf(sim.crankSpeed) + ' U/s'; });
+$('#gap').addEventListener('input', e => { sim.gap = +e.target.value; $('#gapOut').textContent = nf(sim.gap) + ' cm'; getMachine()?.setGap(sim.gap); });
+$('#jars').addEventListener('change', e => {
+  const m = getMachine(); const old = machineC(m);
+  sim.jars = e.target.checked; if (m) { m.setJars(sim.jars); if (old) Q.mach *= machineC(m) / old; }
+});
+$('#dSl').addEventListener('input', e => {
+  const cap = findCapacitor(); if (!cap) return;
+  moveObject(cap.B, cap.A.x + +e.target.value, cap.B.z);
+});
+$('#rSl').addEventListener('input', e => {
+  const cap = findCapacitor(); const r = +e.target.value;
+  const targets = cap ? [cap.A, cap.B] : (selected?.type === 'plate' ? [selected] : []);
+  targets.forEach(p => { p.setRadius(r); p.group.position.z = clamp(p.z, -TABLE.hz + r + 1, TABLE.hz - r - 1); geometryChanged(p); });
+  if (selected?.type === 'plate') renderSelection();
+});
+$('#medSeg').addEventListener('click', e => {
+  const b = e.target.closest('button[data-med]'); if (!b) return;
+  sim.medium = b.dataset.med;
+  $('#medSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  fieldKey = '';
+  $('#eNote').textContent = MEDIA[sim.medium].name + ' ≈ ' + nf(MEDIA[sim.medium].Eb / 1e5, 0) + ' kV/cm';
+});
+$('#leakSeg').addEventListener('click', e => {
+  const b = e.target.closest('button[data-leak]'); if (!b) return;
+  sim.ideal = b.dataset.leak === 'ideal';
+  $('#leakSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  $('#leakNote').textContent = sim.ideal ? 'Keine Selbstentladung: Die Spannung bleibt, bis du entlädst oder es überschlägt.' : 'Die Spannung sinkt langsam (Zeitkonstante ≈ 4 min).';
+});
+$('#showField').addEventListener('change', e => { sim.showField = e.target.checked; });
+$('#showCharges').addEventListener('change', e => { sim.showCharges = e.target.checked; });
+$('#dischargeBtn').addEventListener('click', () => {
+  const cap = findCapacitor(); if (!cap) return;
+  const U = sim.Qp / cap.C;
+  if (Math.abs(U) > 500) {
+    const r = cap.r;
+    spawnSpark(v(cap.A.x - 0.1, 25 + r * 0.98, cap.zm), v(cap.B.x + 0.1, 25 + r * 0.98, cap.zm), energyToStrength(0.5 * cap.C * U * U));
+    toast('Kondensator über einen Entladestab entladen.');
+  }
+  sim.req.push(['P' + cap.A.id, 'P' + cap.B.id]);
+});
+$('#vdgOn').addEventListener('change', e => { sim.vdgOn = e.target.checked; ensureAudio(); });
+$('#vdgSpeed').addEventListener('input', e => { sim.vdgSpeed = +e.target.value / 100; $('#vdgSpeedOut').textContent = e.target.value + ' %'; });
+$('#vdgGap').addEventListener('input', e => { sim.vdgGap = +e.target.value; $('#vdgGapOut').textContent = nf(sim.vdgGap) + ' cm'; getVdg()?.setGap(sim.vdgGap); });
+$('#detachBtn').addEventListener('click', () => {
+  const cap = findCapacitor(); if (!cap) return;
+  const list = cables.filter(c => [c.a.owner, c.b.owner].some(o => o === cap.A || o === cap.B));
+  if (!list.length) { toast('An den Platten steckt kein Kabel.'); return; }
+  list.forEach(removeCable);
+  toast('Kabel abgezogen. Die Ladung Q bleibt jetzt auf den Platten.');
+});
+$('#tplBtn').addEventListener('click', () => { loadByName($('#tplSel').value); toast('Versuch neu aufgebaut.'); });
+$('#tplSel').addEventListener('change', e => loadByName(e.target.value));
+$('#taskLoad').addEventListener('click', () => { loadByName('supply'); toast('Aufbau mit Netzgerät geladen: U₀ = 5 kV, d = 2 cm.'); });
+$('#supplyOn').addEventListener('change', e => { sim.supplyOn = e.target.checked; });
+$('#u0').addEventListener('input', e => { sim.U0 = +e.target.value * 1000; $('#u0Out').textContent = nf(+e.target.value) + ' kV'; });
+$('#logAdd').addEventListener('click', addLog);
+$('#logClear').addEventListener('click', () => { measLog.length = 0; renderLog(); });
+$('#logCopy').addEventListener('click', async () => {
+  if (!measLog.length) { toast('Die Tabelle ist noch leer.'); return; }
+  const rows = ['Nr.\tQuelle\td / cm\tU / kV\tQ / nC\tC / pF', ...measLog.map((r, i) => [i + 1, r.src, nf(r.d), nf(r.U, 2), nf(r.Q, 1), nf(r.C, 2)].join('\t'))];
+  try { await navigator.clipboard.writeText(rows.join('\n')); toast('Tabelle kopiert. Du kannst sie in eine Tabellenkalkulation einfügen.'); }
+  catch (err) { toast('Kopieren ist hier nicht erlaubt.', 'warn'); }
+});
+$('#clearBtn').addEventListener('click', () => { clearAll(); cancelPending(); select(null); });
+$('#delBtn').addEventListener('click', deleteSelected);
+$('#soundBtn').addEventListener('click', e => {
+  sim.sound = !sim.sound; e.currentTarget.setAttribute('aria-pressed', sim.sound); e.currentTarget.textContent = sim.sound ? 'Ton an' : 'Ton aus';
+  if (sim.sound) ensureAudio();
+});
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+// ------------------------------------------------------------ Kamera
+let camTween = null;
+function setView(name) {
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === name));
+  let pos, tgt;
+  const cap = findCapacitor(), m = getMachine();
+  if (name === 'front') { pos = v(-2, 36, 205); tgt = v(-2, 26, 0); }
+  else if (name === 'top') { pos = v(0, 300, 0.5); tgt = v(0, 0, 0); }
+  else if (name === 'cap' && cap) { tgt = v(cap.xm, 25, cap.zm); pos = tgt.clone().add(v(10, 26, 78)); }
+  else if (name === 'source' && m) { tgt = m.group.position.clone().add(v(0, 34, 0)); pos = tgt.clone().add(v(14, 10, 92)); }
+  else if (name === 'source' && getVdg()) { tgt = getVdg().group.position.clone().add(v(-4, 34, 0)); pos = tgt.clone().add(v(14, 8, 110)); }
+  else if (name === 'cap' && getScope()) { tgt = getScope().group.position.clone().add(v(0, 24, 0)); pos = tgt.clone().add(v(4, 6, 52)); }
+  else if (name === 'source' && getSupply()) { tgt = getSupply().group.position.clone().add(v(0, 8, 4)); pos = tgt.clone().add(v(8, 16, 62)); }
+  else { pos = v(22, 118, 238); tgt = v(4, 18, 0); }
+  if (reduceMotion) { camera.position.copy(pos); controls.target.copy(tgt); controls.update(); return; }
+  camTween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: tgt, k: 0 };
+}
+function stepCamera(dt) {
+  if (!camTween) return;
+  camTween.k = Math.min(1, camTween.k + dt / 0.75);
+  const e = 1 - Math.pow(1 - camTween.k, 3);
+  camera.position.lerpVectors(camTween.p0, camTween.p1, e);
+  controls.target.lerpVectors(camTween.t0, camTween.t1, e);
+  if (camTween.k >= 1) camTween = null;
+}
+controls.addEventListener('start', () => { camTween = null; });
+
+// ------------------------------------------------------------ Ton
+let actx = null, hum = null;
+function ensureAudio() {
+  if (!sim.sound) return;
+  try {
+    if (!actx) {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = actx.createOscillator(), lp = actx.createBiquadFilter(), g = actx.createGain();
+      osc.type = 'sawtooth'; osc.frequency.value = 50; lp.type = 'lowpass'; lp.frequency.value = 260; g.gain.value = 0;
+      osc.connect(lp).connect(g).connect(actx.destination); osc.start(); hum = { osc, g };
+    }
+    if (actx.state === 'suspended') actx.resume();
+  } catch (err) { actx = null; }
+}
+function sparkSound(strength) {
+  if (!sim.sound || !actx) return;
+  const len = 0.12 + 0.12 * strength, n = Math.floor(actx.sampleRate * len);
+  const buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+  const src = actx.createBufferSource(); src.buffer = buf;
+  const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 600;
+  const g = actx.createGain(); g.gain.value = clamp(0.12 + 0.2 * strength, 0, 0.5);
+  src.connect(hp).connect(g).connect(actx.destination); src.start();
+}
+
+// ------------------------------------------------------------ Toasts
+function toast(text, kind) {
+  const el = document.createElement('div'); el.className = 'toast' + (kind ? ' ' + kind : ''); el.textContent = text;
+  const box = $('#toasts'); box.appendChild(el);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => el.remove(), 2600);
+}
+
+// ------------------------------------------------------------ Darstellung pro Frame
+let lastCtx = { m: null, ps: null, vg: null, es: null, cap: null, L: [], conn: analyze(null, null, null, null, null) };
+function visuals(dt, ctx) {
+  const { m, cap, conn } = ctx;
+  if (m) {
+    const f = sim.crankRate;
+    m.drive.rotation.z += f * Math.PI * 2 * dt;
+    m.diskF.rotation.z += f * RATIO * Math.PI * 2 * dt;
+    m.diskB.rotation.z -= f * RATIO * Math.PI * 2 * dt;
+    const Um = Math.abs(sim.Qm / machineC(m)), ratio = Um / (3e3 + 30e3 * sim.gap);
+    const s = Math.pow(clamp(ratio, 0, 1), 6);
+    for (const sx of [-1, 1]) {
+      const gl = m.glows[sx]; gl.visible = s > 0.02;
+      gl.material.opacity = s * (0.75 + Math.random() * 0.25);
+      const sc = 2 + s * 5; gl.scale.set(sc, sc, 1);
+    }
+    $('#crankIco').style.transform = `rotate(${m.drive.rotation.z * -57.3}deg)`;
+  }
+  if (ctx.ps) ctx.ps.update(sim.supplyOn, sim.U0);
+  if (ctx.vg) {
+    const vg = ctx.vg, speed = sim.vdgOn ? sim.vdgSpeed : 0;
+    vg.beltF.offset.y -= speed * dt * 1.6; vg.beltB.offset.y += speed * dt * 1.6;
+    vg.phase = (vg.phase + speed * dt * 0.28) % 1;
+    vg.beltSprites.forEach((sp, i) => { const f = (vg.phase + i / vg.beltSprites.length) % 1; sp.visible = sim.showCharges && speed > 0; sp.position.set(0, 12 + f * 37, 1.9); });
+    const U = Q.vdg / C_VDG, n = Math.round(vg.sphereSprites.length * clamp(Math.abs(U) / 120e3, 0, 1));
+    vg.sphereSprites.forEach((sp, i) => { sp.visible = sim.showCharges && i < n; sp.material = U >= 0 ? plusMat : minusMat; });
+    vg.ledMat.emissiveIntensity = sim.vdgOn ? 2.2 : 0; vg.sw.rotation.x = sim.vdgOn ? -0.25 : 0.25;
+    const s = Math.pow(clamp(Math.abs(U) / (3e3 + 30e3 * sim.vdgGap), 0, 1), 6);
+    vg.glow.visible = s > 0.02; vg.glow.material.opacity = s * (0.7 + Math.random() * 0.3); const gs = 2 + s * 6; vg.glow.scale.set(gs, gs, 1);
+  }
+  if (ctx.es) {
+    const es = ctx.es, U = Q.scope / C_ES;
+    const target = 80 * (1 - Math.exp(-Math.abs(U) / 12e3)) * Math.PI / 180;
+    const w = 7, z = 0.35, h = Math.min(dt, 0.03);
+    for (let t = 0; t < dt; t += h) { const acc = w * w * (target - es.angle) - 2 * z * w * es.vel; es.vel += acc * h; es.angle += es.vel * h; if (es.angle < 0) { es.angle = 0; es.vel *= -0.3; } }
+    es.needle.rotation.z = -es.angle;
+    const n = Math.round(es.sprites.length * clamp(Math.abs(U) / 15e3, 0, 1) + (Math.abs(U) > 500 ? 0.5 : 0));
+    es.sprites.forEach((sp, i) => { const k = i < 3 ? i : i - 3; sp.visible = sim.showCharges && k < Math.ceil(n / 2); sp.material = U >= 0 ? plusMat : minusMat; });
+  }
+  // Ladungen auf den Platten
+  for (const p of plates()) {
+    let n = 0, sign = 0;
+    if (cap && (p === cap.A || p === cap.B)) {
+      const q = p === cap.A ? sim.Qp : -sim.Qp;
+      const sigma = Math.abs(q) / (cap.area * 1e-4);
+      n = Math.round(p.sprites.length * clamp(sigma / (EPS0 * 3e6), 0, 1));
+      sign = Math.sign(q);
+      p.chargeGroup.position.x = Math.min(0.5, cap.d * 0.3);
+    }
+    const frac = n / p.sprites.length;
+    p.sprites.forEach((s, i) => { s.visible = sim.showCharges && i < n; s.material = sign >= 0 ? plusMat : minusMat; });
+    p.plateMat.emissive.setHex(sign > 0 ? 0xcf3a2e : 0x2560c4);
+    p.plateMat.emissiveIntensity = frac * 0.45;
+  }
+  // Feld & Dielektrikum
+  const key = cap ? [cap.key, nf(cap.d, 2), cap.A.r, cap.B.r, nf(cap.dz, 2), nf(cap.xm, 2), nf(cap.zm, 2), sim.medium].join('|') : 'none|' + sim.medium;
+  if (key !== fieldKey) { fieldKey = key; rebuildField(cap); }
+  if (cap) {
+    const E = Math.abs(sim.Qp / cap.C) / (cap.d / 100);
+    const k = clamp(E / 3e6, 0, 1);
+    fieldGroup.visible = sim.showField && k > 0.01;
+    fieldMat.opacity = 0.18 + 0.75 * Math.sqrt(k);
+    fieldGroup.scale.x = sim.Qp >= 0 ? 1 : -1;
+    dimLabel.visible = true;
+    dimLabel.position.set(cap.xm, 25 + cap.r + 4, cap.zm);
+    dimEl.textContent = 'd = ' + nf(cap.d) + ' cm';
+  } else { fieldGroup.visible = false; dimLabel.visible = false; }
+  // Buchsen hervorheben
+  const pulse = 0.5 + 0.5 * Math.sin(sim.t * 6);
+  for (const o of objects) for (const t of o.terminals) {
+    const on = t === pending || t === hoverTerm;
+    t.ringMat.emissive.setHex(0xffb340);
+    t.ringMat.emissiveIntensity = on ? 1.1 : cableMode ? 0.25 + 0.6 * pulse : 0;
+  }
+  // Auswahlring
+  if (selected && selected.type !== 'cable') {
+    const c = selected.ringCenter(); selRing.visible = true; selRing.position.set(c.x, 0.06, c.z);
+    if (selected.type === 'machine') selRing.scale.set(33, 20, 1); else if (selected.type === 'supply') selRing.scale.set(24, 19, 1); else if (selected.type === 'vdg') selRing.scale.set(22, 15, 1); else if (selected.type === 'scope') selRing.scale.set(10, 10, 1); else selRing.scale.set(10, Math.max(8, selected.r * 0.8), 1);
+  } else selRing.visible = false;
+  if (pending) { const a = termEnd(pending); const arr = bandGeo.attributes.position.array; arr[0] = a.x; arr[1] = a.y; arr[2] = a.z; bandGeo.attributes.position.needsUpdate = true; }
+  updateSparks(dt);
+  if (hum && actx) {
+    const vgOn = ctx.vg && sim.vdgOn;
+    hum.g.gain.setTargetAtTime(sim.sound ? Math.max(m ? Math.min(0.035, sim.crankRate * 0.014) : 0, vgOn ? 0.012 + 0.012 * sim.vdgSpeed : 0) : 0, actx.currentTime, 0.1);
+    hum.osc.frequency.setTargetAtTime(vgOn && sim.crankRate < 0.1 ? 70 + 40 * sim.vdgSpeed : 38 + sim.crankRate * 22, actx.currentTime, 0.2);
+  }
+}
+
+// ------------------------------------------------------------ Messwerte & Anleitung
+const stepsEl = $('#steps');
+const STEPS = {
+  cap: ['Spannungsquelle aufstellen', 'Zwei Platten gegenüberstellen', 'Platten mit + und − verbinden', 'Kondensator laden'],
+  scope: ['Spannungsquelle aufstellen', 'Elektroskop aufstellen', 'Elektroskop anschließen', 'Laden und beobachten'],
+};
+let stepMode = '';
+function setSteps(mode) {
+  if (!stepsEl || mode === stepMode) return; stepMode = mode;
+  stepsEl.innerHTML = STEPS[mode].map((t, i) => `<li><i>${i + 1}</i><span>${t}<small></small></span></li>`).join('');
+  $('#guide h3').textContent = mode === 'scope' ? 'Versuch mit dem Elektroskop' : 'Versuchsablauf';
+}
+setSteps('cap');
+function primaryU(ctx) {
+  const { m, ps, vg, es, cap } = ctx;
+  return cap ? Q.cap / cap.C : es ? Q.scope / C_ES : m ? Q.mach / machineC(m) : vg ? Q.vdg / C_VDG : ps ? Q.sup / C_SUP : 0;
+}
+function niceMax(x) { for (const n of [10, 20, 50, 100, 150, 200, 250]) if (x <= n) return n; return Math.ceil(x / 100) * 100; }
+function drawChart() {
+  const cv = $('#chart'), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
+  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const data = sim.hist, max = niceMax(Math.max(...data.map(Math.abs), 1));
+  const padL = 0, padR = 44, padT = 6, padB = 16, W = w - padL - padR, Hh = h - padT - padB;
+  const muted = css('--muted'), line = css('--line'), brass = css('--brass');
+  g.font = '10px "IBM Plex Mono", monospace'; g.fillStyle = muted; g.strokeStyle = line; g.lineWidth = 1;
+  for (const f of [0, 0.5, 1]) {
+    const y = padT + Hh * (1 - f);
+    g.beginPath(); g.moveTo(padL, Math.round(y) + 0.5); g.lineTo(padL + W, Math.round(y) + 0.5); g.stroke();
+    g.fillText(nf(max * f, 0) + (f === 1 ? ' kV' : ''), padL + W + 6, y + 3.5);
+  }
+  g.fillText('−30 s', padL, h - 3);
+  g.textAlign = 'right'; g.fillText('jetzt', padL + W, h - 3); g.textAlign = 'left';
+  const X = i => padL + W * i / (data.length - 1), Y = u => padT + Hh * (1 - Math.min(1, Math.abs(u) / max));
+  const grad = g.createLinearGradient(0, padT, 0, padT + Hh);
+  grad.addColorStop(0, 'rgba(176,111,22,.28)'); grad.addColorStop(1, 'rgba(176,111,22,.02)');
+  g.beginPath(); g.moveTo(X(0), padT + Hh); data.forEach((u, i) => g.lineTo(X(i), Y(u))); g.lineTo(X(data.length - 1), padT + Hh); g.closePath();
+  g.fillStyle = grad; g.fill();
+  g.beginPath(); data.forEach((u, i) => i ? g.lineTo(X(i), Y(u)) : g.moveTo(X(i), Y(u)));
+  g.strokeStyle = brass; g.lineWidth = 1.6; g.stroke();
+  const lu = data[data.length - 1];
+  g.beginPath(); g.arc(X(data.length - 1), Y(lu), 3.2, 0, Math.PI * 2); g.fillStyle = brass; g.fill();
+}
+function fmtQ(q) { const a = Math.abs(q); return a < 1e-6 ? nf(a * 1e9, 0) + ' nC' : nf(a * 1e6, 2) + ' µC'; }
+function updateUI(ctx) {
+  const { m, cap, conn } = ctx;
+  const Cm = machineC(m);
+  const ps = ctx.ps, vg = ctx.vg, es = ctx.es;
+  const U = primaryU(ctx);
+  $('#uLabel').textContent = cap ? 'Spannung am Kondensator' : es ? 'Spannung am Elektroskop' : m ? 'Spannung an der Influenzmaschine' : vg ? 'Spannung an der Konduktorkugel' : ps ? 'Spannung am Netzgerät' : 'Spannung';
+  $('#vU').textContent = nf(Math.abs(U) / 1e3, 1);
+  if (cap) {
+    const E = Math.abs(U) / (cap.d / 100), cm = capMeasure(cap);
+    $('#vC').textContent = nf(cm.C * 1e12, 1) + ' pF';
+    $('#vQ').textContent = fmtQ(cm.Q);
+    $('#vE').textContent = nf(E / 1e5, 1) + ' kV/cm';
+    $('#vW').textContent = nf(0.5 * cm.C * U * U * 1e3, 1) + ' mJ';
+    $('#vD').textContent = nf(cap.d, 1) + ' cm';
+    $('#vA').textContent = nf(cap.area, 0) + ' cm²';
+    const k = E / MEDIA[sim.medium].Eb;
+    const bar = $('#eBar'); bar.style.width = clamp(k * 100, 0, 100) + '%';
+    bar.style.background = k > 0.85 ? css('--warn') : k > 0.6 ? css('--brass') : css('--ok');
+  } else {
+    for (const id of ['#vC', '#vQ', '#vE', '#vW', '#vD', '#vA']) $(id).textContent = '–';
+    $('#eBar').style.width = '0';
+  }
+  // Status
+  const st = $('#status'); let txt, cls;
+  if (sim.t - sim.lastEvent < 1.2) { txt = sim.lastEventText.startsWith('Funke') ? 'Funke!' : 'Überschlag!'; cls = 'warn'; }
+  else if (conn.machineShort || conn.supplyShort || conn.vdgShort) { txt = 'Kurzschluss'; cls = 'warn'; }
+  else if (!cap && es) { txt = Math.abs(U) < 300 ? 'Zeiger in Ruhe' : 'Zeiger schlägt aus'; cls = Math.abs(U) < 300 ? '' : 'acc'; }
+  else if (sim.corona) { txt = 'Sprühentladung'; cls = 'warn'; }
+  else if (!cap) { txt = 'kein Kondensator'; cls = ''; }
+  else if (Math.abs(U) < 300) { txt = 'ungeladen'; cls = ''; }
+  else if (conn.source === 'supply') { txt = 'mit Quelle verbunden'; cls = 'acc'; }
+  else if (conn.source === 'machine' && sim.crankRate > 0.05 || conn.source === 'vdg' && sim.vdgOn) { txt = 'wird geladen'; cls = 'acc'; }
+  else if (!conn.connected) { txt = 'geladen, getrennt'; cls = 'ok'; }
+  else { txt = 'geladen'; cls = 'ok'; }
+  st.textContent = txt; st.className = 'chip' + (cls ? ' ' + cls : '');
+  // Kondensator-Panel
+  $('#capEmpty').hidden = !!cap;
+  $('#capCtl').classList.toggle('disabled', !cap);
+  if (cap) {
+    const dSl = $('#dSl'); if (document.activeElement !== dSl) dSl.value = cap.d;
+    $('#dOut').textContent = nf(cap.d) + ' cm';
+    const rSl = $('#rSl'); if (document.activeElement !== rSl) rSl.value = cap.r;
+    $('#rOut').textContent = nf(cap.r) + ' cm';
+  }
+  // Maschinenleiste
+  $('#mbar').style.display = m || ps || vg ? '' : 'none';
+  $('#vGrp').style.display = vg ? '' : 'none';
+  $('#mGrp').style.display = m ? '' : 'none';
+  $('#nGrp').style.display = ps ? '' : 'none';
+  crankBtn.classList.toggle('on', sim.hold || sim.auto);
+  // Anleitung
+  const scopeMode = es && !plates().length;
+  setSteps(scopeMode ? 'scope' : 'cap');
+  const srcName = [m && 'Influenzmaschine', vg && 'Bandgenerator', ps && 'Netzgerät'].filter(Boolean).join(', ');
+  const chargeHint = vg && !sim.vdgOn ? 'Motor des Bandgenerators einschalten' : ps && !sim.supplyOn ? 'Netzgerät einschalten' : ps ? 'Spannung U₀ einstellen' : 'Kurbel: Knopf unten gedrückt halten';
+  const charged = (cap || es) && Math.abs(U) > 1e3;
+  const states = scopeMode ? [
+    [!!(m || ps || vg), srcName || 'Bandgenerator, Netzgerät oder Influenzmaschine'],
+    [true, 'Zeigerelektroskop, Gehäuse geerdet'],
+    [!!conn.scopeSource, conn.scopeSource ? (conn.scopeFull || conn.scopeSource === 'vdg' ? 'Kugel und Gehäuse an beiden Polen' : 'Kugel an einem Pol, Gehäuse geerdet') : vg ? 'Konduktorkugel mit der Elektroskop-Kugel verbinden' : 'Kugel mit einem Pol der Quelle verbinden'],
+    [charged, charged ? 'Zeiger schlägt aus, ' + nf(Math.abs(U) / 1e3, 1) + ' kV' : chargeHint],
+  ] : [
+    [!!(m || ps || vg), srcName || 'Netzgerät, Bandgenerator oder Influenzmaschine aus dem Regal ziehen'],
+    [!!cap, cap ? 'Abstand ' + nf(cap.d) + ' cm' : plates().length === 1 ? 'eine zweite Platte fehlt' : 'Flächen zueinander ausrichten'],
+    [conn.connected || (charged && !conn.connected && !conn.samePole && !conn.machineShort), conn.machineShort || conn.supplyShort ? 'Kurzschluss: + und − direkt verbunden' : conn.capShort ? 'beide Platten miteinander verbunden' : conn.samePole ? 'beide Platten am selben Pol' : conn.partial ? 'nur eine Platte verbunden' : conn.source === 'supply' ? 'am Netzgerät angeschlossen' : conn.source === 'vdg' ? 'an Kugel und Erdbuchse angeschlossen' : conn.connected ? 'rechte Buchse +, linke Buchse −' : charged ? 'getrennt, Ladung bleibt' : 'Buchsen anklicken'],
+    [charged, charged ? nf(Math.abs(U) / 1e3, 1) + ' kV erreicht' : conn.source === 'supply' ? (sim.supplyOn ? 'Spannung U₀ einstellen' : 'Netzgerät einschalten') : conn.source === 'vdg' ? 'Motor des Bandgenerators einschalten' : conn.source === 'machine' ? 'Kurbel: Knopf unten gedrückt halten' : chargeHint],
+  ];
+  const firstOpen = states.findIndex(s => !s[0]);
+  if (stepsEl) [...stepsEl.children].forEach((li, i) => {
+    li.classList.toggle('done', states[i][0]); li.classList.toggle('now', i === firstOpen);
+    li.classList.toggle('warn', !scopeMode && i === 2 && (conn.machineShort || conn.supplyShort || conn.vdgShort || conn.capShort || conn.samePole));
+    li.querySelector('i').textContent = states[i][0] ? '✓' : i + 1;
+    li.querySelector('small').textContent = states[i][1];
+  });
+  drawChart();
+}
+
+// ------------------------------------------------------------ Vorlage & Start
+function loadTemplate() {
+  clearAll(); cancelPending();
+  const m = addMachine(-35, -4, true);
+  const A = addPlate(33.5, 4, 1), B = addPlate(36.5, 4, -1);
+  addCable(m.terminals.find(t => t.pol === '+'), A.terminals[0], true);
+  addCable(m.terminals.find(t => t.pol === '-'), B.terminals[0], true);
+  select(null); setView('persp');
+}
+
+function loadSupplyTemplate() {
+  clearAll(); cancelPending();
+  sim.supplyOn = true; sim.U0 = 5000;
+  $('#supplyOn').checked = true; $('#u0').value = 5; $('#u0Out').textContent = '5,0 kV';
+  const ps = addSupply(-35, -4, true);
+  const A = addPlate(29, 0, 1), B = addPlate(31, 0, -1);
+  addCable(ps.terminals.find(t => t.pol === '+'), A.terminals[0], true);
+  addCable(ps.terminals.find(t => t.pol === '-'), B.terminals[0], true);
+  measLog.length = 0; renderLog();
+  select(null); setView('persp');
+  if (camTween) { camTween.p1 = v(10, 78, 158); camTween.t1 = v(2, 12, 8); }
+}
+function loadVdgTemplate() {
+  clearAll(); cancelPending();
+  sim.vdgOn = false; $('#vdgOn').checked = false;
+  const vg = addVdg(-35, -4, true), es = addScope(15, 6, true);
+  addCable(vg.terminals.find(t => t.node === 'G+'), es.terminals.find(t => t.node === 'E'), true);
+  select(null); setView('persp');
+  if (camTween) { camTween.p1 = v(2, 96, 215); camTween.t1 = v(-10, 30, 0); }
+}
+function loadByName(name) {
+  $('#tplSel').value = name;
+  if (name === 'supply') loadSupplyTemplate(); else if (name === 'vdg') loadVdgTemplate(); else loadTemplate();
+}
+
+const measLog = [];
+function addLog() {
+  const { cap, conn } = lastCtx;
+  if (!cap) { toast('Es ist kein Kondensator aufgebaut.', 'warn'); return; }
+  measLog.push({
+    src: conn.connected ? 'verbunden' : 'getrennt', d: cap.d,
+    ...(cm => ({ U: Math.abs(cm.U) / 1e3, Q: Math.abs(cm.Q) * 1e9, C: cm.C * 1e12 }))(capMeasure(cap)),
+  });
+  renderLog();
+}
+function trend(prev, cur) {
+  if (!prev) return '<span class="tr"></span>';
+  const rel = (cur - prev) / Math.max(Math.abs(prev), 1e-9);
+  if (Math.abs(rel) < 0.01) return '<span class="tr eq" title="gleich">=</span>';
+  return rel > 0 ? '<span class="tr ch" title="größer">↑</span>' : '<span class="tr ch" title="kleiner">↓</span>';
+}
+function renderLog() {
+  $('#logBody').innerHTML = measLog.map((r, i) => {
+    const p = measLog[i - 1];
+    return `<tr><td>${i + 1}</td><td><span class="srcchip${r.src === 'verbunden' ? ' on' : ''}">${r.src === 'verbunden' ? 'verb.' : 'getr.'}</span></td>` +
+      `<td>${nf(r.d)}${trend(p && p.d, r.d)}</td><td>${nf(r.U, 2)}${trend(p && p.U, r.U)}</td>` +
+      `<td>${nf(r.Q, 1)}${trend(p && p.Q, r.Q)}</td><td>${nf(r.C, 2)}${trend(p && p.C, r.C)}</td></tr>`;
+  }).join('');
+  $('#logNote').textContent = measLog.length
+    ? 'verb. = mit der Quelle verbunden, getr. = getrennt. Pfeile: Änderung gegenüber der vorigen Zeile.'
+    : 'Noch keine Messwerte. Die Pfeile zeigen später die Änderung gegenüber der vorigen Zeile: ↑ größer, ↓ kleiner, = gleich.';
+}
+
+function resize() {
+  const w = vp.clientWidth, h = vp.clientHeight;
+  renderer.setSize(w, h); labelRenderer.setSize(w, h);
+  camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(vp);
+resize();
+camera.position.set(22, 118, 238); controls.target.set(4, 18, 0); controls.update();
+select(null);
+camera.position.set(22, 118, 238); controls.target.set(4, 18, 0);
+
+const clock = new THREE.Clock();
+let uiAcc = 0, histAcc = 0;
+function frame() {
+  requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  sim.t += dt;
+  const target = (sim.hold || sim.auto) && getMachine() ? sim.crankSpeed : 0;
+  sim.crankRate += (target - sim.crankRate) * Math.min(1, dt * (target > sim.crankRate ? 3 : 1.4));
+  if (sim.crankRate < 0.003) sim.crankRate = 0;
+  const m = getMachine(), ps = getSupply(), vg = getVdg(), es = getScope(), cap = findCapacitor();
+  if (cap) { if (sim.capKey !== cap.key) { sim.capKey = cap.key; Q.cap = 0; } } else sim.capKey = null;
+  const conn = analyze(m, ps, cap, vg, es);
+  const L = buildElements({ m, ps, vg, es, cap });
+  for (const k in Q) if (!L.some(e => e.key === k)) { if (k[0] === 'g') delete Q[k]; else Q[k] = 0; }
+  lastCtx = { m, ps, vg, es, cap, conn, L };
+  for (let i = 0; i < 4; i++) physics(dt / 4, lastCtx);
+  visuals(dt, lastCtx);
+  histAcc += dt;
+  while (histAcc >= 0.1) {
+    histAcc -= 0.1; sim.hist.shift();
+    sim.hist.push(primaryU(lastCtx) / 1e3);
+  }
+  uiAcc += dt; if (uiAcc > 0.1) { uiAcc = 0; updateUI(lastCtx); }
+  stepCamera(dt); controls.update();
+  renderer.render(scene, camera); labelRenderer.render(scene, camera);
+}
+updateUI(lastCtx);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
