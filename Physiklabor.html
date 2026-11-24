@@ -126,6 +126,9 @@ dl.vals dd{margin:0;font:500 15px/1.3 var(--font-mono);font-variant-numeric:tabu
 .field label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
 .field output{font:500 12.5px var(--font-mono);color:var(--ink)}
 .fieldnote{font-size:11.5px;color:var(--muted)}
+#medSeg{display:flex}
+#medSeg button{flex:1;height:auto;padding:5px 8px;line-height:1.25}
+#medSeg small{display:block;font:500 11px/1.3 var(--font-mono);opacity:.75;font-variant-numeric:tabular-nums}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .row .switch{margin-right:6px}
 .empty{font-size:12.5px;color:var(--muted);background:#f4f6f8;border-radius:7px;padding:9px 10px;margin:0 0 10px}
@@ -317,9 +320,9 @@ table.log th:nth-child(-n+2),table.log td:nth-child(-n+2){text-align:left}
         <div class="field"><label for="rSl">Plattenradius r <output id="rOut">10,0 cm</output></label><input type="range" id="rSl" min="5" max="15" step="0.5" value="10"></div>
         <div class="field"><label>Zwischen den Platten</label>
           <div class="seg" role="group" aria-label="Dielektrikum" id="medSeg">
-            <button type="button" data-med="air" class="on">Luft</button>
-            <button type="button" data-med="plexi">Plexiglas</button>
-            <button type="button" data-med="glass">Glas</button>
+            <button type="button" data-med="air" class="on">Luft<small>εᵣ = 1,0</small></button>
+            <button type="button" data-med="plexi">Plexiglas<small>εᵣ = 3,3</small></button>
+            <button type="button" data-med="glass">Glas<small>εᵣ = 6,0</small></button>
           </div>
         </div>
         <div class="field"><label>Selbstentladung durch die Luft</label>
@@ -348,30 +351,6 @@ table.log th:nth-child(-n+2),table.log td:nth-child(-n+2){text-align:left}
       </table>
       <p class="lognote" id="logNote">Noch keine Messwerte. Die Pfeile zeigen später die Änderung gegenüber der vorigen Zeile: ↑ größer, ↓ kleiner, = gleich.</p>
       <div class="row"><button class="btn" id="logCopy" type="button">Tabelle kopieren</button><button class="btn" id="logClear" type="button">Tabelle leeren</button></div>
-    </section>
-
-    <section class="pane">
-      <h2>Aufgabe: Plattenabstand vergrößern</h2>
-      <div class="task">
-        <b>2.1 Kondensator von der Quelle getrennt</b>
-        <ol>
-          <li>„Aufbau mit Netzgerät laden“: U₀ = 5 kV, d = 2 cm.</li>
-          <li>„Messwert aufnehmen“.</li>
-          <li>„Kabel abziehen“ (Bereich Plattenkondensator).</li>
-          <li>Plattenabstand d vergrößern, z. B. auf 6 cm.</li>
-          <li>„Messwert aufnehmen“ und U, Q und C vergleichen.</li>
-        </ol>
-      </div>
-      <div class="task">
-        <b>2.2 Kondensator mit der Quelle verbunden</b>
-        <ol>
-          <li>„Aufbau mit Netzgerät laden“.</li>
-          <li>„Messwert aufnehmen“.</li>
-          <li>Kabel stecken lassen und d vergrößern, z. B. auf 6 cm.</li>
-          <li>„Messwert aufnehmen“ und U, Q und C vergleichen.</li>
-        </ol>
-      </div>
-      <div class="row" style="margin-top:10px"><button class="btn primary" id="taskLoad" type="button">Aufbau mit Netzgerät laden</button></div>
     </section>
 
     <section class="pane">
@@ -1634,7 +1613,6 @@ $('#detachBtn').addEventListener('click', () => {
 });
 $('#tplBtn').addEventListener('click', () => { loadByName($('#tplSel').value); toast('Versuch neu aufgebaut.'); });
 $('#tplSel').addEventListener('change', e => loadByName(e.target.value));
-$('#taskLoad').addEventListener('click', () => { loadByName('supply'); toast('Aufbau mit Netzgerät geladen: U₀ = 5 kV, d = 2 cm.'); });
 $('#supplyOn').addEventListener('change', e => { sim.supplyOn = e.target.checked; });
 $('#u0').addEventListener('input', e => { sim.U0 = +e.target.value * 1000; $('#u0Out').textContent = nf(+e.target.value) + ' kV'; });
 $('#logAdd').addEventListener('click', addLog);
